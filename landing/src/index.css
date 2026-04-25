@@ -34,7 +34,7 @@
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light dark;
   }
 
   html {
@@ -42,24 +42,12 @@
   }
 
   body {
-    background-color: var(--color-ink);
+    background-color: #f2f2f2;
     color: var(--color-paper);
     font-family: var(--font-mono);
     font-weight: 400;
     font-feature-settings: "ss01", "ss02", "cv01";
     overflow-x: hidden;
-    /* subtle warm grain — paper-fiber feel */
-    background-image:
-      radial-gradient(
-        circle at 20% 10%,
-        rgba(200, 164, 77, 0.04),
-        transparent 50%
-      ),
-      radial-gradient(
-        circle at 85% 85%,
-        rgba(196, 48, 43, 0.03),
-        transparent 55%
-      );
   }
 
   ::selection {

@@ -38,11 +38,12 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
             className="h-display text-[clamp(3.2rem,8.4vw,8.6rem)]"
+            style={{ color: "#1a7a3c" }}
           >
             <span className="block">the tutor in</span>
             <span className="block">
               the{" "}
-              <span style={{ fontStyle: "italic" }} className="text-paper">
+              <span style={{ fontStyle: "italic", color: "#1a7a3c" }}>
                 margin
               </span>
             </span>
@@ -72,9 +73,32 @@ export function Hero() {
               open the tutor
               <span aria-hidden>→</span>
             </a>
-            <a href="#pipeline" className="cta cta-ghost">
-              see how it works
-            </a>
+            <a
+                href="#pipeline"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  width: "120px",
+                  height: "120px",
+                  borderRadius: "50%",
+                  background: "rgba(37, 99, 235, 0.18)",
+                  border: "1px solid rgba(37, 99, 235, 0.5)",
+                  color: "#000",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "0.6rem",
+                  letterSpacing: "0.16em",
+                  textTransform: "uppercase",
+                  textAlign: "center",
+                  lineHeight: 1.4,
+                  padding: "0 16px",
+                  textDecoration: "none",
+                  transition: "background 0.3s ease",
+                  backdropFilter: "blur(4px)",
+                }}
+              >
+                see how<br />it works
+              </a>
           </motion.div>
 
           {/* tagline strip */}
