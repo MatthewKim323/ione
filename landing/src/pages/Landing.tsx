@@ -4,6 +4,7 @@ import { TitlePage } from "../components/TitlePage";
 import { Hero } from "../components/Hero";
 import { Pedagogy } from "../components/Pedagogy";
 import { Pipeline } from "../components/Pipeline";
+import { Demo } from "../components/Demo";
 import { Signal } from "../components/Signal";
 import { Closer } from "../components/Closer";
 import { SKIP_FX } from "../lib/prerender";
@@ -205,6 +206,7 @@ export default function Landing() {
           <Hero />
           <Pedagogy />
           <Pipeline />
+          <Demo />
           <Signal />
           <Closer />
         </main>
