@@ -1,4 +1,4 @@
-# Margin
+# ione
 
 The AI tutor that lives in the margin of your page. A live web-based math tutor that watches you work in real time, intervenes only when it'll actually help, and remembers what you specifically struggle with across sessions.
 

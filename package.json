@@ -1,0 +1,17 @@
+{
+  "name": "ione",
+  "version": "0.0.1",
+  "private": true,
+  "description": "ione — live AI math tutor (hackathon, Auth0 + Anthropic + Backboard tracks)",
+  "type": "module",
+  "scripts": {
+    "test:ocr": "node scripts/test-ocr.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "sharp": "^0.33.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
