@@ -7,103 +7,142 @@ import { Pipeline } from "./components/Pipeline";
 import { Signal } from "./components/Signal";
 import { Closer } from "./components/Closer";
 
-// Two-screen scrub.  Scrub fills the first 1.5 screens; fade lasts 0.5.
-const SCRUB_VH = 1.5;
-const FADE_VH = 0.5;
-const TOTAL_VH = SCRUB_VH + FADE_VH;
+// Page boundaries (measured in viewport heights).
+const BLUR_START_VH = 0.5; // start blurring midway through page 1
+const BLUR_FULL_VH = 2.0; // fully blurred by end of page 2
+const FADE_OUT_END_VH = 3.0; // fully gone by end of page 3
 
-// Lower = smoother, more lag.  0.18 is a good comfort point.
-const LERP_SPEED = 0.18;
-
-// Don't seek for tiny deltas — most browsers throw extra cost on every seek.
-const SEEK_EPSILON = 0.012;
+// Unfocused blur prop range used at each phase.
+const BLUR_MIN = 0; // razor sharp
+const BLUR_MAX = 600; // heavy directional blur
 
 const FALLBACK_BG = "#f2f2f2";
 
-function ScrubbingBackgroundVideo({
+function smoothstep(t: number) {
+  const c = t < 0 ? 0 : t > 1 ? 1 : t;
+  return c * c * (3 - 2 * c);
+}
+
+function UnfocusedBackground({
   onSampledBg,
 }: {
   onSampledBg: (color: string) => void;
 }) {
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const sampledRef = useRef(false);
 
   useEffect(() => {
     const wrapper = wrapperRef.current;
-    const video = videoRef.current;
-    if (!wrapper || !video) return;
+    const iframe = iframeRef.current;
+    if (!wrapper || !iframe) return;
 
-    video.pause();
-
-    let targetTime = 0;
-    let displayTime = 0;
-    let lastSeekTime = -1;
+    let cachedVh = window.innerHeight || 1;
+    let lastBlur = -1;
     let lastOpacity = 1;
     let isHidden = false;
     let scrollDirty = true;
     let rafId = 0;
     let running = true;
+    let iframeReady = false;
 
-    // Cache window.innerHeight; only refresh on resize.  Reading it on
-    // every scroll causes layout thrash on some browsers.
-    let cachedVh = window.innerHeight || 1;
-
-    // Use the faster seek API when available — Firefox/Safari have it,
-    // Chrome falls back to plain assignment.
-    const supportsFastSeek = typeof (video as HTMLVideoElement & {
-      fastSeek?: (t: number) => void;
-    }).fastSeek === "function";
+    function postBlur(blur: number) {
+      if (!iframeReady || !iframe.contentWindow) return;
+      iframe.contentWindow.postMessage(
+        { type: "unfocused:update", props: { blur } },
+        "*"
+      );
+    }
 
     function compute() {
       const vh = cachedVh;
       const scrollPx = window.scrollY;
 
-      const scrubProgress = scrollPx / (SCRUB_VH * vh);
-      const clampedScrub = scrubProgress < 0 ? 0 : scrubProgress > 1 ? 1 : scrubProgress;
-      targetTime = clampedScrub * (video!.duration || 0);
+      const blurT = smoothstep(
+        (scrollPx / vh - BLUR_START_VH) / (BLUR_FULL_VH - BLUR_START_VH)
+      );
+      const nextBlur = BLUR_MIN + blurT * (BLUR_MAX - BLUR_MIN);
 
-      const fadeStart = SCRUB_VH * vh;
-      const fadeEnd = TOTAL_VH * vh;
-      let nextOpacity = 1;
-      if (scrollPx > fadeStart) {
-        const t = (scrollPx - fadeStart) / (fadeEnd - fadeStart);
-        nextOpacity = t >= 1 ? 0 : 1 - t;
+      const fadeT = smoothstep(
+        (scrollPx / vh - BLUR_FULL_VH) / (FADE_OUT_END_VH - BLUR_FULL_VH)
+      );
+      const nextOpacity = 1 - fadeT;
+
+      if (Math.abs(nextBlur - lastBlur) > 4) {
+        postBlur(nextBlur);
+        lastBlur = nextBlur;
       }
-      // Write directly to the DOM — no React re-render.
       if (Math.abs(nextOpacity - lastOpacity) > 0.005) {
         wrapper!.style.opacity = String(nextOpacity);
         lastOpacity = nextOpacity;
       }
 
-      // Hard hide past the 2-screen cap.  display:none also frees up
-      // the GPU layer + paint cost.
-      const shouldHide = scrollPx >= fadeEnd;
+      const shouldHide = scrollPx >= FADE_OUT_END_VH * vh;
       if (shouldHide !== isHidden) {
         wrapper!.style.display = shouldHide ? "none" : "block";
         isHidden = shouldHide;
-        if (shouldHide && !video!.paused) video!.pause();
       }
     }
 
-    function trySampleBg() {
-      if (sampledRef.current || !video || video.readyState < 2) return;
+    function tick() {
+      if (!running) return;
+      if (scrollDirty) {
+        compute();
+        scrollDirty = false;
+      }
+      rafId = requestAnimationFrame(tick);
+    }
+
+    function onScroll() {
+      scrollDirty = true;
+    }
+    function onResize() {
+      cachedVh = window.innerHeight || 1;
+      scrollDirty = true;
+    }
+
+    function onMsg(e: MessageEvent) {
+      if (!e.data) return;
+      if (e.data.type === "unfocused:ready") {
+        iframeReady = true;
+        sampleBgColor();
+        scrollDirty = true;
+      }
+    }
+
+    // Sample the iframe's video element's first frame to extract the
+    // dominant background color, so the page seam is invisible.
+    async function sampleBgColor() {
+      if (sampledRef.current) return;
       try {
+        // Easier path: load a fresh video off-screen just to grab the color.
+        const probe = document.createElement("video");
+        probe.src = "/bg.mp4";
+        probe.muted = true;
+        probe.crossOrigin = "anonymous";
+        await new Promise<void>((resolve, reject) => {
+          probe.addEventListener("loadeddata", () => resolve(), { once: true });
+          probe.addEventListener("error", () => reject(), { once: true });
+        });
         const c = document.createElement("canvas");
         c.width = 16;
         c.height = 16;
         const ctx = c.getContext("2d", { willReadFrequently: true });
         if (!ctx) return;
-        ctx.drawImage(video, 0, 0, 16, 16);
+        ctx.drawImage(probe, 0, 0, 16, 16);
         const corners = [
           ctx.getImageData(0, 0, 1, 1).data,
           ctx.getImageData(15, 0, 1, 1).data,
           ctx.getImageData(0, 15, 1, 1).data,
           ctx.getImageData(15, 15, 1, 1).data,
         ];
-        let r = 0, g = 0, b = 0;
+        let r = 0,
+          g = 0,
+          b = 0;
         for (const p of corners) {
-          r += p[0]; g += p[1]; b += p[2];
+          r += p[0];
+          g += p[1];
+          b += p[2];
         }
         onSampledBg(`rgb(${(r / 4) | 0}, ${(g / 4) | 0}, ${(b / 4) | 0})`);
         sampledRef.current = true;
@@ -112,81 +151,18 @@ function ScrubbingBackgroundVideo({
       }
     }
 
-    function frame() {
-      if (!running) return;
-
-      // Recompute scroll-derived values at most once per frame.
-      if (scrollDirty) {
-        compute();
-        scrollDirty = false;
-      }
-
-      if (!isHidden) {
-        const delta = targetTime - displayTime;
-        const absDelta = delta < 0 ? -delta : delta;
-
-        // Snap when we're already there — saves a wasted seek every frame.
-        if (absDelta > 0.001) {
-          displayTime += delta * LERP_SPEED;
-
-          if (
-            Number.isFinite(displayTime) &&
-            Math.abs(displayTime - lastSeekTime) > SEEK_EPSILON
-          ) {
-            try {
-              if (supportsFastSeek) {
-                (video as HTMLVideoElement & { fastSeek: (t: number) => void })
-                  .fastSeek(displayTime);
-              } else {
-                video!.currentTime = displayTime;
-              }
-              lastSeekTime = displayTime;
-            } catch {
-              /* metadata not ready or seek unsupported */
-            }
-          }
-        }
-      }
-
-      rafId = requestAnimationFrame(frame);
-    }
-
-    // Coalesce scroll events into one rAF tick.
-    function onScroll() {
-      scrollDirty = true;
-    }
-
-    function onResize() {
-      cachedVh = window.innerHeight || 1;
-      scrollDirty = true;
-    }
-
-    function onMeta() {
-      scrollDirty = true;
-      trySampleBg();
-    }
-
-    function onLoadedData() {
-      trySampleBg();
-    }
-
-    video.addEventListener("loadedmetadata", onMeta);
-    video.addEventListener("loadeddata", onLoadedData);
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize, { passive: true });
+    window.addEventListener("message", onMsg);
 
-    if (video.readyState >= 1) compute();
-    if (video.readyState >= 2) trySampleBg();
-
-    rafId = requestAnimationFrame(frame);
+    rafId = requestAnimationFrame(tick);
 
     return () => {
       running = false;
       cancelAnimationFrame(rafId);
-      video.removeEventListener("loadedmetadata", onMeta);
-      video.removeEventListener("loadeddata", onLoadedData);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
+      window.removeEventListener("message", onMsg);
     };
   }, [onSampledBg]);
 
@@ -198,8 +174,6 @@ function ScrubbingBackgroundVideo({
         inset: 0,
         zIndex: 0,
         pointerEvents: "none",
-        // contained paint = browser only invalidates this layer on opacity
-        // changes, not the whole page.
         contain: "strict",
         willChange: "opacity",
         transform: "translateZ(0)",
@@ -207,25 +181,19 @@ function ScrubbingBackgroundVideo({
         opacity: 1,
       }}
     >
-      <video
-        ref={videoRef}
-        src="/bg.mp4"
-        muted
-        playsInline
-        preload="auto"
-        // Disable bg machinery the browser would otherwise spin up.
-        disablePictureInPicture
-        disableRemotePlayback
-        crossOrigin="anonymous"
+      <iframe
+        ref={iframeRef}
+        title="background"
+        src={`/unfocused.html?blur=${BLUR_MIN}`}
         style={{
           width: "100%",
           height: "100%",
-          objectFit: "cover",
+          border: "0",
           display: "block",
-          transform: "translateZ(0)",
-          willChange: "transform",
-          filter: "saturate(1.08) contrast(1.04)",
+          background: "transparent",
         }}
+        // Allow autoplay etc.
+        allow="autoplay"
       />
     </div>
   );
@@ -241,8 +209,32 @@ export default function App() {
 
   return (
     <div style={{ backgroundColor: bg, position: "relative" }}>
-      <ScrubbingBackgroundVideo onSampledBg={setBg} />
-      <div style={{ position: "relative", zIndex: 1 }}>
+      <UnfocusedBackground onSampledBg={setBg} />
+
+      {/* Horizontal vignette overlay — 15% max edge shadow, smooth gradient. */}
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 1,
+          pointerEvents: "none",
+          background:
+            "linear-gradient(to right," +
+            " rgba(0,0,0,0.15) 0%," +
+            " rgba(0,0,0,0.10) 8%," +
+            " rgba(0,0,0,0.06) 16%," +
+            " rgba(0,0,0,0.02) 28%," +
+            " rgba(0,0,0,0)    50%," +
+            " rgba(0,0,0,0.02) 72%," +
+            " rgba(0,0,0,0.06) 84%," +
+            " rgba(0,0,0,0.10) 92%," +
+            " rgba(0,0,0,0.15) 100%)",
+          mixBlendMode: "multiply",
+        }}
+      />
+
+      <div style={{ position: "relative", zIndex: 2 }}>
         <Nav />
         <main>
           <TitlePage />
