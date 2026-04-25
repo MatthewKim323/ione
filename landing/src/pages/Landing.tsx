@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Nav } from "../components/Nav";
 import { TitlePage } from "../components/TitlePage";
 import { Hero } from "../components/Hero";
@@ -13,122 +13,201 @@ const PAGE_BG = "#f2f2f2";
 
 // How many viewport-heights of scroll equal one full pass through the video.
 // 1.6 = the video's entire duration plays out over ~1.6 screens of scrolling.
-// Bump higher to slow the bloom; lower to make it whip past faster.
 const SCRUB_RANGE_VH = 1.6;
 
 // Where (within the scrub range) the video starts fading out.
 // 0.78 = video stays fully opaque until you've scrolled ~78% of the range,
-// then fades out over the last ~22%. Tweak alongside SCRUB_RANGE_VH if you
-// want the fade to happen earlier/later inside the bloom.
+// then fades out over the last ~22%.
 const FADE_START_T = 0.78;
 
+// How many frames to pre-decode from /bg.mp4. Higher = smoother scrub,
+// at the cost of memory + a longer initial preload. 240 looks buttery on
+// a typical short clip; bump to 360 if you still see steps on a fast wheel.
+const FRAME_COUNT = 240;
+
+// rAF lerp toward target frame. Lower = more inertia / smoother glide.
+const FRAME_LERP = 0.22;
+
+// ─────────────────────────────────────────────────────────────────────
+// Pre-decode N frames from /bg.mp4 → ImageBitmap[].
+// Drawing bitmaps to a canvas during scroll has zero decode cost, so
+// scrubbing is silky smooth regardless of the source file's keyframe
+// spacing. The trade-off is ~1–3s of "preload" before the bg appears.
+// ─────────────────────────────────────────────────────────────────────
+async function preloadFrames(count: number): Promise<{
+  frames: ImageBitmap[];
+  width: number;
+  height: number;
+}> {
+  const video = document.createElement("video");
+  video.src = "/bg.mp4";
+  video.muted = true;
+  video.playsInline = true;
+  video.crossOrigin = "anonymous";
+  video.preload = "auto";
+
+  await new Promise<void>((resolve, reject) => {
+    video.addEventListener("loadedmetadata", () => resolve(), { once: true });
+    video.addEventListener("error", () => reject(new Error("video error")), {
+      once: true,
+    });
+  });
+
+  const duration = video.duration || 0;
+  if (!duration) throw new Error("zero duration");
+
+  const frames: ImageBitmap[] = [];
+  for (let i = 0; i < count; i++) {
+    const t = (i / Math.max(1, count - 1)) * duration;
+    await new Promise<void>((resolve) => {
+      video.addEventListener("seeked", () => resolve(), { once: true });
+      video.currentTime = Math.min(t, duration - 0.001);
+    });
+    // Wait one rAF for the seeked frame to actually paint into the element.
+    await new Promise((r) => requestAnimationFrame(() => r(null)));
+    const bitmap = await createImageBitmap(video);
+    frames.push(bitmap);
+  }
+
+  return { frames, width: video.videoWidth, height: video.videoHeight };
+}
+
 function FlowerBackground() {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const framesRef = useRef<ImageBitmap[]>([]);
+  const dimsRef = useRef({ vw: 0, vh: 0 });
+  const [ready, setReady] = useState(false);
 
+  // Preload bitmaps once on mount.
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
+    if (SKIP_FX) return;
 
-    if (SKIP_FX) {
-      video.style.opacity = "1";
-      return;
+    let cancelled = false;
+    preloadFrames(FRAME_COUNT)
+      .then(({ frames, width, height }) => {
+        if (cancelled) {
+          frames.forEach((f) => f.close?.());
+          return;
+        }
+        framesRef.current = frames;
+        dimsRef.current = { vw: width, vh: height };
+        setReady(true);
+      })
+      .catch(() => {
+        /* fallback bg stays */
+      });
+
+    return () => {
+      cancelled = true;
+      framesRef.current.forEach((f) => f.close?.());
+      framesRef.current = [];
+    };
+  }, []);
+
+  // Frame loop: scroll → frame index, scroll → opacity.
+  useEffect(() => {
+    if (!ready) return;
+    const wrapper = wrapperRef.current;
+    const canvas = canvasRef.current;
+    if (!wrapper || !canvas) return;
+
+    const ctx = canvas.getContext("2d", { alpha: false });
+    if (!ctx) return;
+
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    let cssWidth = window.innerWidth;
+    let cssHeight = window.innerHeight;
+
+    function syncCanvas() {
+      cssWidth = window.innerWidth;
+      cssHeight = window.innerHeight;
+      canvas!.width = Math.floor(cssWidth * dpr);
+      canvas!.height = Math.floor(cssHeight * dpr);
+      canvas!.style.width = cssWidth + "px";
+      canvas!.style.height = cssHeight + "px";
+      ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
+    syncCanvas();
 
-    // Native video scrubbing — the video's currentTime is mapped 1:1 to the
-    // user's scroll position. We never call .play(); the browser only seeks.
-    // This is the same UX the canvas-frames version had, but the file streams
-    // immediately instead of waiting on 120 ImageBitmap decodes.
+    let cachedVh = window.innerHeight || 1;
+    let targetIdx = 0;
+    let displayIdx = 0;
+    let lastDrawnIdx = -1;
     let lastOpacity = -1;
-    let lastTargetTime = -1;
     let scrollDirty = true;
     let rafId = 0;
     let running = true;
-    let cachedVh = window.innerHeight || 1;
-    let duration = 0;
 
-    // currentTime is interpolated toward target so a fast scroll doesn't
-    // demand a single huge seek (which can hitch). 0.18 = catches up in
-    // ~6 frames at 60fps. Pure CSS — no easing libs needed.
-    const SEEK_LERP = 0.18;
-    let renderedTime = 0;
+    const total = framesRef.current.length;
 
-    const computeProgress = () => {
-      const t = window.scrollY / (cachedVh * SCRUB_RANGE_VH);
-      return t < 0 ? 0 : t > 1 ? 1 : t;
-    };
-
-    const apply = () => {
-      const t = computeProgress();
-
-      // ── opacity ────────────────────────────────────────────────────
-      const fadeT =
-        t < FADE_START_T
-          ? 0
-          : (t - FADE_START_T) / Math.max(0.001, 1 - FADE_START_T);
-      const opacity = 1 - (fadeT > 1 ? 1 : fadeT);
-      if (Math.abs(opacity - lastOpacity) > 0.005) {
-        video.style.opacity = String(opacity);
-        lastOpacity = opacity;
-      }
-
-      // ── scrub ──────────────────────────────────────────────────────
-      if (duration > 0) {
-        const target = t * duration;
-        // Smooth toward target so flicks of the wheel don't cause stutters.
-        renderedTime += (target - renderedTime) * SEEK_LERP;
-        // Snap when we're close enough to avoid trailing forever.
-        if (Math.abs(target - renderedTime) < 0.005) renderedTime = target;
-        if (Math.abs(renderedTime - lastTargetTime) > 0.012) {
-          // Pause the video before seeking — Safari ignores currentTime
-          // assignments on a playing element in some versions.
-          if (!video.paused) video.pause();
-          try {
-            video.currentTime = renderedTime;
-          } catch {
-            // ignore — happens if metadata isn't quite ready
-          }
-          lastTargetTime = renderedTime;
-        }
-      }
-    };
-
-    const frame = () => {
-      if (!running) return;
-      // Keep ticking even when scroll is idle so the seek-lerp catches up.
-      apply();
-      rafId = requestAnimationFrame(frame);
-    };
-
-    const onScroll = () => {
-      scrollDirty = true;
-    };
-    const onResize = () => {
-      cachedVh = window.innerHeight || 1;
-      scrollDirty = true;
-    };
-
-    const onMeta = () => {
-      duration = Number.isFinite(video.duration) ? video.duration : 0;
-      // Land on the correct first frame for whatever scroll position we
-      // already have (e.g. user reloaded mid-page).
-      renderedTime = computeProgress() * duration;
-      try {
-        if (!video.paused) video.pause();
-        video.currentTime = renderedTime;
-      } catch {
-        // ignore
-      }
-    };
-
-    if (video.readyState >= 1) {
-      onMeta();
-    } else {
-      video.addEventListener("loadedmetadata", onMeta, { once: true });
+    function drawFrame(idx: number) {
+      const frames = framesRef.current;
+      const i = Math.max(0, Math.min(total - 1, idx | 0));
+      const bmp = frames[i];
+      if (!bmp) return;
+      const { vw, vh: vhPx } = dimsRef.current;
+      // cover-fit
+      const scale = Math.max(cssWidth / vw, cssHeight / vhPx);
+      const w = vw * scale;
+      const h = vhPx * scale;
+      const x = (cssWidth - w) / 2;
+      const y = (cssHeight - h) / 2;
+      ctx!.drawImage(bmp, x, y, w, h);
     }
 
-    apply();
+    function compute() {
+      const vh = cachedVh;
+      const scrollPx = window.scrollY;
+
+      const t = scrollPx / (vh * SCRUB_RANGE_VH);
+      const clamped = t < 0 ? 0 : t > 1 ? 1 : t;
+      targetIdx = clamped * (total - 1);
+
+      const fadeT =
+        clamped < FADE_START_T
+          ? 0
+          : (clamped - FADE_START_T) / Math.max(0.001, 1 - FADE_START_T);
+      const opacity = 1 - (fadeT > 1 ? 1 : fadeT);
+      if (Math.abs(opacity - lastOpacity) > 0.005) {
+        wrapper!.style.opacity = String(opacity);
+        lastOpacity = opacity;
+      }
+    }
+
+    function frame() {
+      if (!running) return;
+      if (scrollDirty) {
+        compute();
+        scrollDirty = false;
+      }
+      const delta = targetIdx - displayIdx;
+      if (Math.abs(delta) > 0.005) {
+        displayIdx += delta * FRAME_LERP;
+      }
+      const rounded = Math.round(displayIdx);
+      if (rounded !== lastDrawnIdx) {
+        drawFrame(rounded);
+        lastDrawnIdx = rounded;
+      }
+      rafId = requestAnimationFrame(frame);
+    }
+
+    function onScroll() {
+      scrollDirty = true;
+    }
+    function onResize() {
+      cachedVh = window.innerHeight || 1;
+      syncCanvas();
+      lastDrawnIdx = -1;
+      scrollDirty = true;
+    }
+
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize, { passive: true });
+
+    compute();
+    drawFrame(0);
     rafId = requestAnimationFrame(frame);
 
     return () => {
@@ -136,34 +215,31 @@ function FlowerBackground() {
       cancelAnimationFrame(rafId);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
-      video.removeEventListener("loadedmetadata", onMeta);
-      // Suppress the unused-var warning for scrollDirty — kept on purpose
-      // in case we re-enable scroll-gated rendering later.
-      void scrollDirty;
     };
-  }, []);
+  }, [ready]);
 
   return (
-    <video
-      ref={videoRef}
-      src="/bg.mp4"
-      muted
-      playsInline
-      preload="auto"
+    <div
+      ref={wrapperRef}
       aria-hidden
       style={{
         position: "fixed",
         inset: 0,
-        width: "100%",
-        height: "100%",
-        objectFit: "cover",
         zIndex: 0,
         pointerEvents: "none",
-        opacity: 1,
+        contain: "strict",
         willChange: "opacity",
         transform: "translateZ(0)",
+        backfaceVisibility: "hidden",
+        opacity: ready ? 1 : 0,
+        transition: "opacity 0.5s ease",
       }}
-    />
+    >
+      <canvas
+        ref={canvasRef}
+        style={{ display: "block", width: "100%", height: "100%" }}
+      />
+    </div>
   );
 }
 
