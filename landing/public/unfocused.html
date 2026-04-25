@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>unfocused</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+        background: transparent;
+        overflow: hidden;
+      }
+      #root,
+      #root > div,
+      #root canvas,
+      #root video,
+      #root img {
+        width: 100vw !important;
+        height: 100vh !important;
+      }
+    </style>
+
+    <!-- Map Framer's bare specifiers to esm.sh so the Unfocused module
+         can resolve `react`, `framer`, `framer-motion`, etc. -->
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@18.3.1",
+          "react/jsx-runtime": "https://esm.sh/react@18.3.1/jsx-runtime",
+          "react-dom": "https://esm.sh/react-dom@18.3.1",
+          "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+          "framer": "https://esm.sh/framer@2.4.1?deps=react@18.3.1",
+          "framer-motion": "https://esm.sh/framer-motion@11?deps=react@18.3.1"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="module">
+      import React, { useEffect, useState } from "react";
+      import { createRoot } from "react-dom/client";
+      import Unfocused from "https://framer.com/m/Unfocused-s2wX.js@eLLQg8mahgg9ym0BzBhX";
+
+      const params = new URLSearchParams(location.search);
+      const initial = {
+        blur: parseFloat(params.get("blur") ?? "200"),
+        angle: parseFloat(params.get("angle") ?? "45"),
+        falloff: parseFloat(params.get("falloff") ?? "1"),
+      };
+
+      function Wrapper() {
+        const [props, setProps] = useState({
+          type: "video",
+          urlVideo: "/bg.mp4",
+          loop: true,
+          fit: "cover",
+          blur: initial.blur,
+          angle: initial.angle,
+          falloff: initial.falloff,
+          advance: {
+            falloffType: 0,
+            originX: 0,
+            originY: 0.5,
+            scale: 0,
+            dispersion: 0.2,
+            noise: 0,
+            noiseBlend: 0,
+          },
+          animateProp: { type: "disable" },
+          transition: { ease: "linear", duration: 0.4 },
+          accessibility: { compatibility: false, reduce: false },
+          ariaLabel: "background flowers",
+        });
+
+        useEffect(() => {
+          function onMsg(e) {
+            if (!e.data || e.data.type !== "unfocused:update") return;
+            setProps((p) => ({ ...p, ...e.data.props }));
+          }
+          window.addEventListener("message", onMsg);
+          // Tell the parent we're ready so it can push initial values.
+          parent?.postMessage({ type: "unfocused:ready" }, "*");
+          return () => window.removeEventListener("message", onMsg);
+        }, []);
+
+        return React.createElement(Unfocused, props);
+      }
+
+      createRoot(document.getElementById("root")).render(
+        React.createElement(Wrapper)
+      );
+    </script>
+  </body>
+</html>
