@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Margin · Capture Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&display=swap"
+/>
+<style>
+  :root {
+    --paper: #fdfcf7;
+    --paper-warm: #f6efe1;
+    --ink: #1b1814;
+    --ink-soft: #3a342d;
+    --graphite: #6b6359;
+    --graphite-soft: #a8a097;
+    --rule: rgba(27, 24, 20, 0.10);
+    --rule-strong: rgba(27, 24, 20, 0.22);
+    --moss: #7a9c75;
+    --sienna: #8b6f47;
+    --sienna-red: #a85a3a;
+    --serif: 'Cormorant Garamond', 'Iowan Old Style', Georgia, serif;
+    --sans: 'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+    font-feature-settings: "kern" 1, "liga" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ── Paper grain ───────────────────────────────────────────────── */
+  .paper-noise {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.045;
+    mix-blend-mode: multiply;
+  }
+
+  /* ── Page frame ────────────────────────────────────────────────── */
+  main {
+    position: relative;
+    z-index: 1;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 96px 64px 140px;
+  }
+  @media (max-width: 720px) {
+    main { padding: 56px 28px 96px; }
+  }
+
+  /* ── Header ────────────────────────────────────────────────────── */
+  header { margin-bottom: 56px; }
+
+  h1 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-size: clamp(2.4rem, 5.2vw, 3.6rem);
+    line-height: 1.0;
+    letter-spacing: -0.012em;
+    color: var(--ink);
+  }
+  h1 .brand {
+    font-style: italic;
+    font-weight: 500;
+  }
+  h1 .dot {
+    display: inline-block;
+    margin: 0 0.32em 0 0.34em;
+    color: var(--graphite-soft);
+    font-style: normal;
+    position: relative;
+    top: -0.18em;
+    font-weight: 300;
+  }
+  h1 .title {
+    font-style: normal;
+    font-weight: 400;
+  }
+
+  .caption {
+    font-family: var(--sans);
+    font-style: italic;
+    color: var(--graphite);
+    font-size: 1.0625rem;
+    line-height: 1.55;
+    margin-top: 22px;
+    max-width: 58ch;
+  }
+  .caption strong {
+    font-style: normal;
+    font-weight: 700;
+    color: var(--ink);
+    letter-spacing: 0.01em;
+  }
+
+  hr.rule {
+    border: 0;
+    border-top: 1px solid var(--rule);
+    margin: 56px 0 48px;
+  }
+
+  /* ── Controls ──────────────────────────────────────────────────── */
+  .controls {
+    display: flex;
+    align-items: flex-end;
+    gap: 48px;
+    flex-wrap: wrap;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    flex: 1 1 320px;
+    max-width: 460px;
+  }
+
+  .field-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--graphite);
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1;
+    height: 1px;
+    background: var(--rule-strong);
+    outline: none;
+    cursor: pointer;
+    margin: 0;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 14px;
+    height: 14px;
+    background: var(--ink);
+    border-radius: 50%;
+    border: 0;
+    cursor: pointer;
+    transition: transform 0.18s ease;
+  }
+  input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.25); }
+  input[type="range"]::-moz-range-thumb {
+    width: 14px; height: 14px; background: var(--ink);
+    border-radius: 50%; border: 0; cursor: pointer;
+  }
+
+  .slider-value {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 1.6rem;
+    line-height: 1;
+    min-width: 3.4ch;
+    text-align: right;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  button.begin {
+    font-family: var(--sans);
+    font-size: 0.84rem;
+    font-weight: 700;
+    letter-spacing: 0.20em;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: transparent;
+    border: 1.5px solid var(--ink);
+    padding: 18px 40px;
+    cursor: pointer;
+    transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease;
+    align-self: flex-end;
+  }
+  button.begin:hover { background: var(--ink); color: var(--paper); }
+  button.begin:active { transform: translateY(1px); }
+  button.begin.stop {
+    border-color: var(--sienna-red);
+    color: var(--sienna-red);
+  }
+  button.begin.stop:hover {
+    background: var(--sienna-red);
+    color: var(--paper);
+  }
+
+  /* ── Warning ───────────────────────────────────────────────────── */
+  .warning {
+    margin-top: 36px;
+    padding: 18px 22px 18px 28px;
+    border-left: 3px solid var(--sienna-red);
+    background: rgba(168, 90, 58, 0.055);
+    font-size: 0.96rem;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .warning strong {
+    font-family: var(--serif);
+    font-style: italic;
+    font-weight: 500;
+    color: var(--sienna-red);
+    font-size: 1.08rem;
+    margin-right: 6px;
+  }
+  .warning .dismiss {
+    background: transparent;
+    border: 0;
+    color: var(--graphite);
+    font-size: 1.5rem;
+    cursor: pointer;
+    margin-left: auto;
+    line-height: 1;
+    padding: 0 4px;
+  }
+  .warning .dismiss:hover { color: var(--ink); }
+
+  .hidden { display: none !important; }
+
+  /* ── Capture pane ──────────────────────────────────────────────── */
+  .capture {
+    margin-top: 64px;
+    display: grid;
+    grid-template-columns: minmax(0, 480px) 1fr;
+    gap: 56px;
+    align-items: start;
+  }
+  @media (max-width: 760px) {
+    .capture { grid-template-columns: 1fr; gap: 40px; }
+  }
+
+  .preview-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .preview-frame {
+    position: relative;
+    background: #100e0c;
+  }
+  .preview-frame video {
+    display: block;
+    width: 100%;
+    max-width: 480px;
+    aspect-ratio: 4 / 3;
+    object-fit: contain;
+    background: #100e0c;
+  }
+  .preview-frame::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border: 1px solid var(--rule-strong);
+    pointer-events: none;
+  }
+  .preview-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--graphite);
+  }
+  .preview-meta .res { font-variant-numeric: tabular-nums; letter-spacing: 0.12em; }
+
+  /* ── Stats ─────────────────────────────────────────────────────── */
+  .stats {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+  }
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px 36px;
+  }
+  .stat dt {
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--graphite);
+    margin-bottom: 8px;
+    font-weight: 400;
+  }
+  .stat dd {
+    font-family: var(--serif);
+    font-size: 2.25rem;
+    font-weight: 400;
+    font-variant-numeric: tabular-nums lining-nums;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .stat dd .unit {
+    font-family: var(--sans);
+    font-size: 0.78rem;
+    color: var(--graphite);
+    margin-left: 6px;
+    letter-spacing: 0.12em;
+    font-style: normal;
+    font-variant-numeric: normal;
+  }
+
+  .adaptive {
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    font-style: italic;
+    padding: 16px 0;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--graphite);
+    transition: color 0.4s ease;
+  }
+  .adaptive .icon {
+    font-size: 1rem;
+    font-style: normal;
+    width: 1.2em;
+    display: inline-block;
+    text-align: center;
+  }
+  .adaptive.normal { color: var(--graphite); }
+  .adaptive.idle { color: var(--moss); }
+  .adaptive.writing { color: var(--sienna); }
+  .adaptive.stalled { color: var(--sienna-red); }
+
+  /* ── Log ───────────────────────────────────────────────────────── */
+  .log-section { margin-top: 80px; }
+  .log-section h2 {
+    font-family: var(--serif);
+    font-weight: 400;
+    font-style: italic;
+    font-size: 1.6rem;
+    color: var(--ink);
+    margin-bottom: 8px;
+  }
+  .log-section .h2-sub {
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--graphite);
+    margin-bottom: 28px;
+  }
+  .log {
+    list-style: none;
+    font-variant-numeric: tabular-nums;
+    font-size: 0.94rem;
+    line-height: 1.85;
+  }
+  .log-entry {
+    display: grid;
+    grid-template-columns: 86px 100px 1fr;
+    gap: 16px;
+    padding: 7px 0;
+    align-items: baseline;
+    border-bottom: 1px solid transparent;
+  }
+  .log-entry time {
+    color: var(--graphite);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.92rem;
+  }
+  .log-entry .diff {
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .log-entry .action {
+    color: var(--ink);
+  }
+  .log-entry .arrow {
+    color: var(--graphite-soft);
+    margin: 0 8px;
+    font-style: normal;
+  }
+  .log-entry.encoded .action { color: var(--moss); }
+  .log-entry.encoded .arrow  { color: var(--moss); opacity: 0.55; }
+  .log-entry.skipped time,
+  .log-entry.skipped .diff,
+  .log-entry.skipped .action { color: var(--graphite-soft); }
+  .log-entry.baseline .action {
+    color: var(--graphite);
+    font-style: italic;
+    font-family: var(--serif);
+    font-size: 1.02rem;
+  }
+  .log-entry.fade-in {
+    animation: fade-in 0.35s ease-out;
+  }
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateX(-6px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .log-empty {
+    color: var(--graphite-soft);
+    font-style: italic;
+    padding: 16px 0;
+    font-family: var(--serif);
+    font-size: 1.05rem;
+  }
+
+  /* ── Footnote ──────────────────────────────────────────────────── */
+  .footnote {
+    margin-top: 96px;
+    padding-top: 28px;
+    border-top: 1px solid var(--rule);
+    font-size: 0.82rem;
+    color: var(--graphite);
+    font-style: italic;
+    line-height: 1.6;
+    max-width: 60ch;
+  }
+</style>
+</head>
+<body>
+
+<svg class="paper-noise" aria-hidden="true">
+  <filter id="paperNoise">
+    <feTurbulence type="fractalNoise" baseFrequency="0.92" numOctaves="2" stitchTiles="stitch" seed="7" />
+    <feColorMatrix type="saturate" values="0" />
+  </filter>
+  <rect width="100%" height="100%" filter="url(#paperNoise)" />
+</svg>
+
+<main>
+  <header>
+    <h1>
+      <span class="brand">Margin</span><span class="dot">·</span><span class="title">Capture Prototype</span>
+    </h1>
+    <p class="caption">
+      Click <strong>Start</strong>, pick the QuickTime window mirroring your iPad — this page
+      walks the production capture loop in isolation, encoding WebP frames, gating on a pixel
+      diff, and adapting cadence to the student's activity. Nothing crosses the wire.
+    </p>
+  </header>
+
+  <hr class="rule" />
+
+  <section class="controls">
+    <div class="field">
+      <span class="field-label">Cycle interval · base cadence</span>
+      <div class="slider-row">
+        <input type="range" min="4" max="15" step="1" value="8" id="intervalSlider" aria-label="Cycle interval seconds" />
+        <span class="slider-value" id="intervalValue">8s</span>
+      </div>
+    </div>
+    <button id="startBtn" class="begin" type="button">Start Capture</button>
+  </section>
+
+  <section class="warning hidden" id="warning" role="alert">
+    <strong>Permission denied.</strong>
+    <span id="warningText">The browser declined to share a window. Click Start Capture again and pick a source.</span>
+    <button class="dismiss" id="dismissWarning" aria-label="Dismiss">×</button>
+  </section>
+
+  <section class="capture hidden" id="captureSection">
+    <div class="preview-wrap">
+      <div class="preview-frame">
+        <video id="preview" autoplay playsinline muted></video>
+      </div>
+      <div class="preview-meta">
+        <span>live preview · what the agent sees</span>
+        <span class="res" id="previewRes">— × —</span>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat-grid">
+        <div class="stat">
+          <dt>Cycles run</dt>
+          <dd id="cyclesRun">0</dd>
+        </div>
+        <div class="stat">
+          <dt>Skipped (idle gate)</dt>
+          <dd id="cyclesSkipped">0</dd>
+        </div>
+        <div class="stat">
+          <dt>Would have posted</dt>
+          <dd><span id="encodedKB">0.0</span><span class="unit">KB</span></dd>
+        </div>
+        <div class="stat">
+          <dt>Cost saved</dt>
+          <dd id="costSaved">$0.000</dd>
+        </div>
+      </div>
+
+      <div class="adaptive normal" id="adaptiveStatus">
+        <span class="icon">·</span>
+        <span class="text">resting cadence — 8s between cycles</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="log-section hidden" id="logSection">
+    <h2>Cycle log</h2>
+    <div class="h2-sub">newest first</div>
+    <ol class="log" id="log">
+      <li class="log-empty">No cycles yet — the first frame becomes the baseline.</li>
+    </ol>
+  </section>
+
+  <p class="footnote">
+    The diff gate compares each new frame against the previous one at 64×64, summing per-channel
+    absolute differences. Frames under the 5% threshold are dropped before encode — the cheapest
+    API call is the one you don't make. Adaptive cadence reads recent activity and either slows
+    down for an idle student, speeds up for an active one, or kicks closer when nothing has
+    moved for a minute.
+  </p>
+</main>
+
+<script>
+(() => {
+  'use strict';
+
+  // ── State ──────────────────────────────────────────────────────────
+  const state = {
+    stream: null,
+    track: null,
+    imageCapture: null,
+    isRunning: false,
+
+    baseInterval: 8000,      // ms, slider-driven
+    effectiveInterval: 8000, // ms, possibly overridden by adaptive
+    cycleTimer: null,
+
+    prevDiffData: null,      // 64×64 ImageData from the previous accepted frame
+    cyclesRun: 0,
+    cyclesSkipped: 0,
+    totalEncodedBytes: 0,
+
+    recentDiffs: [],         // last N diff percentages (excludes the synthetic baseline)
+    lastBigDiffTime: 0,      // ms epoch of the last cycle with diff >= 5%
+    captureStartTime: 0,
+    status: 'normal',        // 'normal' | 'idle' | 'writing' | 'stalled'
+  };
+
+  // ── DOM ────────────────────────────────────────────────────────────
+  const els = {
+    startBtn: document.getElementById('startBtn'),
+    intervalSlider: document.getElementById('intervalSlider'),
+    intervalValue: document.getElementById('intervalValue'),
+    warning: document.getElementById('warning'),
+    warningText: document.getElementById('warningText'),
+    dismissWarning: document.getElementById('dismissWarning'),
+    captureSection: document.getElementById('captureSection'),
+    logSection: document.getElementById('logSection'),
+    preview: document.getElementById('preview'),
+    previewRes: document.getElementById('previewRes'),
+    cyclesRun: document.getElementById('cyclesRun'),
+    cyclesSkipped: document.getElementById('cyclesSkipped'),
+    encodedKB: document.getElementById('encodedKB'),
+    costSaved: document.getElementById('costSaved'),
+    adaptiveStatus: document.getElementById('adaptiveStatus'),
+    log: document.getElementById('log'),
+  };
+
+  // ── Reusable canvases ──────────────────────────────────────────────
+  const diffCanvas = document.createElement('canvas');
+  diffCanvas.width = 64;
+  diffCanvas.height = 64;
+  const diffCtx = diffCanvas.getContext('2d', { willReadFrequently: true });
+
+  const encodeCanvas = document.createElement('canvas');
+  const encodeCtx = encodeCanvas.getContext('2d');
+
+  // ── Slider ─────────────────────────────────────────────────────────
+  els.intervalSlider.addEventListener('input', () => {
+    const v = parseInt(els.intervalSlider.value, 10);
+    state.baseInterval = v * 1000;
+    els.intervalValue.textContent = v + 's';
+    computeAdaptive();
+    renderAdaptive();
+  });
+
+  // ── Warning ────────────────────────────────────────────────────────
+  els.dismissWarning.addEventListener('click', () => {
+    els.warning.classList.add('hidden');
+  });
+
+  function showWarning(headline, body) {
+    els.warning.querySelector('strong').textContent = headline;
+    els.warningText.textContent = body;
+    els.warning.classList.remove('hidden');
+  }
+
+  // ── Lifecycle ──────────────────────────────────────────────────────
+  els.startBtn.addEventListener('click', async () => {
+    if (state.isRunning) {
+      stopCapture();
+      return;
+    }
+    await startCapture();
+  });
+
+  async function startCapture() {
+    els.warning.classList.add('hidden');
+
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { frameRate: { ideal: 1, max: 5 } },
+        audio: false,
+      });
+    } catch (err) {
+      if (err && (err.name === 'NotAllowedError' || err.name === 'AbortError')) {
+        showWarning('Permission declined.',
+          'The browser cancelled the share. Click Start Capture again and pick the QuickTime window.');
+      } else {
+        showWarning('Capture failed.',
+          'Could not start screen capture: ' + (err && err.message ? err.message : String(err)));
+      }
+      return;
+    }
+
+    resetCaptureState();
+
+    state.stream = stream;
+    state.track = stream.getVideoTracks()[0];
+    state.captureStartTime = Date.now();
+    state.lastBigDiffTime = state.captureStartTime;
+    state.isRunning = true;
+
+    els.preview.srcObject = stream;
+    els.captureSection.classList.remove('hidden');
+    els.logSection.classList.remove('hidden');
+    els.startBtn.textContent = 'Stop Capture';
+    els.startBtn.classList.add('stop');
+
+    if ('ImageCapture' in window) {
+      try {
+        state.imageCapture = new ImageCapture(state.track);
+      } catch {
+        state.imageCapture = null;
+      }
+    }
+
+    // User clicks Chrome's "Stop sharing" → we tear down too.
+    state.track.addEventListener('ended', () => {
+      if (state.isRunning) stopCapture();
+    });
+
+    await waitForVideo();
+    els.previewRes.textContent = els.preview.videoWidth + ' × ' + els.preview.videoHeight;
+
+    scheduleNext(0);
+  }
+
+  function stopCapture() {
+    state.isRunning = false;
+    if (state.cycleTimer) {
+      clearTimeout(state.cycleTimer);
+      state.cycleTimer = null;
+    }
+    if (state.stream) {
+      state.stream.getTracks().forEach((t) => { try { t.stop(); } catch {} });
+    }
+    state.stream = null;
+    state.track = null;
+    state.imageCapture = null;
+    els.preview.srcObject = null;
+    els.startBtn.textContent = 'Start Capture';
+    els.startBtn.classList.remove('stop');
+  }
+
+  function resetCaptureState() {
+    state.prevDiffData = null;
+    state.cyclesRun = 0;
+    state.cyclesSkipped = 0;
+    state.totalEncodedBytes = 0;
+    state.recentDiffs = [];
+    state.status = 'normal';
+    state.effectiveInterval = state.baseInterval;
+    els.log.innerHTML = '<li class="log-empty">No cycles yet — the first frame becomes the baseline.</li>';
+    renderStats();
+    renderAdaptive();
+  }
+
+  function waitForVideo() {
+    return new Promise((resolve) => {
+      if (els.preview.videoWidth > 0) return resolve();
+      const onLoaded = () => {
+        els.preview.removeEventListener('loadedmetadata', onLoaded);
+        resolve();
+      };
+      els.preview.addEventListener('loadedmetadata', onLoaded);
+    });
+  }
+
+  // ── Cycle loop ─────────────────────────────────────────────────────
+  function scheduleNext(ms) {
+    if (!state.isRunning) return;
+    if (state.cycleTimer) clearTimeout(state.cycleTimer);
+    state.cycleTimer = setTimeout(runCycle, ms);
+  }
+
+  async function runCycle() {
+    if (!state.isRunning) return;
+
+    const cycleStart = Date.now();
+    let frame;
+    try {
+      frame = await grabFrame();
+    } catch (err) {
+      console.warn('grabFrame failed:', err);
+      scheduleNext(state.effectiveInterval);
+      return;
+    }
+    if (!frame) {
+      scheduleNext(state.effectiveInterval);
+      return;
+    }
+
+    state.cyclesRun++;
+
+    // ── Diff against previous frame at 64×64 ──
+    const currDiffData = drawToDiff(frame);
+    const isBaseline = state.prevDiffData === null;
+    const diffPct = isBaseline ? 0 : computeDiff(currDiffData, state.prevDiffData);
+    const shouldEncode = isBaseline || diffPct >= 5;
+
+    if (shouldEncode) {
+      let blob = null;
+      try {
+        blob = await encodeWebp(frame);
+      } catch (err) {
+        console.warn('encode failed:', err);
+      }
+      if (blob) {
+        state.totalEncodedBytes += blob.size;
+        appendLog({
+          ts: cycleStart,
+          diff: diffPct,
+          type: isBaseline ? 'baseline' : 'encoded',
+          kb: blob.size / 1024,
+        });
+      } else {
+        appendLog({ ts: cycleStart, diff: diffPct, type: 'baseline' });
+      }
+    } else {
+      state.cyclesSkipped++;
+      appendLog({ ts: cycleStart, diff: diffPct, type: 'skipped' });
+    }
+
+    if (!isBaseline) {
+      state.recentDiffs.push(diffPct);
+      if (state.recentDiffs.length > 24) state.recentDiffs.shift();
+      if (diffPct >= 5) state.lastBigDiffTime = cycleStart;
+    }
+
+    state.prevDiffData = currDiffData;
+
+    if (frame && typeof frame.close === 'function') {
+      try { frame.close(); } catch {}
+    }
+
+    renderStats();
+    computeAdaptive();
+    renderAdaptive();
+
+    scheduleNext(state.effectiveInterval);
+  }
+
+  // ── Frame acquisition ──────────────────────────────────────────────
+  async function grabFrame() {
+    if (state.imageCapture) {
+      try {
+        return await state.imageCapture.grabFrame();
+      } catch {
+        // fall through to the canvas path
+      }
+    }
+    return videoToCanvas();
+  }
+
+  function videoToCanvas() {
+    const w = els.preview.videoWidth;
+    const h = els.preview.videoHeight;
+    if (!w || !h) return null;
+    const c = document.createElement('canvas');
+    c.width = w;
+    c.height = h;
+    c.getContext('2d').drawImage(els.preview, 0, 0, w, h);
+    return c;
+  }
+
+  function drawToDiff(src) {
+    diffCtx.drawImage(src, 0, 0, 64, 64);
+    return diffCtx.getImageData(0, 0, 64, 64);
+  }
+
+  function computeDiff(curr, prev) {
+    const a = curr.data;
+    const b = prev.data;
+    const len = a.length;
+    let sum = 0;
+    for (let i = 0; i < len; i += 4) {
+      sum += Math.abs(a[i]     - b[i])
+           + Math.abs(a[i + 1] - b[i + 1])
+           + Math.abs(a[i + 2] - b[i + 2]);
+    }
+    return (sum / (64 * 64 * 3 * 255)) * 100;
+  }
+
+  function encodeWebp(src) {
+    return new Promise((resolve, reject) => {
+      const w = src.width;
+      const h = src.height;
+      if (encodeCanvas.width !== w) encodeCanvas.width = w;
+      if (encodeCanvas.height !== h) encodeCanvas.height = h;
+      encodeCtx.clearRect(0, 0, w, h);
+      encodeCtx.drawImage(src, 0, 0);
+      encodeCanvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error('toBlob returned null')),
+        'image/webp',
+        0.7
+      );
+    });
+  }
+
+  // ── Adaptive cadence ───────────────────────────────────────────────
+  function computeAdaptive() {
+    const now = Date.now();
+    const recent3 = state.recentDiffs.slice(-3);
+    const have3 = recent3.length === 3;
+    const sinceBig = now - state.lastBigDiffTime;
+
+    // Stalled wins: no diff >= 5% for 60s.
+    if (state.cyclesRun >= 2 && sinceBig > 60_000) {
+      state.effectiveInterval = 4000;
+      state.status = 'stalled';
+      return;
+    }
+    if (have3 && recent3.every((d) => d > 10)) {
+      state.effectiveInterval = 6000;
+      state.status = 'writing';
+      return;
+    }
+    if (have3 && recent3.every((d) => d < 2)) {
+      state.effectiveInterval = 15000;
+      state.status = 'idle';
+      return;
+    }
+    state.effectiveInterval = state.baseInterval;
+    state.status = 'normal';
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────
+  function renderStats() {
+    els.cyclesRun.textContent = String(state.cyclesRun);
+    els.cyclesSkipped.textContent = String(state.cyclesSkipped);
+    els.encodedKB.textContent = (state.totalEncodedBytes / 1024).toFixed(1);
+    const dollars = state.cyclesSkipped * 0.005;
+    els.costSaved.textContent = '$' + dollars.toFixed(3);
+  }
+
+  const STATUS_COPY = {
+    normal:  () => ({ icon: '·',   text: 'resting cadence — ' + (state.baseInterval / 1000) + 's between cycles' }),
+    idle:    () => ({ icon: '🟢',  text: 'idle — cycling slow at 15s' }),
+    writing: () => ({ icon: '✏️',  text: 'writing — cycling fast at 6s' }),
+    stalled: () => ({ icon: '⚠',   text: 'stalled — looking closer at 4s' }),
+  };
+
+  function renderAdaptive() {
+    els.adaptiveStatus.className = 'adaptive ' + state.status;
+    const { icon, text } = STATUS_COPY[state.status]();
+    els.adaptiveStatus.querySelector('.icon').textContent = icon;
+    els.adaptiveStatus.querySelector('.text').textContent = text;
+  }
+
+  function pad2(n) { return String(n).padStart(2, '0'); }
+
+  function appendLog({ ts, diff, type, kb }) {
+    const empty = els.log.querySelector('.log-empty');
+    if (empty) empty.remove();
+
+    const li = document.createElement('li');
+    li.className = 'log-entry ' + type + ' fade-in';
+
+    const t = new Date(ts);
+    const time = pad2(t.getHours()) + ':' + pad2(t.getMinutes()) + ':' + pad2(t.getSeconds());
+
+    let actionHTML;
+    if (type === 'baseline') {
+      actionHTML = 'baseline — first frame anchored';
+    } else if (type === 'encoded') {
+      actionHTML = 'encoded ' + kb.toFixed(1) + ' KB <span class="arrow">→</span> would <code>POST /api/cycle</code>';
+    } else {
+      actionHTML = 'skipped (idle)';
+    }
+
+    const diffStr = diff < 10 ? '  ' + diff.toFixed(1) + '%' : ' ' + diff.toFixed(1) + '%';
+
+    li.innerHTML =
+      '<time>' + time + '</time>' +
+      '<span class="diff">Δ' + diffStr + '</span>' +
+      '<span class="action">' + actionHTML + '</span>';
+
+    els.log.insertBefore(li, els.log.firstChild);
+
+    while (els.log.children.length > 240) {
+      els.log.removeChild(els.log.lastChild);
+    }
+  }
+
+  // ── Initial render ─────────────────────────────────────────────────
+  renderStats();
+  renderAdaptive();
+
+  // Defensive: if the page is hidden while running, the cycle still
+  // ticks, but throttling could make grabFrame fail; we already retry
+  // on the next interval, so nothing else to do.
+})();
+</script>
+</body>
+</html>

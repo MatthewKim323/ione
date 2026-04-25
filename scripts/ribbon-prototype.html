@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Margin — interface aesthetic spike</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Atkinson+Hyperlegible:wght@400;700&family=STIX+Two+Math&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    /* --------------------------------------------------------------------
+       Margin design tokens — see MARGIN_ULTIMATE_MASTER_PLAN.md §5
+       Values reconciled with task-spec overrides for this spike.
+       -------------------------------------------------------------------- */
+    :root {
+      --paper:        #fdfcf7;
+      --paper-warm:   #f4ecd8;
+      --paper-cream:  #f7f0e3;
+      --ink:          #1a1612;
+      --graphite:     #5c5c5c;
+      --graphite-soft:#9a9a9a;
+      --rule:         #d4cdbf;
+      --hairline:     #8b6f47;
+
+      --moss:         #7a9c75;
+      --amber:        #c9974a;
+      --sienna:       #a85a3a;
+      --silent:       #ece5d2;
+
+      --serif:  "Cormorant Garamond", "Iowan Old Style", Georgia, serif;
+      --sans:   "Atkinson Hyperlegible", system-ui, sans-serif;
+      --math:   "STIX Two Math", "Cambria Math", Georgia, serif;
+
+      --shadow-paper: 0 1px 2px rgba(26, 22, 18, 0.06),
+                      4px 6px 14px rgba(26, 22, 18, 0.07),
+                      0 0 0 1px rgba(26, 22, 18, 0.03);
+      --shadow-pinned: 1px 2px 0 rgba(26, 22, 18, 0.06),
+                       6px 10px 22px rgba(26, 22, 18, 0.10);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body { margin: 0; padding: 0; }
+
+    body {
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-feature-settings: "onum" 1, "kern" 1;
+      font-size: 15px;
+      line-height: 1.55;
+      min-height: 100vh;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* The paper-grain layer — fixed full-viewport SVG behind everything */
+    .paper-grain {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.42;            /* the SVG already has alpha baked in */
+      mix-blend-mode: multiply;
+    }
+
+    /* --------------------------------------------------------------------
+       Confidence Ribbon — top of viewport, full width, ~12px tall.
+       Two stacked layers: under-layer holds the previous state,
+       top-layer wipes in with a clip-path inset + a turbulence
+       displacement filter to fake a hand-drawn leading edge.
+       -------------------------------------------------------------------- */
+    .ribbon {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 12px;
+      z-index: 50;
+      pointer-events: none;
+    }
+
+    .ribbon__layer {
+      position: absolute;
+      inset: 0;
+      filter: url(#pencilJitter);
+    }
+
+    .ribbon__layer--under {
+      /* always fully visible; carries the current/previous color */
+    }
+
+    .ribbon__layer--over {
+      /* starts fully clipped on the right, wipes left-to-right */
+      clip-path: inset(0 100% 0 0);
+      transition: clip-path 720ms cubic-bezier(0.45, 0.05, 0.2, 1);
+    }
+
+    .ribbon__layer--over.is-wiping {
+      clip-path: inset(0 0 0 0);
+    }
+
+    /* The drawn pencil-mark that races across during a transition */
+    .ribbon__stroke {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .ribbon__stroke path {
+      fill: none;
+      stroke: rgba(26, 22, 18, 0.42);
+      stroke-width: 1.1;
+      stroke-linecap: round;
+      stroke-dasharray: 1800;
+      stroke-dashoffset: 1800;
+    }
+    .ribbon__stroke.is-drawing path {
+      animation: pencil-race 720ms cubic-bezier(0.45, 0.05, 0.2, 1) forwards;
+    }
+    @keyframes pencil-race {
+      from { stroke-dashoffset: 1800; }
+      to   { stroke-dashoffset: 0; }
+    }
+
+    /* state colors — applied to either layer */
+    .ribbon__layer[data-state="silent"] {
+      background:
+        repeating-linear-gradient(
+          92deg,
+          rgba(26, 22, 18, 0.04) 0 1px,
+          transparent 1px 6px
+        ),
+        var(--silent);
+      opacity: 0.55;
+    }
+    .ribbon__layer[data-state="observing"] {
+      background:
+        repeating-linear-gradient(
+          92deg,
+          rgba(26, 22, 18, 0.05) 0 1px,
+          transparent 1px 5px
+        ),
+        var(--moss);
+    }
+    .ribbon__layer[data-state="concerned"] {
+      background:
+        repeating-linear-gradient(
+          92deg,
+          rgba(26, 22, 18, 0.07) 0 1px,
+          transparent 1px 4px
+        ),
+        var(--amber);
+      animation: ribbon-pulse 2200ms ease-in-out infinite;
+    }
+    .ribbon__layer[data-state="intervening"] {
+      background:
+        repeating-linear-gradient(
+          92deg,
+          rgba(255, 252, 245, 0.10) 0 1px,
+          transparent 1px 3px
+        ),
+        var(--sienna);
+    }
+    @keyframes ribbon-pulse {
+      0%, 100% { filter: url(#pencilJitter) brightness(1.00); }
+      50%      { filter: url(#pencilJitter) brightness(1.10) saturate(1.10); }
+    }
+
+    /* --------------------------------------------------------------------
+       Page composition
+       -------------------------------------------------------------------- */
+    .page {
+      position: relative;
+      z-index: 2;
+      padding: 96px 64px 160px;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    .wordmark {
+      font-family: var(--serif);
+      font-style: italic;
+      font-weight: 600;
+      font-size: 44px;
+      letter-spacing: -0.5px;
+      line-height: 1;
+      color: var(--ink);
+      margin: 0;
+    }
+    .wordmark .dot {
+      color: var(--sienna);
+    }
+
+    .caption {
+      margin: 14px 0 0;
+      font-size: 12px;
+      letter-spacing: 0.06em;
+      text-transform: lowercase;
+      color: var(--graphite);
+    }
+    .caption::before {
+      content: "— ";
+      color: var(--graphite-soft);
+    }
+
+    /* The faint divider between header and content — hand-drawn */
+    .divider {
+      margin: 56px 0 36px;
+      width: 220px;
+      height: 9px;
+      display: block;
+    }
+    .divider path {
+      fill: none;
+      stroke: var(--ink);
+      stroke-opacity: 0.32;
+      stroke-width: 1.2;
+      stroke-linecap: round;
+    }
+
+    /* The notebook content area */
+    .notebook {
+      position: relative;
+      padding: 32px 40px 44px;
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0,
+        transparent 31px,
+        rgba(212, 205, 191, 0.65) 31px,
+        rgba(212, 205, 191, 0.65) 32px
+      );
+      /* the rules need to start exactly under our line-height grid */
+      background-position: 0 30px;
+    }
+
+    .notebook__problem {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-style: italic;
+      color: var(--ink);
+      line-height: 32px;
+      margin: 0 0 32px;
+    }
+    .notebook__problem::before {
+      content: "Problem.";
+      font-style: normal;
+      font-weight: 600;
+      color: var(--sienna);
+      margin-right: 10px;
+      font-feature-settings: "smcp" 1;
+    }
+
+    .notebook__work {
+      font-family: var(--math);
+      font-size: 20px;
+      line-height: 32px;
+      color: var(--ink);
+      letter-spacing: 0.01em;
+    }
+    .notebook__work .step {
+      display: block;
+      padding-left: 4px;
+    }
+    .notebook__work .step--bad {
+      color: var(--sienna);
+      position: relative;
+    }
+    .notebook__work .step--bad::after {
+      content: "";
+      position: absolute;
+      left: 4px;
+      right: 38%;
+      bottom: 4px;
+      height: 6px;
+      background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 6' preserveAspectRatio='none'><path d='M0 3 Q 25 1 50 3 T 100 3 T 150 3 T 200 3' fill='none' stroke='%23a85a3a' stroke-width='1.2' stroke-linecap='round' stroke-opacity='0.85'/></svg>") center/100% 100% no-repeat;
+    }
+
+    .notebook__caret {
+      display: inline;
+      margin-left: 14px;
+      color: var(--graphite-soft);
+      font-style: italic;
+      font-family: var(--serif);
+      font-size: 17px;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+
+    /* Margin notes column to the right of the notebook (where cards pin) */
+    .margin-rail {
+      position: fixed;
+      top: 96px;
+      right: 24px;
+      width: 460px;
+      max-width: calc(100vw - 48px);
+      z-index: 30;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+    .margin-rail > * {
+      pointer-events: auto;
+    }
+
+    /* --------------------------------------------------------------------
+       Hint Cards — three sizes, three voices.
+       All three slide in from the right, all three rotate slightly when
+       hovered, like notes pinned to the margin.
+       -------------------------------------------------------------------- */
+    .hint {
+      --hint-rotate: -1.1deg;
+      transform: translateX(112%) rotate(-2.6deg);
+      opacity: 0;
+      transition:
+        transform 280ms cubic-bezier(0.2, 0.85, 0.3, 1.05),
+        opacity  280ms ease-out;
+      will-change: transform, opacity;
+      align-self: flex-end;
+    }
+    .hint.is-in {
+      transform: translateX(0) rotate(var(--hint-rotate));
+      opacity: 1;
+    }
+    .hint.is-out {
+      transform: translateX(40px) rotate(calc(var(--hint-rotate) - 1.5deg));
+      opacity: 0;
+      transition:
+        transform 200ms ease-in,
+        opacity  200ms ease-in;
+    }
+    .hint:hover {
+      transform: translateX(-2px) rotate(calc(var(--hint-rotate) - 0.6deg));
+      transition: transform 180ms ease-out;
+    }
+
+    .hint__head {
+      position: relative;
+      display: inline-block;
+    }
+    .hint__under {
+      position: absolute;
+      left: -2px;
+      right: -6px;
+      bottom: -7px;
+      height: 7px;
+      pointer-events: none;
+    }
+    .hint__under path {
+      fill: none;
+      stroke-width: 1.4;
+      stroke-linecap: round;
+      stroke-dasharray: 260;
+      stroke-dashoffset: 260;
+    }
+    .hint.is-in .hint__under path {
+      animation: pencil-under 220ms ease-out 140ms forwards;
+    }
+    @keyframes pencil-under {
+      to { stroke-dashoffset: 0; }
+    }
+
+    /* SUBTLE — whisper register */
+    .hint--subtle {
+      width: 280px;
+      padding: 6px 4px 10px;
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 19px;
+      line-height: 1.35;
+      color: var(--graphite);
+      letter-spacing: 0.005em;
+      --hint-rotate: -0.9deg;
+    }
+    .hint--subtle .hint__head { color: var(--ink); }
+    .hint--subtle .hint__under path { stroke: rgba(26, 22, 18, 0.55); }
+
+    /* STANDARD — advisor register */
+    .hint--standard {
+      width: 360px;
+      padding: 18px 22px 20px;
+      background: var(--paper-cream);
+      border: 1px solid var(--hairline);
+      box-shadow: var(--shadow-pinned);
+      --hint-rotate: -1.1deg;
+    }
+    .hint--standard h3 {
+      margin: 0 0 8px;
+      font-family: var(--serif);
+      font-weight: 600;
+      font-size: 22px;
+      line-height: 1.15;
+      color: var(--sienna);
+      letter-spacing: -0.005em;
+    }
+    .hint--standard p {
+      margin: 0;
+      font-family: var(--sans);
+      font-size: 14.5px;
+      line-height: 1.6;
+      color: var(--ink);
+    }
+    .hint--standard .hint__under path { stroke: var(--sienna); }
+
+    /* CRITICAL — alarm register */
+    .hint--critical {
+      width: 440px;
+      padding: 22px 26px 18px;
+      background: var(--sienna);
+      color: var(--paper);
+      box-shadow:
+        2px 3px 0 rgba(26, 22, 18, 0.10),
+        10px 14px 28px rgba(168, 90, 58, 0.30);
+      --hint-rotate: -1.6deg;
+      position: relative;
+    }
+    .hint--critical h3 {
+      margin: 0 0 10px;
+      font-family: var(--serif);
+      font-weight: 600;
+      font-style: italic;
+      font-size: 28px;
+      line-height: 1.1;
+      color: var(--paper);
+      letter-spacing: -0.01em;
+    }
+    .hint--critical p {
+      margin: 0;
+      font-family: var(--sans);
+      font-size: 15px;
+      line-height: 1.55;
+      color: rgba(253, 252, 247, 0.93);
+    }
+    .hint--critical .affordance {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 18px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(253, 252, 247, 0.22);
+      font-family: var(--sans);
+      font-size: 11.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(253, 252, 247, 0.70);
+    }
+    .hint--critical .affordance kbd {
+      font-family: var(--sans);
+      font-size: 10.5px;
+      padding: 2px 7px;
+      border: 1px solid rgba(253, 252, 247, 0.45);
+      border-radius: 2px;
+      letter-spacing: 0.10em;
+    }
+    .hint--critical .hint__under path { stroke: var(--paper); stroke-opacity: 0.85; }
+
+    /* --------------------------------------------------------------------
+       Demo controls strip — fixed to bottom, notebook-style buttons.
+       Italic labels, hairline underline, sienna on hover. No SaaS pills.
+       -------------------------------------------------------------------- */
+    .controls {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 40;
+      background: var(--paper);
+      border-top: 1px solid var(--rule);
+      padding: 18px 64px 22px;
+      display: flex;
+      gap: 56px;
+      align-items: baseline;
+      box-shadow: 0 -8px 24px rgba(26, 22, 18, 0.04);
+    }
+    .controls__group {
+      display: flex;
+      gap: 18px;
+      align-items: baseline;
+    }
+    .controls__label {
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 14px;
+      color: var(--graphite);
+      margin-right: 4px;
+    }
+    .ctrl-btn {
+      appearance: none;
+      background: transparent;
+      border: 0;
+      padding: 4px 2px 6px;
+      margin: 0;
+      cursor: pointer;
+      font-family: var(--serif);
+      font-style: italic;
+      font-size: 17px;
+      color: var(--ink);
+      position: relative;
+      letter-spacing: 0.005em;
+      transition: color 140ms ease-out;
+    }
+    .ctrl-btn::after {
+      content: "";
+      position: absolute;
+      left: 2px; right: 2px;
+      bottom: 0;
+      height: 1px;
+      background: var(--ink);
+      opacity: 0.30;
+      transform-origin: left;
+      transform: scaleX(0.94);
+      transition: transform 180ms ease-out, background 140ms ease-out, opacity 140ms ease-out;
+    }
+    .ctrl-btn:hover {
+      color: var(--sienna);
+    }
+    .ctrl-btn:hover::after {
+      background: var(--sienna);
+      opacity: 0.95;
+      transform: scaleX(1.0);
+    }
+    .ctrl-btn[aria-pressed="true"] {
+      color: var(--sienna);
+    }
+    .ctrl-btn[aria-pressed="true"]::after {
+      background: var(--sienna);
+      opacity: 0.85;
+    }
+    .ctrl-btn--reset {
+      color: var(--graphite);
+    }
+    .ctrl-btn--reset::after { opacity: 0.18; }
+
+    /* Hide ruled lines on controls (already implicitly outside .notebook) */
+
+    @media (max-width: 880px) {
+      .page { padding: 64px 28px 200px; }
+      .margin-rail { right: 12px; width: calc(100vw - 24px); }
+      .controls { padding: 14px 24px 18px; gap: 24px; flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ===========================================================
+       Hidden SVG defs — paper noise, pencil-jitter displacement,
+       and a couple of hand-drawn underline paths.
+       =========================================================== -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <!-- pencil-jitter: turbulence-driven displacement, applied to the
+           ribbon layers so the wiping leading edge looks hand-drawn -->
+      <filter id="pencilJitter" x="-2%" y="-50%" width="104%" height="200%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.04 0.9"
+                      numOctaves="2" seed="7" result="t" />
+        <feDisplacementMap in="SourceGraphic" in2="t" scale="2.6"
+                           xChannelSelector="R" yChannelSelector="G" />
+      </filter>
+
+      <!-- paper-noise: the grainy texture overlay behind the whole page -->
+      <filter id="paperNoise">
+        <feTurbulence type="fractalNoise" baseFrequency="0.78"
+                      numOctaves="2" stitchTiles="stitch" seed="3" />
+        <feColorMatrix values="
+          0 0 0 0  0.13
+          0 0 0 0  0.10
+          0 0 0 0  0.06
+          0 0 0 0.10  0" />
+      </filter>
+    </defs>
+  </svg>
+
+  <!-- The paper grain overlay — fixed across the viewport -->
+  <svg class="paper-grain" preserveAspectRatio="none" aria-hidden="true">
+    <rect width="100%" height="100%" filter="url(#paperNoise)" />
+  </svg>
+
+  <!-- ===========================================================
+       Confidence Ribbon
+       =========================================================== -->
+  <div class="ribbon" aria-hidden="true">
+    <div class="ribbon__layer ribbon__layer--under" data-state="silent"></div>
+    <div class="ribbon__layer ribbon__layer--over"  data-state="silent"></div>
+    <svg class="ribbon__stroke" viewBox="0 0 1800 12" preserveAspectRatio="none">
+      <path d="M0 7 Q 90 4 180 7 T 360 7 T 540 6.5 T 720 7 T 900 7 T 1080 6.6 T 1260 7 T 1440 7 T 1620 6.8 T 1800 7" />
+    </svg>
+  </div>
+
+  <!-- ===========================================================
+       Page content
+       =========================================================== -->
+  <main class="page">
+    <h1 class="wordmark">Margin<span class="dot">.</span></h1>
+    <p class="caption">interface aesthetic spike — confidence ribbon + hint cards</p>
+
+    <svg class="divider" viewBox="0 0 220 9" preserveAspectRatio="none" aria-hidden="true">
+      <path d="M2 5 Q 30 3 60 5 T 120 4.5 T 180 5 T 218 4" />
+    </svg>
+
+    <section class="notebook" aria-label="Sample notebook page">
+      <p class="notebook__problem">
+        Solve for <em>x</em>: &nbsp; 3(2x − 4) = 18.
+      </p>
+      <div class="notebook__work">
+        <span class="step">3(2<i>x</i> − 4) = 18</span>
+        <span class="step">6<i>x</i> − 12 = 18</span>
+        <span class="step step--bad">6<i>x</i> + 12 = 18</span>
+        <span class="step">6<i>x</i> = 6</span>
+        <span class="step">
+          <i>x</i> = 1<span class="notebook__caret">  ⟵ check this</span>
+        </span>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===========================================================
+       Margin rail — where hint cards pin themselves
+       =========================================================== -->
+  <aside class="margin-rail" id="rail" aria-live="polite"></aside>
+
+  <!-- ===========================================================
+       Demo controls strip
+       =========================================================== -->
+  <nav class="controls" aria-label="Prototype controls">
+    <div class="controls__group" role="group" aria-label="Ribbon state">
+      <span class="controls__label">Ribbon</span>
+      <button class="ctrl-btn" data-ribbon="silent"      aria-pressed="true">silent</button>
+      <button class="ctrl-btn" data-ribbon="observing"   aria-pressed="false">observing</button>
+      <button class="ctrl-btn" data-ribbon="concerned"   aria-pressed="false">concerned</button>
+      <button class="ctrl-btn" data-ribbon="intervening" aria-pressed="false">intervening</button>
+    </div>
+
+    <div class="controls__group" role="group" aria-label="Hint cards">
+      <span class="controls__label">Cards</span>
+      <button class="ctrl-btn" data-card="subtle">subtle</button>
+      <button class="ctrl-btn" data-card="standard">standard</button>
+      <button class="ctrl-btn" data-card="critical">critical</button>
+      <button class="ctrl-btn ctrl-btn--reset" data-action="dismiss">dismiss all</button>
+    </div>
+  </nav>
+
+  <!-- ===========================================================
+       Behavior
+       =========================================================== -->
+  <script>
+    (() => {
+      "use strict";
+
+      /* ---------- Ribbon state machine ----------------------------- */
+      const ribbonEl       = document.querySelector(".ribbon");
+      const ribbonUnder    = ribbonEl.querySelector(".ribbon__layer--under");
+      const ribbonOver     = ribbonEl.querySelector(".ribbon__layer--over");
+      const ribbonStroke   = ribbonEl.querySelector(".ribbon__stroke");
+      const ribbonButtons  = document.querySelectorAll("[data-ribbon]");
+
+      let currentState = "silent";
+      let wipeLock = false;
+
+      function setRibbon(nextState) {
+        if (nextState === currentState || wipeLock) return;
+        wipeLock = true;
+
+        // Stage the new state on the over-layer, fully clipped.
+        ribbonOver.dataset.state = nextState;
+        ribbonOver.classList.remove("is-wiping");
+        // Reflow so the transition fires from the clipped state.
+        // eslint-disable-next-line no-unused-expressions
+        ribbonOver.offsetWidth;
+        ribbonOver.classList.add("is-wiping");
+
+        // Race the pencil-stroke alongside the wipe.
+        ribbonStroke.classList.remove("is-drawing");
+        ribbonStroke.offsetWidth;
+        ribbonStroke.classList.add("is-drawing");
+
+        // After the wipe completes, commit to the under-layer
+        // and reset the over-layer for the next transition.
+        const finalize = () => {
+          ribbonUnder.dataset.state = nextState;
+          ribbonOver.classList.remove("is-wiping");
+          ribbonOver.dataset.state = nextState; // keeps both in sync
+          currentState = nextState;
+          wipeLock = false;
+          ribbonOver.removeEventListener("transitionend", finalize);
+        };
+        ribbonOver.addEventListener("transitionend", finalize, { once: true });
+
+        // Reflect pressed state on the controls.
+        ribbonButtons.forEach((b) => {
+          b.setAttribute("aria-pressed", String(b.dataset.ribbon === nextState));
+        });
+      }
+
+      ribbonButtons.forEach((b) => {
+        b.addEventListener("click", () => setRibbon(b.dataset.ribbon));
+      });
+
+      /* ---------- Hint card factory -------------------------------- */
+      const rail = document.getElementById("rail");
+
+      // The pencil-stroke under each card heading. Reused at three sizes.
+      const underlinePath =
+        "M2 6 Q 24 2 48 5 T 96 5 T 144 5 T 200 5 T 256 5";
+
+      const variants = {
+        subtle: () => {
+          const card = document.createElement("article");
+          card.className = "hint hint--subtle";
+          card.innerHTML = `
+            <span class="hint__head">are you sure about that sign?
+              <svg class="hint__under" viewBox="0 0 260 7" preserveAspectRatio="none" aria-hidden="true">
+                <path d="${underlinePath}" />
+              </svg>
+            </span>
+          `;
+          return card;
+        },
+
+        standard: () => {
+          const card = document.createElement("article");
+          card.className = "hint hint--standard";
+          card.innerHTML = `
+            <h3>
+              <span class="hint__head">Sign of −4 across the parens
+                <svg class="hint__under" viewBox="0 0 260 7" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="${underlinePath}" />
+                </svg>
+              </span>
+            </h3>
+            <p>When you distribute 3 across (2x − 4), the −4 stays negative.
+               So 3 × (−4) = −12, not +12.</p>
+          `;
+          return card;
+        },
+
+        critical: () => {
+          const card = document.createElement("article");
+          card.className = "hint hint--critical";
+          card.innerHTML = `
+            <h3>
+              <span class="hint__head">Stop. Look at line 2.
+                <svg class="hint__under" viewBox="0 0 260 7" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="${underlinePath}" />
+                </svg>
+              </span>
+            </h3>
+            <p>You wrote 6x − 12 = 18. That's right. But your next line treats
+               −12 as if it were positive. Re-add it to both sides.</p>
+            <div class="affordance">
+              <kbd>space</kbd> <span>press to expand</span>
+            </div>
+          `;
+          return card;
+        },
+      };
+
+      function showCard(kind) {
+        const make = variants[kind];
+        if (!make) return;
+        const el = make();
+        rail.appendChild(el);
+
+        // Trigger the slide-in on the next frame so the initial
+        // off-screen transform is captured by the browser.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => el.classList.add("is-in"));
+        });
+
+        // Click any card to dismiss just that one.
+        el.addEventListener("click", () => dismissCard(el));
+      }
+
+      function dismissCard(el) {
+        if (!el || el.classList.contains("is-out")) return;
+        el.classList.remove("is-in");
+        el.classList.add("is-out");
+        el.addEventListener(
+          "transitionend",
+          () => el.remove(),
+          { once: true }
+        );
+        // Safety: if transitionend doesn't fire (e.g., reduced-motion),
+        // remove after the expected duration.
+        setTimeout(() => el.remove(), 320);
+      }
+
+      function dismissAll() {
+        rail.querySelectorAll(".hint").forEach(dismissCard);
+      }
+
+      document.querySelectorAll("[data-card]").forEach((b) => {
+        b.addEventListener("click", () => showCard(b.dataset.card));
+      });
+      document.querySelectorAll('[data-action="dismiss"]').forEach((b) => {
+        b.addEventListener("click", dismissAll);
+      });
+
+      /* ---------- Keyboard niceties -------------------------------- */
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") dismissAll();
+        if (e.key === "1") setRibbon("silent");
+        if (e.key === "2") setRibbon("observing");
+        if (e.key === "3") setRibbon("concerned");
+        if (e.key === "4") setRibbon("intervening");
+        if (e.key.toLowerCase() === "s") showCard("subtle");
+        if (e.key.toLowerCase() === "h") showCard("standard");
+        if (e.key.toLowerCase() === "c") showCard("critical");
+      });
+
+      /* ---------- Opening choreography ----------------------------- */
+      // Land on `silent`, drift to `observing` after a beat so the
+      // ribbon doesn't look broken on first paint.
+      setTimeout(() => setRibbon("observing"), 600);
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "stage": "stage_3",
+  "stage_description": "The error has been committed. Student wrote '-6x - 12 = 18' (the predicted error: dropped the sign rule on the second term, treated -3 × -4 as -12 instead of +12). They are now operating on a wrong starting point. This stage is for the Reasoning Agent, not the Predictive Risk Agent — the prediction window is closed. The Predictive Risk Agent's correct response here is low confidence and recommend_intervene=false (the time for prediction has passed; reasoning will catch the error).",
+  "student_work_so_far_latex": [
+    "-3(2x - 4) = 18",
+    "-6x - 12 = 18"
+  ],
+  "current_partial_step": "",
+  "time_on_problem_seconds": 38,
+  "behavioral_indicators": {
+    "pen_lifted_seconds": 3,
+    "looking_at_problem": false,
+    "wrote_anything_in_last_8s": true
+  }
+}

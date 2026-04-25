@@ -1,0 +1,19 @@
+{
+  "problem_text": "Solve for x: -3(2x - 4) = 18",
+  "problem_id": "demo_neg3_distrib",
+  "topic": "algebra_1.linear_equations.distributive_property_with_negative_coefficient",
+  "canonical_solution_steps_latex": [
+    "-3(2x - 4) = 18",
+    "-6x + 12 = 18",
+    "-6x = 6",
+    "x = -1"
+  ],
+  "canonical_solution_steps_explanation": [
+    "Original problem.",
+    "Distribute -3 across (2x - 4). Note that -3 × -4 = +12 (negative times negative is positive). The +12 is the sign hazard most students miss.",
+    "Subtract 12 from both sides.",
+    "Divide both sides by -6."
+  ],
+  "predicted_failure_step_index": 1,
+  "predicted_failure_description": "When distributing -3 across (2x - 4), the student writes '-6x - 12 = 18' instead of '-6x + 12 = 18' — they correctly negate the first term but forget that the sign rule applies to the second term as well, treating -3 × -4 as -12 instead of +12."
+}

@@ -1,0 +1,26 @@
+{
+  "user_id": "matthew_demo",
+  "subject": "algebra_1",
+  "snapshot_date": "2026-04-25",
+  "pattern_summary": "Sign errors when distributing a negative coefficient across parentheses — the student reliably negates the first term but forgets that the sign rule applies to the second term as well.",
+  "error_type": "negative_distribution_sign_error",
+  "frequency": "3 incidents in the last 14 days; pattern is reliable and reproducible",
+  "examples": [
+    {
+      "problem": "-2(x + 5) = -8",
+      "date": "2026-04-11",
+      "what_went_wrong": "Wrote -2x + 10 = -8 (got the second term wrong: treated -2 × +5 as +10 instead of -10). Once corrected, finished the problem cleanly. Indicates the error is at the distribution step specifically, not at the arithmetic that follows."
+    },
+    {
+      "problem": "-(4x - 7) = 21",
+      "date": "2026-04-15",
+      "what_went_wrong": "Treated -(4x - 7) as -4x - 7 instead of -4x + 7. Negated the first term but dropped the sign rule on the -7, treating it as if it were +7 being negated. Identical pattern: first-term-only sign rule application."
+    },
+    {
+      "problem": "-5(2y - 3) = 30",
+      "date": "2026-04-21",
+      "what_went_wrong": "Wrote -10y - 15 = 30. Distributed -5 across the 2y correctly (got -10y), but then multiplied -5 × -3 and wrote -15 instead of +15. Same pattern — the sign rule on the second term was dropped. The error happened within 8 seconds of seeing the problem; no hesitation, automatic mistake."
+    }
+  ],
+  "tutor_notes": "When distributing a negative coefficient, this student consistently negates the first term inside parentheses but forgets the sign rule applies to BOTH terms. Pattern is reliable — fires within 10–15 seconds of seeing a negative coefficient outside parens. Verbal hint about 'two terms, same rule' has worked twice. Visual reminder (boxing the negative coefficient and drawing arrows to both terms) has worked once. Pattern has not generalized to subtraction inside parens (e.g., -3(x - 4)) — error rate there is ~60%. Best intervention timing: BEFORE the second term is written, when only the first term has been distributed. After the wrong second term is committed, student needs to back up and redo, which is more disruptive than a brief preempt."
+}

@@ -1,0 +1,14 @@
+{
+  "stage": "stage_1",
+  "stage_description": "The predictive moment. Student has copied the problem onto their iPad and is sitting with pen poised to write the next line. Distribution step has not yet begun. This is when the agent should fire its prediction — before any wrong ink hits the page.",
+  "student_work_so_far_latex": [
+    "-3(2x - 4) = 18"
+  ],
+  "current_partial_step": "",
+  "time_on_problem_seconds": 14,
+  "behavioral_indicators": {
+    "pen_lifted_seconds": 6,
+    "looking_at_problem": true,
+    "wrote_anything_in_last_8s": false
+  }
+}

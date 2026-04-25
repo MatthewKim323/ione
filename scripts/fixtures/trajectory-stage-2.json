@@ -1,0 +1,14 @@
+{
+  "stage": "stage_2",
+  "stage_description": "The error is materializing. Student has begun writing the distribution step but has only completed the first term. The dangling partial step '-6x' is the strongest behavioral signal that the second term is about to land — and the historical pattern says the sign on the second term is where the error lives.",
+  "student_work_so_far_latex": [
+    "-3(2x - 4) = 18"
+  ],
+  "current_partial_step": "-6x",
+  "time_on_problem_seconds": 22,
+  "behavioral_indicators": {
+    "pen_lifted_seconds": 0,
+    "looking_at_problem": false,
+    "wrote_anything_in_last_8s": true
+  }
+}
