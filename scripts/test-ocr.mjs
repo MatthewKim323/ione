@@ -76,17 +76,38 @@ Rules:
 - Do not evaluate correctness.
 - Output JSON only. Any other output breaks the system.`;
 
-// ── Find the most recent screenshot on Desktop if no path given ─────────────
+// ── Find the most recent screenshot on Desktop (incl. one level of subfolders) ──
 async function findLatestScreenshot() {
   const desktop = join(homedir(), "Desktop");
-  const entries = await readdir(desktop);
-  const candidates = entries.filter((f) => /\.(png|jpe?g|heic|webp)$/i.test(f));
+  const imgRe = /\.(png|jpe?g|heic|webp)$/i;
+  const screenshotNameHint = /screenshot|screen[\s_-]?shot/i;
+  const candidates = [];
+
+  const entries = await readdir(desktop, { withFileTypes: true });
+  for (const e of entries) {
+    const full = join(desktop, e.name);
+    if (e.isFile() && imgRe.test(e.name)) {
+      candidates.push(full);
+    } else if (e.isDirectory()) {
+      try {
+        const sub = await readdir(full);
+        for (const f of sub) if (imgRe.test(f)) candidates.push(join(full, f));
+      } catch {}
+    }
+  }
   if (candidates.length === 0) return null;
+
   const stamped = await Promise.all(
-    candidates.map(async (f) => ({ f, mtime: (await stat(join(desktop, f))).mtimeMs })),
+    candidates.map(async (p) => {
+      const s = await stat(p);
+      return { p, mtime: s.mtimeMs, isScreenshot: screenshotNameHint.test(basename(p)) };
+    }),
   );
-  stamped.sort((a, b) => b.mtime - a.mtime);
-  return join(desktop, stamped[0].f);
+  // Prefer files literally named "Screenshot ...", then fall back to most recent image.
+  const screenshotsOnly = stamped.filter((x) => x.isScreenshot);
+  const pool = screenshotsOnly.length > 0 ? screenshotsOnly : stamped;
+  pool.sort((a, b) => b.mtime - a.mtime);
+  return pool[0].p;
 }
 
 // ── Stage 1: encode WebP at q=0.7 (production capture path) ────────────────
@@ -204,10 +225,19 @@ async function main() {
     process.exit(1);
   }
 
+  // Stat the image so we can flag stale auto-picks.
+  const imageStat = await stat(imagePath);
+  const ageMin = (Date.now() - imageStat.mtimeMs) / 60000;
+  const ageStr = ageMin < 60 ? `${ageMin.toFixed(0)}m ago` : `${(ageMin / 60).toFixed(1)}h ago`;
+
   console.log("");
   console.log(rule("MARGIN  ·  OCR HARDWARE REALITY CHECK"));
   console.log(c.dim(`  image    `) + basename(imagePath));
-  console.log(c.dim(`  format   `) + extname(imagePath).slice(1).toLowerCase());
+  console.log(c.dim(`  path     `) + c.dim(imagePath));
+  console.log(c.dim(`  format   `) + extname(imagePath).slice(1).toLowerCase() + c.dim(`   modified ${ageStr}`));
+  if (!argPath && ageMin > 10) {
+    console.log(c.yellow(`  ⚠  auto-picked an image ${ageStr} — pass an explicit path if this is wrong.`));
+  }
 
   // Encode WebP
   console.log("");
