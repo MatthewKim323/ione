@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Nav } from "../components/Nav";
 import { TitlePage } from "../components/TitlePage";
 import { Hero } from "../components/Hero";
@@ -6,233 +6,128 @@ import { Pedagogy } from "../components/Pedagogy";
 import { Pipeline } from "../components/Pipeline";
 import { Signal } from "../components/Signal";
 import { Closer } from "../components/Closer";
+import { SKIP_FX } from "../lib/prerender";
 
-// ── Tunables ───────────────────────────────────────────────────────────
-const FRAME_COUNT = 120;        // pre-decoded frames for buttery scrubbing
+const PAGE_BG = "#f2f2f2";
 
-const SCRUB_VH = 1.0;           // video advances over first 1 viewport
-const BLUR_START_VH = 0.5;      // start blurring midway through page 1
-const BLUR_FULL_VH = 2.0;       // full blur reached by end of page 2
-const VEIL_START_VH = 1.5;      // white veil starts creeping in
-const VEIL_FULL_VH = 3.0;       // page is fully white by end of page 3
+// How many viewport-heights of scroll equal one full pass through the video.
+// 1.6 = the video's entire duration plays out over ~1.6 screens of scrolling.
+// Bump higher to slow the bloom; lower to make it whip past faster.
+const SCRUB_RANGE_VH = 1.6;
 
-const MAX_BLUR_PX = 36;
-const LERP_SPEED = 0.22;
-const SEEK_EPSILON = 0.005;
+// Where (within the scrub range) the video starts fading out.
+// 0.78 = video stays fully opaque until you've scrolled ~78% of the range,
+// then fades out over the last ~22%. Tweak alongside SCRUB_RANGE_VH if you
+// want the fade to happen earlier/later inside the bloom.
+const FADE_START_T = 0.78;
 
-const FALLBACK_BG = "#f2f2f2";
-const VEIL_COLOR = "#f2f2f2";
-
-function smoothstep(t: number) {
-  const c = t < 0 ? 0 : t > 1 ? 1 : t;
-  return c * c * (3 - 2 * c);
-}
-
-// ─────────────────────────────────────────────────────────────────────
-// Pre-decode N frames from /bg.mp4 → ImageBitmap[].
-// Drawing bitmaps to a canvas during scroll = silky smooth scrubbing,
-// no keyframe choppiness.
-// ─────────────────────────────────────────────────────────────────────
-async function preloadFrames(count: number): Promise<{
-  frames: ImageBitmap[];
-  width: number;
-  height: number;
-}> {
-  const video = document.createElement("video");
-  video.src = "/bg.mp4";
-  video.muted = true;
-  video.playsInline = true;
-  video.crossOrigin = "anonymous";
-  video.preload = "auto";
-
-  await new Promise<void>((resolve, reject) => {
-    video.addEventListener("loadedmetadata", () => resolve(), { once: true });
-    video.addEventListener("error", () => reject(new Error("video error")), {
-      once: true,
-    });
-  });
-
-  const duration = video.duration || 0;
-  if (!duration) throw new Error("zero duration");
-
-  const frames: ImageBitmap[] = [];
-  for (let i = 0; i < count; i++) {
-    const t = (i / Math.max(1, count - 1)) * duration;
-    await new Promise<void>((resolve) => {
-      video.addEventListener("seeked", () => resolve(), { once: true });
-      video.currentTime = Math.min(t, duration - 0.001);
-    });
-    await new Promise((r) => requestAnimationFrame(() => r(null)));
-    const bitmap = await createImageBitmap(video);
-    frames.push(bitmap);
-  }
-
-  return { frames, width: video.videoWidth, height: video.videoHeight };
-}
-
-function ScrubbingFlowers({
-  onSampledBg,
-  veilRef,
-}: {
-  onSampledBg: (color: string) => void;
-  veilRef: React.RefObject<HTMLDivElement | null>;
-}) {
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const framesRef = useRef<ImageBitmap[]>([]);
-  const dimsRef = useRef({ vw: 0, vh: 0 });
-  const [ready, setReady] = useState(false);
+function FlowerBackground() {
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    preloadFrames(FRAME_COUNT)
-      .then(({ frames, width, height }) => {
-        if (cancelled) {
-          frames.forEach((f) => f.close?.());
-          return;
-        }
-        framesRef.current = frames;
-        dimsRef.current = { vw: width, vh: height };
+    const video = videoRef.current;
+    if (!video) return;
 
-        try {
-          const c = document.createElement("canvas");
-          c.width = 16;
-          c.height = 16;
-          const ctx = c.getContext("2d", { willReadFrequently: true });
-          if (ctx) {
-            ctx.drawImage(frames[0], 0, 0, 16, 16);
-            const corners = [
-              ctx.getImageData(0, 0, 1, 1).data,
-              ctx.getImageData(15, 0, 1, 1).data,
-              ctx.getImageData(0, 15, 1, 1).data,
-              ctx.getImageData(15, 15, 1, 1).data,
-            ];
-            let r = 0, g = 0, b = 0;
-            for (const p of corners) { r += p[0]; g += p[1]; b += p[2]; }
-            onSampledBg(`rgb(${(r/4)|0}, ${(g/4)|0}, ${(b/4)|0})`);
-          }
-        } catch { /* noop */ }
-
-        setReady(true);
-      })
-      .catch(() => {
-        /* noop — fallback bg stays */
-      });
-
-    return () => {
-      cancelled = true;
-      framesRef.current.forEach((f) => f.close?.());
-      framesRef.current = [];
-    };
-  }, [onSampledBg]);
-
-  useEffect(() => {
-    if (!ready) return;
-    const wrapper = wrapperRef.current;
-    const canvas = canvasRef.current;
-    if (!wrapper || !canvas) return;
-
-    const ctx = canvas.getContext("2d", { alpha: false });
-    if (!ctx) return;
-
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    let cssWidth = window.innerWidth;
-    let cssHeight = window.innerHeight;
-
-    function syncCanvas() {
-      cssWidth = window.innerWidth;
-      cssHeight = window.innerHeight;
-      canvas!.width = Math.floor(cssWidth * dpr);
-      canvas!.height = Math.floor(cssHeight * dpr);
-      canvas!.style.width = cssWidth + "px";
-      canvas!.style.height = cssHeight + "px";
-      ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (SKIP_FX) {
+      video.style.opacity = "1";
+      return;
     }
-    syncCanvas();
 
-    let cachedVh = window.innerHeight || 1;
-    let targetIdx = 0;
-    let displayIdx = 0;
-    let lastDrawnIdx = -1;
-    let lastBlur = -1;
-    let lastVeil = 0;
+    // Native video scrubbing — the video's currentTime is mapped 1:1 to the
+    // user's scroll position. We never call .play(); the browser only seeks.
+    // This is the same UX the canvas-frames version had, but the file streams
+    // immediately instead of waiting on 120 ImageBitmap decodes.
+    let lastOpacity = -1;
+    let lastTargetTime = -1;
     let scrollDirty = true;
     let rafId = 0;
     let running = true;
+    let cachedVh = window.innerHeight || 1;
+    let duration = 0;
 
-    const total = framesRef.current.length;
+    // currentTime is interpolated toward target so a fast scroll doesn't
+    // demand a single huge seek (which can hitch). 0.18 = catches up in
+    // ~6 frames at 60fps. Pure CSS — no easing libs needed.
+    const SEEK_LERP = 0.18;
+    let renderedTime = 0;
 
-    function drawFrame(idx: number) {
-      const frames = framesRef.current;
-      const i = Math.max(0, Math.min(total - 1, idx | 0));
-      const bmp = frames[i];
-      if (!bmp) return;
-      const { vw, vh: vhPx } = dimsRef.current;
-      const scale = Math.max(cssWidth / vw, cssHeight / vhPx);
-      const w = vw * scale;
-      const h = vhPx * scale;
-      const x = (cssWidth - w) / 2;
-      const y = (cssHeight - h) / 2;
-      ctx!.drawImage(bmp, x, y, w, h);
-    }
+    const computeProgress = () => {
+      const t = window.scrollY / (cachedVh * SCRUB_RANGE_VH);
+      return t < 0 ? 0 : t > 1 ? 1 : t;
+    };
 
-    function compute() {
-      const vh = cachedVh;
-      const scrollPx = window.scrollY;
+    const apply = () => {
+      const t = computeProgress();
 
-      const scrub = scrollPx / (SCRUB_VH * vh);
-      const clamped = scrub < 0 ? 0 : scrub > 1 ? 1 : scrub;
-      targetIdx = clamped * (total - 1);
-
-      const blurT = smoothstep(
-        (scrollPx / vh - BLUR_START_VH) / (BLUR_FULL_VH - BLUR_START_VH)
-      );
-      const nextBlur = blurT * MAX_BLUR_PX;
-      if (Math.abs(nextBlur - lastBlur) > 0.4) {
-        wrapper!.style.filter = `blur(${nextBlur.toFixed(2)}px)`;
-        lastBlur = nextBlur;
+      // ── opacity ────────────────────────────────────────────────────
+      const fadeT =
+        t < FADE_START_T
+          ? 0
+          : (t - FADE_START_T) / Math.max(0.001, 1 - FADE_START_T);
+      const opacity = 1 - (fadeT > 1 ? 1 : fadeT);
+      if (Math.abs(opacity - lastOpacity) > 0.005) {
+        video.style.opacity = String(opacity);
+        lastOpacity = opacity;
       }
 
-      const veilT = smoothstep(
-        (scrollPx / vh - VEIL_START_VH) / (VEIL_FULL_VH - VEIL_START_VH)
-      );
-      if (veilRef.current && Math.abs(veilT - lastVeil) > 0.005) {
-        veilRef.current.style.opacity = String(veilT);
-        lastVeil = veilT;
+      // ── scrub ──────────────────────────────────────────────────────
+      if (duration > 0) {
+        const target = t * duration;
+        // Smooth toward target so flicks of the wheel don't cause stutters.
+        renderedTime += (target - renderedTime) * SEEK_LERP;
+        // Snap when we're close enough to avoid trailing forever.
+        if (Math.abs(target - renderedTime) < 0.005) renderedTime = target;
+        if (Math.abs(renderedTime - lastTargetTime) > 0.012) {
+          // Pause the video before seeking — Safari ignores currentTime
+          // assignments on a playing element in some versions.
+          if (!video.paused) video.pause();
+          try {
+            video.currentTime = renderedTime;
+          } catch {
+            // ignore — happens if metadata isn't quite ready
+          }
+          lastTargetTime = renderedTime;
+        }
       }
-    }
+    };
 
-    function frame() {
+    const frame = () => {
       if (!running) return;
-      if (scrollDirty) {
-        compute();
-        scrollDirty = false;
-      }
-      const delta = targetIdx - displayIdx;
-      if (Math.abs(delta) > SEEK_EPSILON) {
-        displayIdx += delta * LERP_SPEED;
-      }
-      const rounded = Math.round(displayIdx);
-      if (rounded !== lastDrawnIdx) {
-        drawFrame(rounded);
-        lastDrawnIdx = rounded;
-      }
+      // Keep ticking even when scroll is idle so the seek-lerp catches up.
+      apply();
       rafId = requestAnimationFrame(frame);
-    }
+    };
 
-    function onScroll() { scrollDirty = true; }
-    function onResize() {
-      cachedVh = window.innerHeight || 1;
-      syncCanvas();
-      lastDrawnIdx = -1;
+    const onScroll = () => {
       scrollDirty = true;
+    };
+    const onResize = () => {
+      cachedVh = window.innerHeight || 1;
+      scrollDirty = true;
+    };
+
+    const onMeta = () => {
+      duration = Number.isFinite(video.duration) ? video.duration : 0;
+      // Land on the correct first frame for whatever scroll position we
+      // already have (e.g. user reloaded mid-page).
+      renderedTime = computeProgress() * duration;
+      try {
+        if (!video.paused) video.pause();
+        video.currentTime = renderedTime;
+      } catch {
+        // ignore
+      }
+    };
+
+    if (video.readyState >= 1) {
+      onMeta();
+    } else {
+      video.addEventListener("loadedmetadata", onMeta, { once: true });
     }
 
+    apply();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize, { passive: true });
-
-    compute();
-    drawFrame(0);
     rafId = requestAnimationFrame(frame);
 
     return () => {
@@ -240,73 +135,53 @@ function ScrubbingFlowers({
       cancelAnimationFrame(rafId);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
+      video.removeEventListener("loadedmetadata", onMeta);
+      // Suppress the unused-var warning for scrollDirty — kept on purpose
+      // in case we re-enable scroll-gated rendering later.
+      void scrollDirty;
     };
-  }, [ready, veilRef]);
+  }, []);
 
   return (
-    <div
-      ref={wrapperRef}
+    <video
+      ref={videoRef}
+      src="/bg.mp4"
+      muted
+      playsInline
+      preload="auto"
+      aria-hidden
       style={{
         position: "fixed",
         inset: 0,
+        width: "100%",
+        height: "100%",
+        objectFit: "cover",
         zIndex: 0,
         pointerEvents: "none",
-        contain: "strict",
-        willChange: "filter",
+        opacity: 1,
+        willChange: "opacity",
         transform: "translateZ(0)",
-        backfaceVisibility: "hidden",
-        opacity: ready ? 1 : 0,
-        transition: "opacity 0.4s ease",
       }}
-    >
-      <canvas
-        ref={canvasRef}
-        style={{
-          display: "block",
-          width: "100%",
-          height: "100%",
-        }}
-      />
-    </div>
+    />
   );
 }
 
 export default function Landing() {
-  const [bg, setBg] = useState(FALLBACK_BG);
-  const veilRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
-    document.body.style.backgroundColor = bg;
-    document.documentElement.style.backgroundColor = bg;
-  }, [bg]);
+    document.body.style.backgroundColor = PAGE_BG;
+    document.documentElement.style.backgroundColor = PAGE_BG;
+  }, []);
 
   return (
-    <div style={{ backgroundColor: bg, position: "relative" }}>
-      <ScrubbingFlowers onSampledBg={setBg} veilRef={veilRef} />
+    <div style={{ backgroundColor: PAGE_BG, position: "relative" }}>
+      <FlowerBackground />
 
-      {/* White veil — fades in over the video instead of fading the
-          video out, so the flowers never disappear or glitch. */}
       <div
-        ref={veilRef}
         aria-hidden
         style={{
           position: "fixed",
           inset: 0,
           zIndex: 1,
-          pointerEvents: "none",
-          backgroundColor: VEIL_COLOR,
-          opacity: 0,
-          willChange: "opacity",
-        }}
-      />
-
-      {/* Horizontal vignette overlay — 15% max edge shadow, smooth gradient. */}
-      <div
-        aria-hidden
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 2,
           pointerEvents: "none",
           background:
             "linear-gradient(to right," +
@@ -323,7 +198,7 @@ export default function Landing() {
         }}
       />
 
-      <div style={{ position: "relative", zIndex: 3 }}>
+      <div style={{ position: "relative", zIndex: 2 }}>
         <Nav />
         <main>
           <TitlePage />

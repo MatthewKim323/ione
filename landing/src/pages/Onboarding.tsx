@@ -7,6 +7,8 @@ import { AuthLayout } from "../components/AuthLayout";
 import { Field } from "../components/Field";
 import { OptionPill } from "../components/OptionPill";
 import { OptionRow } from "../components/OptionRow";
+import { SourceUpload } from "../components/SourceUpload";
+import { SourceList } from "../components/SourceList";
 import type {
   Grade,
   HintFrequency,
@@ -79,9 +81,9 @@ const FREQUENCIES: { value: HintFrequency; label: string; description: string }[
     },
   ];
 
-const TOTAL_STEPS = 3;
+const TOTAL_STEPS = 4;
 
-type StepKey = 0 | 1 | 2;
+type StepKey = 0 | 1 | 2 | 3;
 
 export default function Onboarding() {
   const navigate = useNavigate();
@@ -103,6 +105,10 @@ export default function Onboarding() {
   const [hintVoice, setHintVoice] = useState(true);
   const [hintFrequency, setHintFrequency] = useState<HintFrequency>("balanced");
 
+  // Step 4 — optional sources
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [sourceListReloadKey, setSourceListReloadKey] = useState(0);
+
   function toggleTopic(t: TrickyTopic) {
     setTrickyTopics((prev) =>
       prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t],
@@ -112,7 +118,7 @@ export default function Onboarding() {
   const step1Valid = firstName.trim().length > 0 && grade !== null;
   const step2Valid = currentClass !== null;
 
-  async function finish() {
+  async function saveProfileThenAdvance() {
     if (!user) {
       setError("session expired. log in again.");
       return;
@@ -146,11 +152,18 @@ export default function Onboarding() {
       return;
     }
     await refreshProfile();
+    setProfileSaved(true);
+    setSubmitting(false);
+    setStep(3);
+  }
+
+  function finish() {
     navigate("/dashboard", { replace: true });
   }
 
   return (
     <AuthLayout
+      wide={step === 3}
       meta={`onboarding / ${step + 1} of ${TOTAL_STEPS}`}
       title={
         step === 0 ? (
@@ -161,9 +174,13 @@ export default function Onboarding() {
           <>
             what are you <em>working on</em>?
           </>
-        ) : (
+        ) : step === 2 ? (
           <>
             how should I <em>help</em>?
+          </>
+        ) : (
+          <>
+            what should I <em>read</em>?
           </>
         )
       }
@@ -172,7 +189,9 @@ export default function Onboarding() {
           ? "just enough to address you in the margin notes."
           : step === 1
             ? "context shapes what counts as a stall vs. genuine thinking."
-            : "you can change any of this later from settings."
+            : step === 2
+              ? "you can change any of this later from settings."
+              : "drop in anything that shows where you actually struggle. optional — skip if you're starting blank."
       }
       footer={<StepDots active={step} total={TOTAL_STEPS} />}
     >
@@ -340,12 +359,76 @@ export default function Onboarding() {
               <button
                 type="button"
                 disabled={submitting}
-                onClick={finish}
+                onClick={() => {
+                  if (profileSaved) {
+                    setStep(3);
+                  } else {
+                    void saveProfileThenAdvance();
+                  }
+                }}
                 className="cta disabled:opacity-50 disabled:cursor-wait"
               >
-                {submitting ? "saving…" : "open the tutor"}
+                {submitting ? "saving…" : "next"}
                 <span aria-hidden>→</span>
               </button>
+            </div>
+          </motion.div>
+        )}
+
+        {step === 3 && (
+          <motion.div
+            key="step-3"
+            initial={{ opacity: 0, x: 12 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -12 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <p className="text-paper-dim text-sm leading-relaxed mb-6 max-w-[58ch]">
+              ione builds a private knowledge graph of you from these. failed
+              exams point to weak topics. transcripts point to which classes
+              are slipping. nothing leaves your account.
+            </p>
+
+            <SourceUpload
+              heading="add a first source"
+              onUploaded={() => setSourceListReloadKey((k) => k + 1)}
+            />
+
+            <div className="mt-6">
+              <SourceList reloadKey={sourceListReloadKey} />
+            </div>
+
+            {error && (
+              <p className="mt-4 font-mono text-[11px] text-red-pencil">
+                {error}
+              </p>
+            )}
+
+            <div className="flex justify-between items-center mt-10">
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                className="font-mono text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-paper transition-colors"
+              >
+                ← back
+              </button>
+              <div className="flex items-center gap-5">
+                <button
+                  type="button"
+                  onClick={finish}
+                  className="font-mono text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-paper transition-colors"
+                >
+                  skip for now
+                </button>
+                <button
+                  type="button"
+                  onClick={finish}
+                  className="cta"
+                >
+                  open the tutor
+                  <span aria-hidden>→</span>
+                </button>
+              </div>
             </div>
           </motion.div>
         )}

@@ -22,16 +22,37 @@ getting a fresh clone running locally end-to-end in ~5 min.
    - **anon / public key** → goes into `VITE_SUPABASE_ANON_KEY`
    - **service_role key** → goes into `SUPABASE_SERVICE_ROLE_KEY` (server only)
 
-3. **Run the schema migration.** Open **SQL Editor → New query**, paste the
-   contents of `supabase/migrations/0001_profiles.sql`, and **Run**.
+3. **Run the schema migrations.** Open **SQL Editor → New query**, paste,
+   and **Run** — in this order:
 
-   This creates:
-   - `profiles` table (one row per `auth.users` row, joined by `id`)
-   - enums: `grade_level`, `math_class`, `tricky_topic`, `hint_frequency`
-   - trigger that auto-inserts a blank profile row on signup
-   - RLS policies so users can only read/write their own profile
+   a. `supabase/migrations/0001_profiles.sql`
 
-4. **(optional) email confirmations.** For local dev, go to
+      Creates:
+      - `profiles` table (one row per `auth.users` row, joined by `id`)
+      - enums: `grade_level`, `math_class`, `tricky_topic`, `hint_frequency`
+      - trigger that auto-inserts a blank profile row on signup
+      - RLS policies so users can only read/write their own profile
+
+   b. `supabase/migrations/0002_knowledge_graph.sql`
+
+      Creates the **student-scope knowledge graph** (Nami-style):
+      - `source_files` — uploaded docs (failed exams, transcripts, essays, …)
+      - `artifacts` / `chunks` — what an agent extracted + the receipt it cites
+      - `entities` / `claims` / `relationships` — the typed graph itself
+      - `events` — pub/sub stream so agents react to uploads in real time
+      - enums: `source_kind`, `claim_status`, `sensitivity`
+      - the `source-files` storage bucket + RLS policies for it
+      - per-owner RLS on every table
+
+      Every claim an agent makes will be grounded in a `chunk` from one of
+      these uploaded files. No chunk → no claim. Receipts by construction.
+
+4. **Enable Realtime on `source_files`.** Go to **Database → Replication**,
+   click your default publication (`supabase_realtime`), and toggle on
+   `source_files`. The dashboard's "your sources" panel subscribes to it
+   so newly-parsed files light up live.
+
+5. **(optional) email confirmations.** For local dev, go to
    **Authentication → Providers → Email** and **disable** "Confirm email"
    so signup → onboarding works without a round trip to your inbox.
    Re-enable in production.
@@ -73,10 +94,14 @@ Vite serves on `http://localhost:5173`.
 2. `/signup` — email + password form. On submit, Supabase creates a user,
    the `on_auth_user_created` trigger creates a blank `profiles` row, and
    the app redirects to `/onboarding`.
-3. `/onboarding` — three steps (about you → your math → hint preferences).
-   Submitting writes onto your `profiles` row and stamps `onboarded_at`.
-4. `/dashboard` — placeholder summary of what you told us. Sign out lands
-   back on `/`.
+3. `/onboarding` — four steps (about you → your math → hint preferences
+   → optional document upload). After step 3, your `profiles` row is
+   stamped with `onboarded_at`; step 4 lets you seed the knowledge graph
+   and is fully skippable.
+4. `/dashboard` — summary of what you told us, plus the **knowledge graph
+   sources panel**: drop in failed exams, transcripts, practice work, etc.
+   The brand mark and the `← landing` link both navigate back to `/`.
+   Sign out lands on `/`.
 
 Route guards live in `landing/src/components/RouteGuards.tsx`:
 
@@ -107,3 +132,21 @@ without RLS policies. Re-run `0001_profiles.sql` end-to-end.
 **Onboarding redirects me back to onboarding.**
 `onboarded_at` is still null. The `Onboarding` page sets it inside the
 final upsert; if that upsert errored, the toast shows it. Check console.
+
+**Document upload says "couldn't upload — bucket not found".**
+The `source-files` storage bucket wasn't created. Re-run
+`0002_knowledge_graph.sql` — the `insert into storage.buckets` block at
+the bottom is what makes the bucket. Confirm with:
+```sql
+select id from storage.buckets where id = 'source-files';
+```
+
+**Document upload says "new row violates row-level security policy".**
+RLS on `source_files` requires `owner = auth.uid()`. Make sure
+`0002_knowledge_graph.sql` ran end-to-end (it creates both the table
+policies and the storage policies). Re-run if in doubt.
+
+**Sources list doesn't auto-update after upload.**
+Realtime isn't on for `source_files`. See step 4 above — add it to the
+`supabase_realtime` publication. The list still refreshes on page reload
+without realtime; only the live updates need it.

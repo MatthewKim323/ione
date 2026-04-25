@@ -1,5 +1,10 @@
 import { motion } from "motion/react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { SourceList } from "../components/SourceList";
+import { SourceUpload } from "../components/SourceUpload";
+import { CaptureLog, CapturePanel } from "../components/CaptureSurface";
+import { useScreenCapture } from "../lib/capture";
 import type {
   HintFrequency,
   MathClass,
@@ -47,6 +52,7 @@ const FREQ_LABELS: Record<HintFrequency, string> = {
 
 export default function Dashboard() {
   const { user, profile, signOut } = useAuth();
+  const capture = useScreenCapture({ baseIntervalSec: 8 });
   if (!profile) return null; // route guard ensures we have one, but TS
 
   const firstName = profile.first_name;
@@ -63,18 +69,37 @@ export default function Dashboard() {
       {/* ── header ──────────────────────────────────────────────────── */}
       <header className="border-b border-ink-line px-6 sm:px-10 py-5 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <span
-            className="text-paper text-2xl leading-none"
+          <Link
+            to="/"
+            aria-label="back to landing"
+            className="text-paper text-2xl leading-none hover:opacity-80 transition-opacity"
             style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
           >
             ione<span className="text-red-pencil">.</span>
-          </span>
-          <span className="hidden sm:inline-block font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
-            session / idle
+          </Link>
+          <span
+            className={[
+              "hidden sm:inline-flex items-center gap-2 font-mono text-[10px] tracking-[0.22em] uppercase",
+              capture.isRunning ? "text-red-pencil" : "text-paper-mute",
+            ].join(" ")}
+          >
+            <span
+              aria-hidden
+              className={capture.isRunning ? "animate-pulse" : ""}
+            >
+              ●
+            </span>
+            session / {capture.isRunning ? "live" : "idle"}
           </span>
         </div>
         <div className="flex items-center gap-6">
-          <span className="hidden sm:inline-block font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+          <Link
+            to="/"
+            className="hidden sm:inline-block font-mono text-[11px] tracking-[0.14em] uppercase pencil-link"
+          >
+            ← landing
+          </Link>
+          <span className="hidden md:inline-block font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
             {user?.email}
           </span>
           <button
@@ -173,7 +198,7 @@ export default function Dashboard() {
             </div>
           </motion.section>
 
-          {/* right: capture status placeholder */}
+          {/* right: live capture surface */}
           <motion.aside
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
@@ -181,30 +206,7 @@ export default function Dashboard() {
             className="lg:col-span-5"
           >
             <div className="section-label mb-4">capture</div>
-            <div className="border border-ink-line bg-ink-raise p-8 sm:p-10">
-              <div className="flex items-baseline gap-3 mb-6">
-                <span className="text-red-pencil text-2xl leading-none">●</span>
-                <span className="font-mono text-[11px] tracking-[0.22em] uppercase text-paper-dim">
-                  not yet capturing
-                </span>
-              </div>
-              <p className="text-paper-dim text-sm leading-relaxed mb-8">
-                connect an iPad mirror or screen share and ione will start
-                watching. nothing is recorded until you press start.
-              </p>
-              <button
-                type="button"
-                disabled
-                className="cta cta-ghost w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-                title="capture coming soon"
-              >
-                start session
-                <span aria-hidden>→</span>
-              </button>
-              <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-paper-faint mt-4 text-center">
-                wiring in progress
-              </p>
-            </div>
+            <CapturePanel capture={capture} />
 
             {/* margin note */}
             <div
@@ -217,6 +219,48 @@ export default function Dashboard() {
             </div>
           </motion.aside>
         </div>
+
+        {/* full-width cycle log — only renders once a session is live */}
+        <CaptureLog log={capture.log} />
+
+        {/* ── knowledge graph: your sources ───────────────────────────── */}
+        <motion.section
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="mt-24"
+        >
+          <div className="flex items-baseline justify-between mb-4">
+            <div className="section-label">© ione — 001 / sources</div>
+            <span
+              className="hidden sm:inline-block font-mono text-[10px] tracking-[0.22em] uppercase text-paper-faint"
+              title="every claim ione makes will cite a chunk from one of these"
+            >
+              receipts ↑ ground truth
+            </span>
+          </div>
+
+          <h2
+            className="h-display text-[1.75rem] sm:text-[2.25rem] leading-tight mb-3"
+            style={{ fontStyle: "italic" }}
+          >
+            what should ione <em>read</em>?
+          </h2>
+          <p className="text-paper-dim text-sm sm:text-base leading-relaxed max-w-[60ch] mb-10">
+            drop in failed exams, transcripts, scratch work, writing samples —
+            anything that shows where you actually struggle. ione builds a
+            knowledge graph of you from these. nothing leaves your account.
+          </p>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-12 gap-y-10">
+            <div className="lg:col-span-7">
+              <SourceUpload />
+            </div>
+            <div className="lg:col-span-5">
+              <SourceList />
+            </div>
+          </div>
+        </motion.section>
       </main>
     </div>
   );

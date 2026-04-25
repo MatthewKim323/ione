@@ -16,12 +16,15 @@ export function AuthLayout({
   subtitle,
   children,
   footer,
+  wide = false,
 }: {
   meta: string;
   title: ReactNode;
   subtitle?: ReactNode;
   children: ReactNode;
   footer?: ReactNode;
+  /** Use the wider page format for steps with embedded panels (e.g. doc upload). */
+  wide?: boolean;
 }) {
   return (
     <div className="min-h-screen flex flex-col bg-ink">
@@ -49,7 +52,7 @@ export function AuthLayout({
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-[460px] relative"
+          className={`w-full ${wide ? "max-w-[680px]" : "max-w-[460px]"} relative`}
         >
           {/* the page */}
           <div className="relative ruled-paper border border-ink-line bg-ink-deep px-8 py-10 sm:px-10 sm:py-12">
