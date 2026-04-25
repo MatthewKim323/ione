@@ -1,5 +1,7 @@
 import { motion } from "motion/react";
 import { SectionLabel } from "./SectionLabel";
+import { EnterCTA } from "./EnterCTA";
+import { Link } from "react-router-dom";
 
 export function Closer() {
   return (
@@ -83,13 +85,10 @@ export function Closer() {
               transition={{ duration: 0.7, delay: 0.35 }}
               className="mt-12 flex flex-wrap items-center gap-5"
             >
-              <a href="#" className="cta">
-                open the tutor
-                <span aria-hidden>→</span>
-              </a>
-              <a href="#" className="cta cta-ghost">
-                view dashboard
-              </a>
+              <EnterCTA />
+              <Link to="/login" className="cta cta-ghost">
+                already have an account?
+              </Link>
             </motion.div>
 
             <motion.div
@@ -99,7 +98,7 @@ export function Closer() {
               transition={{ duration: 0.7, delay: 0.5 }}
               className="mt-8 font-mono text-[11px] tracking-[0.18em] text-paper-mute"
             >
-              works with iPad + goodnotes · no setup · uses your auth0 login
+              works with iPad + goodnotes · no setup · email + password
             </motion.div>
           </div>
 
@@ -131,7 +130,7 @@ export function Closer() {
           <a href="#pedagogy" className="pencil-link">pedagogy</a>
           <a href="#pipeline" className="pencil-link">pipeline</a>
           <a href="#signal" className="pencil-link">signal</a>
-          <a href="https://github.com" className="pencil-link">github</a>
+          <a href="https://github.com/MatthewKim323/ione" className="pencil-link">github</a>
           <a href="#" className="pencil-link">privacy</a>
         </div>
         <div className="text-paper-faint">

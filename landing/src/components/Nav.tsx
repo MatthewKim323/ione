@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { SKIP_FX } from "../lib/prerender";
+import { useAuth } from "../lib/auth";
 
 const STATUS_CYCLE = [
   { label: "watching", value: "8.0s / cycle" },
@@ -9,6 +11,8 @@ const STATUS_CYCLE = [
 ];
 
 export function Nav() {
+  const { session, profile } = useAuth();
+  const isAuthed = !!session;
   // When prerendering, skip straight to booted state so headless captures
   // see the final status line, not a frozen mid-boot percentage.
   const [pct, setPct] = useState(SKIP_FX ? 96 : 0);
@@ -61,12 +65,13 @@ export function Nav() {
 
       {/* Center: brand mark, italic ione. */}
       <div className="pointer-events-auto absolute left-1/2 -translate-x-1/2 hidden md:block">
-        <span
+        <Link
+          to="/"
           className="text-paper text-2xl leading-none"
           style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
         >
           ione<span className="text-red-pencil">.</span>
-        </span>
+        </Link>
       </div>
 
       {/* Right: nav links */}
@@ -78,15 +83,25 @@ export function Nav() {
           terminal
         </a>
         <a
-          href="https://github.com"
+          href="https://github.com/MatthewKim323/ione"
           className="pencil-link hidden sm:inline-block text-paper-dim"
         >
           github
         </a>
-        <a href="#start" className="pencil-link text-paper">
-          log in
-          <span className="ml-2 text-red-pencil">↗</span>
-        </a>
+        {isAuthed ? (
+          <Link
+            to={profile?.onboarded_at ? "/dashboard" : "/onboarding"}
+            className="pencil-link text-paper"
+          >
+            dashboard
+            <span className="ml-2 text-red-pencil">↗</span>
+          </Link>
+        ) : (
+          <Link to="/login" className="pencil-link text-paper">
+            log in
+            <span className="ml-2 text-red-pencil">↗</span>
+          </Link>
+        )}
       </div>
     </nav>
   );

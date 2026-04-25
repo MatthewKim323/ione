@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { MarginNote } from "./MarginNote";
+import { EnterCTA } from "./EnterCTA";
 
 const MATH_LINES = [
   { i: 0, text: "problem 4.", kind: "label" as const },
@@ -69,36 +70,33 @@ export function Hero() {
             transition={{ delay: 0.85, duration: 0.6 }}
             className="mt-12 flex flex-wrap items-center gap-5"
           >
-            <a href="#start" className="cta">
-              open the tutor
-              <span aria-hidden>→</span>
-            </a>
+            <EnterCTA />
             <a
-                href="#pipeline"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: "120px",
-                  height: "120px",
-                  borderRadius: "50%",
-                  background: "rgba(37, 99, 235, 0.18)",
-                  border: "1px solid rgba(37, 99, 235, 0.5)",
-                  color: "#000",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "0.6rem",
-                  letterSpacing: "0.16em",
-                  textTransform: "uppercase",
-                  textAlign: "center",
-                  lineHeight: 1.4,
-                  padding: "0 16px",
-                  textDecoration: "none",
-                  transition: "background 0.3s ease",
-                  backdropFilter: "blur(4px)",
-                }}
-              >
-                see how<br />it works
-              </a>
+              href="#pipeline"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "120px",
+                height: "120px",
+                borderRadius: "50%",
+                background: "rgba(37, 99, 235, 0.18)",
+                border: "1px solid rgba(37, 99, 235, 0.5)",
+                color: "#000",
+                fontFamily: "var(--font-mono)",
+                fontSize: "0.6rem",
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                textAlign: "center",
+                lineHeight: 1.4,
+                padding: "0 16px",
+                textDecoration: "none",
+                transition: "background 0.3s ease",
+                backdropFilter: "blur(4px)",
+              }}
+            >
+              see how<br />it works
+            </a>
           </motion.div>
 
           {/* tagline strip */}

@@ -5,7 +5,8 @@
   "description": "ione — live AI math tutor (hackathon, Auth0 + Anthropic + Backboard tracks)",
   "type": "module",
   "scripts": {
-    "test:ocr": "node scripts/test-ocr.mjs"
+    "test:ocr": "node scripts/test-ocr.mjs",
+    "test:predictive": "node scripts/test-predictive.mjs"
   },
   "dependencies": {
     "dotenv": "^16.4.7",
