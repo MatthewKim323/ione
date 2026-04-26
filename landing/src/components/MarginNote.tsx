@@ -1,83 +1,82 @@
-import { motion } from "motion/react";
-import type { ReactNode } from "react";
+import { motion, useScroll } from "motion/react";
+import { useEffect, useState, type ReactNode } from "react";
 
 interface MarginNoteProps {
   children: ReactNode;
-  /** Optional: small caption above the handwritten note (e.g. "stall · 92s") */
   meta?: string;
-  /** delay in seconds for the staggered fade-in */
-  delay?: number;
-  /** show the leading arrow + connecting line pointing left into the page */
+  /** Stagger index (0, 1, 2). Each note waits longer than the previous. */
+  index?: number;
   arrow?: boolean;
-  /** tilt in degrees, alternated for personality */
   tilt?: number;
   className?: string;
 }
 
 /**
- * A handwritten margin annotation — rendered in vivid red Caveat as if a
- * live tutor just scrawled it beside the student's work.
- *
- * Entrance: slides in from the right with an ink-draw connector line.
- * At rest: pulses softly to signal it's alive.
- * On hover: lifts and brightens.
+ * Handwritten margin annotation that only begins animating after the user
+ * has scrolled at least 60 px — so it never fires on initial page load.
+ * Each note fades + draws in very slowly, editorial-pace.
  */
 export function MarginNote({
   children,
   meta,
-  delay = 0,
+  index = 0,
   arrow = true,
   tilt = -1.5,
   className = "",
 }: MarginNoteProps) {
+  const { scrollY } = useScroll();
+  const [triggered, setTriggered] = useState(false);
+
+  // Fire once the user has scrolled > 60 px
+  useEffect(() => {
+    return scrollY.on("change", (y) => {
+      if (y > 60) setTriggered(true);
+    });
+  }, [scrollY]);
+
+  // Large stagger so each note arrives well after the previous one
+  const stagger = index * 1.4;
+
+  const baseTransition = {
+    ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
+  };
+
   return (
     <motion.div
-      initial={{ opacity: 0, x: 28 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true, margin: "-8%" }}
-      transition={{ duration: 0.7, delay, ease: [0.16, 1, 0.3, 1] }}
-      whileHover={{
-        scale: 1.04,
-        transition: { duration: 0.18, ease: "easeOut" },
-      }}
-      className={`flex items-start gap-0 group cursor-default select-none ${className}`}
+      initial={{ opacity: 0, x: 20 }}
+      animate={triggered ? { opacity: 1, x: 0 } : { opacity: 0, x: 20 }}
+      transition={{ ...baseTransition, duration: 2.2, delay: stagger }}
+      whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
+      className={`flex items-start gap-0 cursor-default select-none ${className}`}
     >
-      {/* ── Connecting line + arrow ─────────────────────────────── */}
+      {/* ── Connecting line + arrow ─────────────────────────── */}
       {arrow && (
-        <div className="flex items-center shrink-0 mt-[1.05rem] mr-1.5">
-          {/* the horizontal ink line, draws in from the page side */}
+        <div className="flex items-center shrink-0 mt-[1.0rem] mr-1.5">
           <motion.div
             initial={{ scaleX: 0 }}
-            whileInView={{ scaleX: 1 }}
-            viewport={{ once: true }}
+            animate={triggered ? { scaleX: 1 } : { scaleX: 0 }}
             transition={{
-              duration: 0.38,
-              delay: delay + 0.32,
-              ease: [0.4, 0, 0.2, 1],
+              ...baseTransition,
+              duration: 1.2,
+              delay: stagger + 0.9,
             }}
             style={{
               width: "36px",
               height: "1px",
               background:
-                "linear-gradient(to right, rgba(232,41,42,0.3), rgba(232,41,42,0.85))",
+                "linear-gradient(to right, rgba(212,43,43,0.1), rgba(212,43,43,0.45))",
               transformOrigin: "left center",
             }}
           />
-          {/* pulsing arrowhead */}
           <motion.span
-            animate={{ opacity: [0.7, 1, 0.7] }}
-            transition={{
-              duration: 2.8,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: delay + 1.1,
-            }}
+            initial={{ opacity: 0 }}
+            animate={triggered ? { opacity: 0.7 } : { opacity: 0 }}
+            transition={{ duration: 1.0, delay: stagger + 1.8 }}
             style={{
-              color: "#e8292a",
-              fontSize: "0.7rem",
+              color: "#d42b2b",
+              fontSize: "0.62rem",
               lineHeight: 1,
               marginLeft: "1px",
-              filter: "drop-shadow(0 0 4px rgba(232,41,42,0.6))",
             }}
           >
             ◀
@@ -85,74 +84,45 @@ export function MarginNote({
         </div>
       )}
 
-      {/* ── Annotation body ────────────────────────────────────── */}
-      <div
-        className="relative rounded px-2.5 py-1.5 transition-all duration-200"
-        style={{
-          background: "rgba(8, 5, 3, 0.45)",
-          backdropFilter: "blur(6px)",
-          WebkitBackdropFilter: "blur(6px)",
-          boxShadow:
-            "0 4px 18px rgba(0,0,0,0.55), 0 0 0 0.5px rgba(232,41,42,0.18), inset 0 0 0 0.5px rgba(255,255,255,0.03)",
-        }}
-      >
-        {/* meta timestamp label */}
+      {/* ── Annotation body ──────────────────────────────────── */}
+      <div className="relative">
         {meta && (
           <motion.div
             initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.4, delay: delay + 0.5 }}
-            className="font-mono tracking-[0.2em] uppercase mb-1"
-            style={{ fontSize: "0.55rem", color: "rgba(232,41,42,0.55)" }}
+            animate={triggered ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ duration: 1.4, delay: stagger + 1.0 }}
+            className="font-mono tracking-[0.2em] uppercase mb-0.5"
+            style={{ fontSize: "0.52rem", color: "rgba(212,43,43,0.4)" }}
           >
             {meta}
           </motion.div>
         )}
 
-        {/* the handwritten annotation text — drawn on via clip-path */}
+        {/* ink draw — left to right, very slow */}
         <motion.div
           initial={{ clipPath: "inset(0 100% 0 0)" }}
-          whileInView={{ clipPath: "inset(0 0% 0 0)" }}
-          viewport={{ once: true }}
+          animate={
+            triggered
+              ? { clipPath: "inset(0 0% 0 0)" }
+              : { clipPath: "inset(0 100% 0 0)" }
+          }
           transition={{
-            duration: 0.55,
-            delay: delay + 0.42,
-            ease: [0.16, 1, 0.3, 1],
+            ...baseTransition,
+            duration: 1.6,
+            delay: stagger + 1.0,
           }}
           className="hand"
           style={{
-            fontSize: "clamp(1.65rem, 2.4vw, 2.05rem)",
-            lineHeight: 1.12,
-            color: "#e8292a",
+            fontSize: "clamp(1.5rem, 2.2vw, 1.85rem)",
+            lineHeight: 1.15,
+            color: "#d42b2b",
             transform: `rotate(${tilt}deg)`,
-            textShadow:
-              "0 0 14px rgba(232,41,42,0.45), 0 0 4px rgba(232,41,42,0.25), 0 1px 4px rgba(0,0,0,0.6)",
+            textShadow: "0 1px 6px rgba(0,0,0,0.28)",
             fontWeight: 600,
           }}
         >
           {children}
         </motion.div>
-
-        {/* subtle red glow that pulses at rest — "alive" signal */}
-        <motion.div
-          aria-hidden
-          animate={{ opacity: [0.08, 0.18, 0.08] }}
-          transition={{
-            duration: 3.5,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: delay + 1.5,
-          }}
-          style={{
-            position: "absolute",
-            inset: 0,
-            borderRadius: "inherit",
-            background:
-              "radial-gradient(ellipse at 30% 50%, rgba(232,41,42,0.4) 0%, transparent 70%)",
-            pointerEvents: "none",
-          }}
-        />
       </div>
     </motion.div>
   );

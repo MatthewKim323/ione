@@ -208,15 +208,15 @@ function NotebookPage() {
 
       {/* margin annotations — editorial notes in the right margin */}
       <div className="absolute -right-3 sm:-right-8 md:-right-16 top-10 flex flex-col gap-10 w-[185px]">
-        <MarginNote meta="t = 0s" delay={1.4} tilt={-1.2}>
+        <MarginNote meta="t = 0s" index={0} tilt={-1.2}>
           silent.
         </MarginNote>
-        <MarginNote meta="t = 92s · stall" delay={1.75} tilt={-2.1}>
+        <MarginNote meta="t = 92s · stall" index={1} tilt={-2.1}>
           check the sign
           <br />
           on line three.
         </MarginNote>
-        <MarginNote meta="t = 148s · solved" delay={2.05} tilt={-0.8}>
+        <MarginNote meta="t = 148s · solved" index={2} tilt={-0.8}>
           nice — that&apos;s
           <br />
           it.
