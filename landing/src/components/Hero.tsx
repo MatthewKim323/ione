@@ -70,7 +70,7 @@ export function Hero() {
             transition={{ delay: 0.85, duration: 0.6 }}
             className="mt-12 flex flex-wrap items-center gap-5"
           >
-            <EnterCTA />
+            <EnterCTA className="hero-primary-cta" />
             <a
               href="#pipeline"
               style={{
@@ -160,7 +160,7 @@ function NotebookPage() {
       {/* the page itself */}
       <div className="relative bg-ink-deep border border-ink-line ruled-paper px-7 py-10 pr-16 sm:pr-20 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)]">
         {/* top-left page meta */}
-        <div className="flex items-center justify-between mb-8 font-mono text-[9px] tracking-[0.22em] uppercase text-paper-faint">
+        <div className="flex items-center justify-between mb-8 font-mono text-[9px] tracking-[0.22em] uppercase" style={{ color: "#b89a78" }}>
           <span>calculus i · sec 5.3</span>
           <span>p. 4</span>
         </div>

@@ -205,6 +205,21 @@
     border-color: var(--color-paper);
   }
 
+  /* Hero: “open the tutor” — a shade darker than the circular #pipeline CTA
+     (circle uses blue-600 rgba; this uses blue-700 for the same glassy feel). */
+  .hero-primary-cta.cta {
+    color: var(--color-paper);
+    background-color: rgba(29, 78, 216, 0.34);
+    border-color: rgba(29, 78, 216, 0.52);
+  }
+  .hero-primary-cta.cta::before {
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+  .hero-primary-cta.cta:hover {
+    background-color: var(--color-red-pencil);
+    border-color: var(--color-red-pencil);
+  }
+
   .cta-ghost {
     color: var(--color-paper-dim);
     border-color: var(--color-ink-line);
