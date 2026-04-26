@@ -247,7 +247,7 @@ function FlowerBackground() {
         style={{
           position: "absolute",
           inset: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.32)",
+          backgroundColor: "rgba(0, 0, 0, 0.18)",
           pointerEvents: "none",
         }}
       />
