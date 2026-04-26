@@ -66,11 +66,11 @@ export function MeetTheTutorCard() {
           {/* Orb — dominant column */}
           <div className="lg:col-span-7 order-2 lg:order-1">
             <div
-              className="relative mx-auto w-full max-w-[min(92vw,720px)] lg:max-w-none aspect-[4/3] lg:aspect-[5/4] lg:min-h-[min(58vh,640px)] rounded-sm border border-line-soft bg-[#ece7f5] overflow-hidden"
+              className="relative mx-auto w-full max-w-[min(92vw,720px)] lg:max-w-none aspect-[4/3] lg:aspect-[5/4] lg:min-h-[min(58vh,640px)] rounded-sm border border-zinc-800 bg-black overflow-hidden shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]"
               style={{ contain: "layout paint" }}
             >
-              <div className="absolute inset-0 flex items-center justify-center p-2 sm:p-4">
-                <div className="w-[min(94%,560px)] aspect-square max-h-full">
+              <div className="absolute inset-0 flex items-center justify-center p-2 sm:p-4 bg-black">
+                <div className="w-[min(94%,560px)] aspect-square max-h-full bg-black">
                   <WispOrb
                     fill
                     minFill={220}
@@ -78,7 +78,7 @@ export function MeetTheTutorCard() {
                   />
                 </div>
               </div>
-              <p className="absolute bottom-3 left-0 right-0 text-center font-sub text-[9px] tracking-[0.2em] uppercase text-paper-mute/90 pointer-events-none">
+              <p className="absolute bottom-3 left-0 right-0 text-center font-sub text-[9px] tracking-[0.2em] uppercase text-zinc-500 pointer-events-none">
                 idle drift · accelerates on voice
               </p>
             </div>

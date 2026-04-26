@@ -33,14 +33,14 @@ ${levels}
 
 void main() {
   vec4 color = texture(inputTexture, vUv);
-  // Reinhard — kills HDR-style spikes so the center cannot clip to paper white.
-  vec3 c = color.rgb / (color.rgb + vec3(0.72));
+  // Gentle Reinhard on a black stage — keep mids readable without milky haze.
+  vec3 c = color.rgb / (color.rgb + vec3(0.48));
   fragColor = vec4(c, color.a);
   fragColor *= vignette(vUv, vignetteBoost, vignetteReduction);
-  fragColor += 0.002 * noise(gl_FragCoord.xy, time);
-  fragColor.rgb = finalLevels(fragColor.rgb, vec3(0.12), vec3(1.0), vec3(0.58));
+  fragColor += 0.0015 * noise(gl_FragCoord.xy, time);
+  fragColor.rgb = finalLevels(fragColor.rgb, vec3(0.06), vec3(1.0), vec3(0.62));
   float lum = dot(fragColor.rgb, vec3(0.299, 0.587, 0.114));
-  fragColor.a = smoothstep(0.02, 0.5, lum);
+  fragColor.a = smoothstep(0.006, 0.38, lum);
 }
 `;
 
@@ -51,8 +51,8 @@ class Post {
 
     this.finalShader = new RawShaderMaterial({
       uniforms: {
-        vignetteBoost: { value: params.vignetteBoost ?? 0.9 },
-        vignetteReduction: { value: params.vignetteReduction ?? 0.92 },
+        vignetteBoost: { value: params.vignetteBoost ?? 1.0 },
+        vignetteReduction: { value: params.vignetteReduction ?? 1.32 },
         inputTexture: { value: this.colorFBO.texture },
         time: { value: 0 },
       },

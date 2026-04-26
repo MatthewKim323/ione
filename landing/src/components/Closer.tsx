@@ -7,7 +7,7 @@ export function Closer() {
   return (
     <section
       id="start"
-      className="relative overflow-hidden border-t border-ink-line bg-[#f2f2f2] py-32 sm:py-48"
+      className="relative scroll-mt-28 overflow-hidden border-t border-ink-line bg-[#f2f2f2] py-32 sm:py-48"
     >
       {/* big watermark integral, sitting behind everything */}
       <div

@@ -496,7 +496,9 @@ export function TutorWorkspace() {
                 cold start. */}
             <div className="flex flex-col items-center">
               <div className="section-label-light mb-3 self-start">voice</div>
-              <WispOrb size={220} />
+              <div className="rounded-sm border border-zinc-800 bg-black p-2 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]">
+                <WispOrb size={220} />
+              </div>
               <div
                 className={[
                   "mt-2 font-mono text-[10px] tracking-[0.18em] uppercase",

@@ -947,8 +947,8 @@
 
 .floating-nav__div {
   width: 1px;
-  height: 22px;
-  align-self: center;
+  min-height: 2.75rem;
+  align-self: stretch;
   background: linear-gradient(
     to bottom,
     transparent 0%,
@@ -957,6 +957,150 @@
     transparent 100%
   );
   flex-shrink: 0;
+}
+
+/* Light glass toolbar (landing dock) — warm parchment, not paper-white */
+.floating-nav--light {
+  --floating-nav-plate: rgba(228, 222, 210, 0.96);
+}
+
+.floating-nav--light .floating-nav__shell {
+  background: linear-gradient(
+    165deg,
+    rgba(218, 210, 196, 0.94) 0%,
+    rgba(206, 198, 186, 0.9) 42%,
+    rgba(196, 188, 176, 0.93) 100%
+  );
+  border: 1px solid rgba(22, 19, 16, 0.14);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.22) inset,
+    0 10px 32px -14px rgba(22, 19, 16, 0.22),
+    0 2px 10px -4px rgba(22, 19, 16, 0.1);
+}
+
+.floating-nav--light .floating-nav__ind-plate {
+  background: var(--floating-nav-plate);
+  box-shadow: 0 0 0 1px rgba(22, 19, 16, 0.08) inset;
+}
+
+.floating-nav--light .floating-nav__ind-glow {
+  opacity: 0.14;
+}
+
+.floating-nav--light .floating-nav__btn {
+  color: rgba(22, 19, 16, 0.55);
+}
+
+.floating-nav--light .floating-nav__btn:hover {
+  color: rgba(22, 19, 16, 0.92);
+  background: rgba(22, 19, 16, 0.05);
+}
+
+.floating-nav--light .floating-nav__btn--on {
+  color: rgba(22, 19, 16, 0.95);
+}
+
+.floating-nav--light .floating-nav__cell {
+  color: var(--color-ink-deep);
+}
+
+.floating-nav--light .floating-nav__cell-title {
+  font-size: 0.6875rem;
+  letter-spacing: 0.1em;
+  font-weight: 650;
+  color: var(--color-ink-deep);
+  opacity: 0.96;
+}
+
+.floating-nav--light .floating-nav__cell-hint {
+  opacity: 1;
+  font-size: 0.5625rem;
+  color: rgba(34, 29, 24, 0.68);
+  font-weight: 500;
+}
+
+.floating-nav--light .floating-nav__cell:hover {
+  background: rgba(22, 19, 16, 0.055);
+}
+
+.floating-nav--light .floating-nav__cell.floating-nav__btn--on {
+  color: var(--color-ink-deep);
+}
+
+.floating-nav--light .floating-nav__cell.floating-nav__btn--on .floating-nav__cell-hint {
+  color: rgba(34, 29, 24, 0.78);
+}
+
+.floating-nav--light .floating-nav__div {
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(22, 19, 16, 0.1) 22%,
+    rgba(22, 19, 16, 0.1) 78%,
+    transparent 100%
+  );
+}
+
+.floating-nav__cell {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0.35rem 0.55rem 0.35rem 0.45rem;
+  border-radius: 14px;
+  border: none;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+  transition:
+    color 0.25s ease,
+    background 0.25s ease;
+}
+
+.floating-nav__cell-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.05rem;
+  line-height: 1.05;
+  text-align: left;
+}
+
+.floating-nav__cell-title {
+  font-family: var(--font-sub);
+  font-size: 0.5625rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+.floating-nav__cell-hint {
+  font-family: var(--font-sub);
+  font-size: 0.5rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-weight: 400;
+  opacity: 0.55;
+  max-width: 6.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 520px) {
+  .floating-nav__cell-hint {
+    display: none;
+  }
+  .floating-nav__cell {
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+    gap: 0.35rem;
+  }
 }
 
 /* When ?nofx is in the URL, skip every motion-driven entrance so headless

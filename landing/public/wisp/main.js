@@ -198,10 +198,9 @@ randomize();
 
 function randomize() {
   randomizeColors();
-  // Transparent clear — the React/iframe parent (TutorWorkspace card) provides
-  // the cream-lavender backdrop. Particles blend additively over it so the orb
-  // looks like it's painted on the card surface, not stamped in a black box.
-  renderer.setClearColor(0xece7f5, 0);
+  // Opaque black “theater” so lavender particles read clearly (parent can still
+  // wrap the iframe in a matching black card on the desk).
+  renderer.setClearColor(0x000000, 1);
   const offset = 500;
   mesh.material.uniforms.offset.value = offset;
   simulation.shader.uniforms.offset.value = offset;

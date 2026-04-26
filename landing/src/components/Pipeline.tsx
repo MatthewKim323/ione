@@ -129,7 +129,7 @@ const STEPS: readonly PipelineStep[] = [
 
 export function Pipeline() {
   return (
-    <section id="pipeline" className="relative">
+    <section id="pipeline" className="relative scroll-mt-28">
       {/*
         Full-bleed video loops in the background; play/pause with visibility.
         Min height 16:9-friendly; soft top blend from demo.

@@ -102,10 +102,8 @@ function randomizePalette() {
   const fixedPalette = [0xece7f5, 0xddd6fe, 0xa78bfa, 0x7c3aed, 0x6366f1];
   let colors = fixedPalette.map((v) => new Color().setHex(v));
 
-  // Background sampled from the landing gradient base (#ece7f5). The renderer
-  // is configured with alpha:0 anyway, so this only feeds the bkgColorFrom/To
-  // shader uniforms — used by particle materials, not as a true clear.
-  const bkg = new Color().setHex(0xece7f5);
+  // bkg uniforms (mostly unused in current shaders); keep near-black for consistency.
+  const bkg = new Color().setHex(0x030308);
 
   // Prepare a Uint8Array to hold color data for a gradient texture.
   const gradientData = new Uint8Array(colors.length * 4);
@@ -300,8 +298,9 @@ void main() {
   // Soft falloff from center — full alpha in middle, fades before the rim.
   float r2 = dot(circCoord, circCoord);
   float disk = 1.0 - smoothstep(0.12, 1.0, r2);
-  vec3 rgb = color * (0.55 + 0.45 * disk);
-  float a = disk * 0.38;
+  // Slightly lifted on a black stage so violets don’t sink into mud.
+  vec3 rgb = color * (0.62 + 0.48 * disk);
+  float a = disk * 0.44;
   fragColor = vec4(rgb, a);
 
 }`;

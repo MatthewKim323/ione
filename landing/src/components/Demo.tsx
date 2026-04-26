@@ -234,7 +234,7 @@ export function Demo() {
       ref={sectionRef}
       id="demo"
       aria-label="demo"
-      className="relative"
+      className="relative scroll-mt-28"
       style={{
         height: `${SECTION_VH * 100}vh`,
       }}

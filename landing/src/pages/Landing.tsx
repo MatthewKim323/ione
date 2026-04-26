@@ -375,8 +375,10 @@ export default function Landing() {
       <div style={{ position: "relative", zIndex: 2 }}>
         <Nav />
         <main>
-          <TitlePage />
-          <Hero />
+          <div id="intro" className="scroll-mt-28">
+            <TitlePage />
+            <Hero />
+          </div>
           <Demo />
           <Pipeline />
           <Closer />

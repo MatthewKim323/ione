@@ -98,7 +98,7 @@ export function WispOrb({
           width: "100%",
           height: "100%",
           border: 0,
-          background: "transparent",
+          background: "#000000",
           pointerEvents: "none",
         }}
         // First-party /wisp bundle: needs scripts + same origin so module
