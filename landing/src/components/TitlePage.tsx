@@ -46,12 +46,13 @@ export function TitlePage() {
           lineHeight: 0.9,
           color: "#ABD400",
           fontStyle: "italic",
-          // Soft shadow — short close drop for "lift" + a slightly
-          // larger diffuse halo so the high-chroma lime feels seated
-          // on the cream paper instead of floating off it.
+          // Layered shadow — a tight contact drop, a mid carry, and a
+          // wide diffuse halo.  Pushed harder so the high-chroma lime
+          // detaches from the cream paper with real depth.
           textShadow:
-            "0 1px 0 rgba(0,0,0,0.10)," +
-            " 0 4px 14px rgba(0,0,0,0.12)",
+            "0 1px 0 rgba(0,0,0,0.18)," +
+            " 0 6px 18px rgba(0,0,0,0.22)," +
+            " 0 18px 48px rgba(0,0,0,0.20)",
         }}
       >
         ione<span style={{ color: "#c4302b", fontStyle: "normal" }}>.</span>
