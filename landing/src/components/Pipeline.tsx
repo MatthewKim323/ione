@@ -160,7 +160,7 @@ export function Pipeline() {
                 />
               </h2>
             </div>
-            <div className="lg:col-span-5 lg:pt-2">
+            <div className="pt-0 lg:col-span-5 lg:pt-14">
               <div className="text-bark/95 text-sm sm:text-base font-sub font-bold leading-[1.75] tracking-[0.1em] drop-shadow-[0_1px_1px_rgba(255,255,255,0.4)]">
                 <TextClipPathRevealLines
                   lineClassName="block"

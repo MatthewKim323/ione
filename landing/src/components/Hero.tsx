@@ -1,5 +1,5 @@
 import { flushSync } from "react-dom";
-import { Fragment, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   useReducedMotion,
   useScroll,
@@ -78,36 +78,36 @@ export function Hero() {
       <div className="relative w-full max-w-[1380px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-x-12 gap-y-16 items-center">
         {/* ── Left: headline + CTAs ─────────────────────────────────── */}
         <div className="lg:col-span-7 relative">
-          <h1
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.12, duration: 0.95, ease: [0.16, 1, 0.3, 1] }}
             className="h-display text-[clamp(3.2rem,8.4vw,8.6rem)]"
             style={{
               color: "#FFFFFF",
               textShadow:
-                "0 1px 0 rgba(0,0,0,0.22)," +
-                " 0 6px 18px rgba(0,0,0,0.28)," +
-                " 0 18px 48px rgba(0,0,0,0.22)",
+                "0 2px 0 rgba(0,0,0,0.32)," +
+                " 0 8px 22px rgba(0,0,0,0.4)," +
+                " 0 20px 52px rgba(0,0,0,0.32)",
             }}
           >
-            <TextClipPathRevealLines
-              lineClassName="block"
-              lines={[
-                "the tutor in",
-                <Fragment key="margin-line">
-                  the{" "}
-                  <AnimatedNeonUnderlink
-                    className="text-white/95 [font-style:italic]"
-                    viewDelay={0.08}
-                    gap={4}
-                  >
-                    margin
-                  </AnimatedNeonUnderlink>
-                </Fragment>,
-                <Fragment key="end-line">
-                  of your page<span className="text-neon">.</span>
-                </Fragment>,
-              ]}
-            />
-          </h1>
+            <span className="block [text-rendering:optimizeLegibility]">
+              the tutor in
+            </span>
+            <span className="block [text-rendering:optimizeLegibility]">
+              the{" "}
+              <AnimatedNeonUnderlink
+                className="text-white [font-style:italic]"
+                viewDelay={0.08}
+                gap={4}
+              >
+                margin
+              </AnimatedNeonUnderlink>
+            </span>
+            <span className="block [text-rendering:optimizeLegibility]">
+              of your page<span className="text-neon">.</span>
+            </span>
+          </motion.h1>
 
           <div
             className="mt-10 max-w-[48ch] text-[15px] leading-[1.7] font-sub text-white"
@@ -155,11 +155,11 @@ export function Hero() {
                   setSeeHowSpin((k) => k + 1);
                 });
               }}
-              className="group relative flex h-[8.25rem] w-[8.25rem] shrink-0 items-center justify-center no-underline rounded-full transition-shadow duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon/80 hover:shadow-[0_0_0_2px_rgba(191,227,42,0.65),0_0_28px_rgba(191,227,42,0.4)]"
+              className="group relative box-border inline-flex aspect-square w-max min-w-[10.25rem] min-h-[10.25rem] max-w-full shrink-0 items-center justify-center rounded-full p-3 no-underline transition-shadow duration-300 sm:min-w-[11.5rem] sm:min-h-[11.5rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon/80 hover:shadow-[0_0_0_2px_rgba(191,227,42,0.65),0_0_28px_rgba(191,227,42,0.4)]"
             >
               <div
                 key={seeHowSpin}
-                className="see-how-flower-spin absolute inset-0 will-change-transform"
+                className="see-how-flower-spin pointer-events-none absolute inset-1.5 will-change-transform sm:inset-2"
                 style={
                   seeHowSpin === 0 || reduced
                     ? { animation: "none" }
@@ -172,13 +172,17 @@ export function Hero() {
                   className="h-full w-full"
                 />
               </div>
-              <TextClipPathReveal
-                text="see how\nit works"
-                className="relative z-10 w-[92%] text-center text-[0.68rem] sm:text-[0.72rem] font-bold uppercase leading-[1.2] text-ink transition-colors duration-300 group-hover:text-ink/90"
-                style={{ fontFamily: "var(--font-sub)", letterSpacing: "0.12em" }}
-                lineClassName="block"
-                amount={0.15}
-              />
+              <span
+                className="relative z-10 max-w-[11ch] px-0.5 text-center text-[0.72rem] sm:text-[0.76rem] font-bold uppercase leading-[1.2] text-ink transition-colors duration-300 group-hover:text-ink/90"
+                style={{
+                  fontFamily: "var(--font-sub)",
+                  letterSpacing: "0.12em",
+                }}
+              >
+                see how
+                <br />
+                it works
+              </span>
             </a>
           </motion.div>
 
@@ -246,14 +250,11 @@ export function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.4, duration: 0.6 }}
-          className="hidden md:flex absolute bottom-[-6rem] left-0 right-0 items-center justify-between px-2 font-sub text-[10px] tracking-[0.22em] uppercase text-ink/50"
+          className="hidden md:flex absolute bottom-[-6rem] left-0 right-0 items-center justify-start px-2 font-sub text-[10px] tracking-[0.22em] uppercase text-ink/50"
         >
           <span className="flex items-center gap-3">
             <span>scroll</span>
             <span className="inline-block h-px w-8 bg-ink/25" />
-          </span>
-          <span className="tabular-nums text-ink/60">
-            01 <span className="text-ink/35">/ 03</span>
           </span>
         </motion.div>
       </div>

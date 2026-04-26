@@ -1,5 +1,4 @@
 import { motion } from "motion/react";
-import { TextClipPathRevealLines } from "./TextClipPathReveal";
 
 // ─── Handwriting choreography for the wordmark ────────────────────────
 const STROKE_START = 0.3;
@@ -100,8 +99,8 @@ export function TitlePage() {
       className="relative min-h-screen"
       style={{ minHeight: "100vh" }}
     >
-      {/* Wordmark only — vertically centered, left-aligned. */}
-      <div className="flex min-h-screen flex-col justify-center items-start px-6 sm:px-10 md:px-14 lg:pl-20 text-left">
+      {/* Wordmark only — vertical padding so huge type + shadows + tittle aren’t flush to the viewport edge. */}
+      <div className="flex min-h-screen flex-col justify-center items-start px-6 py-8 sm:px-10 sm:py-10 md:px-14 md:py-12 lg:pl-20 text-left">
         <h1
           className="h-display"
           style={{
@@ -111,21 +110,22 @@ export function TitlePage() {
             color: "#FFFFFF",
             fontStyle: "italic",
             textShadow:
-              "0 1px 0 rgba(0,0,0,0.22)," +
-              " 0 6px 18px rgba(0,0,0,0.28)," +
-              " 0 18px 48px rgba(0,0,0,0.22)",
+              "0 2px 0 rgba(0,0,0,0.32)," +
+              " 0 8px 24px rgba(0,0,0,0.4)," +
+              " 0 20px 52px rgba(0,0,0,0.32)",
             position: "relative",
             display: "inline-block",
             overflow: "visible",
           }}
         >
-          <TextClipPathRevealLines
-            className="inline-block w-full"
-            lineClassName="block"
-            lines={[<HandwrittenWordmark key="wordmark" />]}
-            amount={0.25}
-            margin="0px 0px -5% 0px"
-          />
+          <motion.div
+            className="inline-block w-full [text-rendering:optimizeLegibility]"
+            initial={{ opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.85, delay: 0.06, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <HandwrittenWordmark />
+          </motion.div>
 
           <span
             style={{
