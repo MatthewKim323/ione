@@ -7,8 +7,15 @@ interface InteractiveGradientProps {
   style?: React.CSSProperties;
   /** Drift speed (lower = slower). Default: 0.00018 */
   drift?: number;
-  /** Lerp factor toward the mouse target (lower = more inertia). Default: 0.04 */
+  /** Lerp factor toward the mouse target (lower = more inertia). Default: 0.12 */
   lerp?: number;
+  /**
+   * Soft top/bottom feather as a fraction of the element's height. 0.18
+   * means the top 18% and bottom 18% mask out so the gradient blends
+   * into the surrounding page bg instead of starting/ending at hard
+   * lines.  Set to 0 for a hard-edged fill.
+   */
+  featherY?: number;
 }
 
 /**
@@ -25,7 +32,8 @@ export function InteractiveGradient({
   className = "",
   style,
   drift = 0.00018,
-  lerp = 0.04,
+  lerp = 0.12,
+  featherY = 0.18,
 }: InteractiveGradientProps) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -34,7 +42,10 @@ export function InteractiveGradient({
     if (!el) return;
 
     // Per-orb mouse-following weight: orb 0 follows tightly, orb 2 lags.
-    const weights = [0.55, 0.35, 0.2];
+    // Bumped well above 1 so the cursor visibly slings the orbs around.
+    // (At 1.0 they'd only translate by half the section, which read as
+    //  a still gradient on a wide section.)
+    const weights = [1.4, 1.0, 0.55];
 
     // Base anchors (in 0..1 coords) for the three orbs. Drift loops add a
     // gentle sine-wave offset to each.
@@ -95,6 +106,17 @@ export function InteractiveGradient({
     };
   }, [drift, lerp]);
 
+  // Top + bottom feather mask so the gradient fades into the surrounding
+  // page bg instead of starting/ending at hard section edges. Identical
+  // gradient on `mask-image` and the `-webkit-` prefix for Safari.
+  const featherPct = (Math.max(0, Math.min(0.49, featherY)) * 100).toFixed(2);
+  const maskGradient =
+    `linear-gradient(to bottom,` +
+    ` transparent 0%,` +
+    ` #000 ${featherPct}%,` +
+    ` #000 ${(100 - parseFloat(featherPct)).toFixed(2)}%,` +
+    ` transparent 100%)`;
+
   return (
     <div
       ref={ref}
@@ -107,7 +129,7 @@ export function InteractiveGradient({
         // over a soft cream-to-lavender base.
         background: [
           "radial-gradient(55% 55% at var(--g0x, 28%) var(--g0y, 32%)," +
-            " rgba(124, 58, 237, 0.65)," +  // violet-600
+            " rgba(124, 58, 237, 0.65)," + // violet-600
             " rgba(124, 58, 237, 0.0) 70%)",
           "radial-gradient(55% 55% at var(--g1x, 78%) var(--g1y, 42%)," +
             " rgba(99, 102, 241, 0.60)," + // indigo-500
@@ -118,6 +140,8 @@ export function InteractiveGradient({
           "linear-gradient(135deg, #ece7f5 0%, #e2dcf0 100%)",
         ].join(", "),
         filter: "saturate(1.05)",
+        maskImage: featherY > 0 ? maskGradient : undefined,
+        WebkitMaskImage: featherY > 0 ? maskGradient : undefined,
         ...style,
       }}
     />
