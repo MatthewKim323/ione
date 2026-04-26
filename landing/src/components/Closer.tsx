@@ -7,12 +7,12 @@ export function Closer() {
   return (
     <section
       id="start"
-      className="relative px-6 sm:px-10 py-32 sm:py-48 border-t border-ink-line overflow-hidden"
+      className="relative overflow-hidden border-t border-ink-line bg-[#f2f2f2] py-32 sm:py-48"
     >
       {/* big watermark integral, sitting behind everything */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 flex items-center justify-center select-none"
+        className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center select-none"
       >
         <span
           className="text-paper-faint/40 leading-none"
@@ -26,93 +26,99 @@ export function Closer() {
         </span>
       </div>
 
-      <div className="relative max-w-[1380px] mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-12 gap-y-16 items-end">
-          <InteractiveGradient className="lg:col-span-7 rounded-2xl bg-[#f2f2f2] px-4 py-6 sm:px-5 sm:py-8 -mx-1 sm:mx-0">
-            <motion.h2
-              initial={{ opacity: 0, y: 16 }}
+      <InteractiveGradient fullBleed className="relative z-[1] w-full">
+        <div className="relative mx-auto max-w-[1380px] px-6 sm:px-10">
+          <div className="grid grid-cols-1 items-end gap-x-12 gap-y-16 lg:grid-cols-12">
+            <div className="lg:col-span-7">
+              <motion.h2
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-10%" }}
+                transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+                className="h-display text-[clamp(3rem,8vw,8.4rem)] text-ink"
+              >
+                <span className="block">check the sign</span>
+                <span className="block">
+                  on{" "}
+                  <span style={{ fontStyle: "italic" }}>line three</span>
+                  <span className="text-neon">.</span>
+                </span>
+              </motion.h2>
+
+              <motion.p
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true, margin: "-10%" }}
+                transition={{ duration: 0.7, delay: 0.2 }}
+                className="mt-10 max-w-[42ch] text-ink/80 text-[15px] leading-[1.7] font-sub"
+              >
+                ten words of voice. one specific question. delivered in 1.2
+                seconds, only when ted needed it. the rest of the hour, ione
+                was silent.
+              </motion.p>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true, margin: "-10%" }}
+                transition={{ duration: 0.7, delay: 0.35 }}
+                className="mt-12 flex flex-wrap items-center gap-5"
+              >
+                <EnterCTA />
+                <Link to="/login" className="cta cta-ghost">
+                  already have an account?
+                </Link>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true, margin: "-10%" }}
+                transition={{ duration: 0.7, delay: 0.5 }}
+                className="mt-8 font-sub text-[11px] tracking-[0.18em] text-ink/45"
+              >
+                works with iPad + goodnotes · no setup · email + password
+              </motion.div>
+            </div>
+
+            {/* right column — a small "session card" summary */}
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-10%" }}
-              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-              className="h-display text-[clamp(3rem,8vw,8.4rem)] text-ink"
+              transition={{ duration: 0.9, delay: 0.4 }}
+              className="lg:col-span-5"
             >
-              <span className="block">check the sign</span>
-              <span className="block">
-                on{" "}
-                <span style={{ fontStyle: "italic" }}>line three</span>
-                <span className="text-neon">.</span>
+              <SessionCard />
+            </motion.div>
+          </div>
+
+          {/* footer */}
+          <div className="relative mt-32 flex flex-col items-start justify-between gap-6 border-t border-ink-line pt-10 font-sub text-[11px] uppercase tracking-[0.18em] text-paper-mute sm:flex-row sm:items-end">
+            <div className="flex items-center gap-4">
+              <span
+                className="text-ink text-2xl leading-none normal-case tracking-normal"
+                style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
+              >
+                ione<span className="text-neon">.</span>
               </span>
-            </motion.h2>
-
-            <motion.p
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true, margin: "-10%" }}
-              transition={{ duration: 0.7, delay: 0.2 }}
-              className="mt-10 max-w-[42ch] text-ink/80 text-[15px] leading-[1.7] font-sub"
-            >
-              ten words of voice. one specific question. delivered in 1.2
-              seconds, only when ted needed it. the rest of the hour, ione
-              was silent.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true, margin: "-10%" }}
-              transition={{ duration: 0.7, delay: 0.35 }}
-              className="mt-12 flex flex-wrap items-center gap-5"
-            >
-              <EnterCTA />
-              <Link to="/login" className="cta cta-ghost">
-                already have an account?
-              </Link>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true, margin: "-10%" }}
-              transition={{ duration: 0.7, delay: 0.5 }}
-              className="mt-8 font-sub text-[11px] tracking-[0.18em] text-paper-mute"
-            >
-              works with iPad + goodnotes · no setup · email + password
-            </motion.div>
-          </InteractiveGradient>
-
-          {/* right column — a small "session card" summary */}
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-10%" }}
-            transition={{ duration: 0.9, delay: 0.4 }}
-            className="lg:col-span-5"
-          >
-            <SessionCard />
-          </motion.div>
+              <span className="text-ink/50">© mmxxvi</span>
+            </div>
+            <div className="flex flex-wrap gap-x-7 gap-y-2">
+              <a href="#pipeline" className="pencil-link">
+                pipeline
+              </a>
+              <a href="https://github.com/MatthewKim323/ione" className="pencil-link">
+                github
+              </a>
+              <a href="#" className="pencil-link">
+                privacy
+              </a>
+            </div>
+            <div className="text-ink/50">built for the student, not at them.</div>
+          </div>
         </div>
-      </div>
-
-      {/* footer */}
-      <div className="relative max-w-[1380px] mx-auto mt-32 pt-10 border-t border-ink-line flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 font-sub text-[11px] uppercase tracking-[0.18em] text-paper-mute">
-        <div className="flex items-center gap-4">
-          <span
-            className="text-paper text-2xl leading-none normal-case tracking-normal"
-            style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
-          >
-            ione<span className="text-neon">.</span>
-          </span>
-          <span className="text-paper-faint">© mmxxvi</span>
-        </div>
-        <div className="flex flex-wrap gap-x-7 gap-y-2">
-          <a href="#pipeline" className="pencil-link">pipeline</a>
-          <a href="https://github.com/MatthewKim323/ione" className="pencil-link">github</a>
-          <a href="#" className="pencil-link">privacy</a>
-        </div>
-        <div className="text-paper-faint">
-          built for the student, not at them.
-        </div>
-      </div>
+      </InteractiveGradient>
     </section>
   );
 }
