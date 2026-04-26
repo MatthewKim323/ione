@@ -1,4 +1,13 @@
 import { motion } from "motion/react";
+import { TextCarousel } from "./TextCarousel";
+
+const CAROUSEL_ITEMS = [
+  "the tutor in the margin.",
+  "the silent observer.",
+  "the patient companion.",
+  "the watcher of stalls.",
+  "the page-respecter.",
+];
 
 export function TitlePage() {
   return (
@@ -42,7 +51,7 @@ export function TitlePage() {
         ione<span style={{ color: "#c4302b", fontStyle: "normal" }}>.</span>
       </motion.h1>
 
-      {/* SEMI-HEADER TAGLINE */}
+      {/* SEMI-HEADER TAGLINE — cycling carousel in electric lime. */}
       <motion.h2
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -50,13 +59,21 @@ export function TitlePage() {
         className="h-editorial mt-6 sm:mt-8"
         style={{
           fontSize: "clamp(1.4rem, 3.4vw, 2.6rem)",
-          color: "rgba(0,0,0,0.78)",
           fontStyle: "italic",
           letterSpacing: "-0.01em",
           maxWidth: "26ch",
         }}
       >
-        the tutor in the margin of your page.
+        <TextCarousel
+          items={CAROUSEL_ITEMS}
+          interval={2600}
+          style={{
+            color: "#CCFF00",
+            // Subtle dark drop-shadow so the high-key lime stays legible
+            // on the cream paper background.
+            textShadow: "0 1px 0 rgba(0,0,0,0.06)",
+          }}
+        />
       </motion.h2>
 
       {/* the actual tagline */}
