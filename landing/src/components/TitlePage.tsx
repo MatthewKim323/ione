@@ -1,5 +1,4 @@
 import { motion } from "motion/react";
-import { Link } from "react-router-dom";
 
 // ─── Handwriting choreography for the wordmark ────────────────────────
 const STROKE_START = 0.3;
@@ -130,22 +129,6 @@ export function TitlePage() {
       className="relative min-h-screen"
       style={{ minHeight: "100vh" }}
     >
-      {/* Top control — replaces the eyebrow line; no long copy. */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1, duration: 0.5 }}
-        className="absolute top-8 left-6 z-10 sm:top-10 sm:left-10 md:left-14"
-      >
-        <Link
-          to="/login"
-          className="inline-flex items-center justify-center rounded-full border border-white/45 bg-white/12 px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.22em] text-white backdrop-blur-sm transition-colors hover:bg-white/22 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80"
-          style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}
-        >
-          Sign in
-        </Link>
-      </motion.div>
-
       {/* Wordmark only — vertically centered, left-aligned. */}
       <div className="flex min-h-screen flex-col justify-center items-start px-6 sm:px-10 md:px-14 lg:pl-20 text-left">
         <motion.h1
