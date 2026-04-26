@@ -33,7 +33,6 @@ import {
   decidePolicy,
   isDuplicateHint,
   ribbonForVerdict,
-  DEFAULT_COOLDOWN_MS,
 } from "./policy.js";
 import type {
   CanonicalSolution,
@@ -51,6 +50,7 @@ import { logger } from "../lib/logger.js";
 import { isAppError } from "../lib/errors.js";
 import { cacheHintForAudio } from "../lib/hintCache.js";
 import { elevenLabsConfigured } from "../integrations/elevenlabs.js";
+import { env } from "../env.js";
 
 export type OrchestratorInput = {
   /** WebP image, base64-encoded (no data: prefix). */
@@ -81,6 +81,20 @@ export type OrchestratorInput = {
   recentHints: { text: string; createdAt: number }[];
   /** Phase 3 will load a real profile; Phase 1 passes null. */
   struggleProfile: StruggleProfile | null;
+  /**
+   * When set to "explain", the cycle was triggered by the student
+   * pressing the "I need help" button — NOT by the autonomous capture
+   * loop. The orchestrator then:
+   *   - bypasses the policy gate (always speaks)
+   *   - bypasses the cooldown (the user asked, this isn't us nagging)
+   *   - bypasses the duplicate-hint check (the user already heard the
+   *     hint and still doesn't get it; saying it again is fine)
+   *   - swaps the intervention agent into EXPLAIN mode (drops the
+   *     Socratic rule, walks through the actual method)
+   * Tagged on the emitted hint event as `assistance: "explain"` so the
+   * UI can render it distinctly.
+   */
+  assistanceMode?: "explain";
 };
 
 export type OrchestratorPersist = {
@@ -159,6 +173,9 @@ export async function runCycle(
     type: "ocr",
     problem_text: ocr.problem_text,
     current_step_latex: ocr.current_step_latex,
+    completed_steps_latex: ocr.completed_steps_latex,
+    mathpix_latex: ocrResult.mathpix.latex,
+    mathpix_confidence: ocrResult.mathpix.confidence,
     confidence: ocr.confidence,
     page_state: ocr.page_state,
   });
@@ -300,47 +317,72 @@ export async function runCycle(
 
   // ── Step 4: Policy gate ────────────────────────────────────────────────
   const cooldownMs = computeCooldownMs(input.recentHints);
+  // Override-able cooldown window. Production: 60s (don't be Clippy). Demo
+  // recordings: 0 via POLICY_COOLDOWN_MS=0 in .env.local. See env.ts.
+  const cooldownWindowMs = env.POLICY_COOLDOWN_MS;
+  const isExplainMode = input.assistanceMode === "explain";
   const verdict = decidePolicy({
     reasoning,
     predictive,
     recentHints: input.recentHints,
     isStalled: input.isStalled,
     cooldownMs,
+    cooldownWindowMs,
     predictiveThreshold,
   });
 
   // Always emit a confidence event derived from the policy verdict.
+  // Explain-mode still surfaces the same ribbon — the user pressed help,
+  // and the trace should still show what the agents collectively thought.
   events.push({
     type: "confidence",
     level: ribbonForVerdict(verdict, reasoning, predictive),
-    reason: verdict.reason,
+    reason: isExplainMode
+      ? "user requested help — explaining the next step"
+      : verdict.reason,
   });
 
-  // ── Step 5: Intervention (only if policy says speak) ───────────────────
+  // ── Step 5: Intervention ────────────────────────────────────────────────
+  // Two paths:
+  //   1. Autonomous loop: only run if policy says speak, dedup, and
+  //      respect the cooldown.
+  //   2. Explain mode: ALWAYS run, ignore policy/cooldown/dedup. The
+  //      student pressed the help button — we owe them a teach.
   let intervention: InterventionOutput | null = null;
   let interventionRaw = "";
-  let suppressionReason: string | null = verdict.kind === "silent" ? verdict.reason : null;
+  let suppressionReason: string | null = isExplainMode
+    ? null
+    : verdict.kind === "silent"
+      ? verdict.reason
+      : null;
   let spoke = false;
   let surfacedHint: OrchestratorPersist["hint"] = null;
 
-  if (verdict.kind !== "silent" && reasoning) {
+  const shouldRunIntervention =
+    reasoning && (isExplainMode || verdict.kind !== "silent");
+
+  if (shouldRunIntervention) {
     try {
       const r = await runInterventionAgent({
-        reasoning,
+        reasoning: reasoning!,
         recentHints: input.recentHints.map((h) => h.text),
-        cooldownActive: cooldownMs >= 0 && cooldownMs < DEFAULT_COOLDOWN_MS,
+        cooldownActive:
+          !isExplainMode && cooldownMs >= 0 && cooldownMs < cooldownWindowMs,
         isStalled: input.isStalled,
         struggleProfile: input.struggleProfile,
         cost,
+        assistanceMode: isExplainMode ? "explain" : undefined,
       });
       intervention = r.output;
       interventionRaw = r.raw;
     } catch (e) {
       logger.warn(
-        { err: errMsg(e), cycle: input.cycleId },
+        { err: errMsg(e), cycle: input.cycleId, explain: isExplainMode },
         "intervention agent failed — staying silent",
       );
-      suppressionReason = "intervention_error";
+      suppressionReason = isExplainMode
+        ? "explain_error"
+        : "intervention_error";
     }
 
     if (
@@ -349,13 +391,18 @@ export async function runCycle(
       intervention.hint_text &&
       intervention.hint_type
     ) {
-      const dup = isDuplicateHint(intervention.hint_text, input.recentHints);
+      // Dedup applies only to autonomous hints. In explain mode, the
+      // student already heard the dedup'd hint and still couldn't move
+      // — repeating with a fuller walkthrough is the entire point.
+      const dup =
+        !isExplainMode &&
+        isDuplicateHint(intervention.hint_text, input.recentHints);
       if (dup) {
         suppressionReason = "duplicate";
       } else {
         spoke = true;
-        const predicted = verdict.kind === "speak_predictive";
-        const severity = reasoning.severity ?? null;
+        const predicted = !isExplainMode && verdict.kind === "speak_predictive";
+        const severity = reasoning!.severity ?? null;
         // Phase 2 / E7 — only advertise audio if the TTS provider is wired
         // up. The frontend's audioStream.ts treats a truthy `audio_url` as
         // "fetch /api/audio/<id>", so we keep this null when ElevenLabs is
@@ -382,6 +429,7 @@ export async function runCycle(
           audio_url: audioUrl,
           predicted,
           severity: severity as 1 | 2 | 3 | 4 | 5 | undefined,
+          ...(isExplainMode ? { assistance: "explain" as const } : {}),
         });
         surfacedHint = {
           hint_type: intervention.hint_type,

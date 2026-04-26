@@ -17,6 +17,18 @@ import { useCallback, useEffect, useRef, useState } from "react";
  *   idle       → last 3 diffs all < idleDiffPct         → slow 15s
  *   normal     → otherwise                              → user-set base
  *
+ * Diff-gate calibration note (Apr 2026): the original 5% threshold was
+ * tuned against scripts/capture-prototype.html where the "screen" was a
+ * laptop with multiple windows. On a mostly-white iPad notebook page,
+ * adding a single line of handwritten math only shifts ~1-2% of the
+ * 64×64-downsampled RGB sum — *well* below the old gate. That meant the
+ * loop was ticking on schedule but every frame was getting marked
+ * `skipped`, so the API never saw a fresh image until the user changed
+ * the ROI (which forces a huge structural diff). Thresholds dropped by
+ * 10× and a MAX_GAP_MS floor was added so a frame is always sent at
+ * least every 12s regardless of diff — gives the model a heartbeat even
+ * during idle moments.
+ *
  * The hook exposes only React-safe primitives (state, callbacks, refs to
  * pass into JSX). Everything else stays inside refs to avoid re-renders.
  */
@@ -45,13 +57,25 @@ export type CaptureError = {
   body: string;
 } | null;
 
-const DIFF_THRESHOLD_PCT = 5;
-const WRITING_DIFF_PCT = 10;
-const IDLE_DIFF_PCT = 2;
+// Calibrated for handwritten math on a mostly-white iPad notebook. See
+// the file-level comment for why these are 10× lower than the original
+// scripts/capture-prototype.html numbers.
+const DIFF_THRESHOLD_PCT = 0.5;
+const WRITING_DIFF_PCT = 1.5;
+const IDLE_DIFF_PCT = 0.15;
 const STALL_AFTER_MS = 60_000;
 const STALLED_INTERVAL_MS = 4_000;
 const WRITING_INTERVAL_MS = 6_000;
 const IDLE_INTERVAL_MS = 15_000;
+/**
+ * Hard floor on time between encoded frames. Even if the diff-gate keeps
+ * skipping (e.g. student is writing very lightly, or the iPad is just
+ * frozen on a problem statement), force-encode every MAX_GAP_MS so the
+ * model gets a heartbeat. Without this the agent trace can sit empty for
+ * minutes during a slow-writing demo, which makes ione look broken even
+ * though the loop is healthy.
+ */
+const MAX_GAP_MS = 12_000;
 const RECENT_DIFFS_KEEP = 24;
 const LOG_KEEP = 240;
 const COST_PER_SKIP = 0.005;
@@ -95,6 +119,14 @@ export type UseScreenCaptureResult = {
   isSupported: boolean;
   /** Total dollars saved by the diff gate (skipped × $0.005, mock). */
   costSaved: number;
+  /**
+   * Capture a single frame on demand, bypassing the diff-gate. Resolves
+   * with an encoded WebP blob (or null if no stream is active or the
+   * encode fails). Used by the "I need help" button — we always want a
+   * fresh frame attached to the explain request, even if the page hasn't
+   * changed since the last cycle.
+   */
+  captureNow: () => Promise<Blob | null>;
 };
 
 export function useScreenCapture(
@@ -137,6 +169,14 @@ export function useScreenCapture(
     totalEncodedBytes: 0,
     recentDiffs: [] as number[],
     lastBigDiffTime: 0,
+    /**
+     * Wall-clock timestamp of the last frame we actually encoded + handed
+     * to onFrameEncoded. Used by the MAX_GAP_MS floor so we force-encode
+     * a frame on schedule even when the diff-gate would otherwise skip
+     * it. Initialized to 0 so the *first* tick after start always counts
+     * as "overdue" relative to the baseline.
+     */
+    lastEncodeTime: 0,
     captureStartTime: 0,
     status: "normal" as CaptureStatus,
     effectiveInterval: (opts.baseIntervalSec ?? 8) * 1000,
@@ -282,7 +322,18 @@ export function useScreenCapture(
     const diffPct = isBaseline
       ? 0
       : computeDiff(currDiffData, r.prevDiffData as ImageData);
-    const shouldEncode = isBaseline || diffPct >= DIFF_THRESHOLD_PCT;
+    // Heartbeat: even if the diff-gate would skip, force-encode whenever
+    // it's been MAX_GAP_MS since the last encoded frame. This guarantees
+    // the agent trace stays alive on slow-writing demos and gives the
+    // model enough samples to notice a stall.
+    const sinceLastEncode = cycleStart - r.lastEncodeTime;
+    const isHeartbeat =
+      !isBaseline &&
+      diffPct < DIFF_THRESHOLD_PCT &&
+      r.lastEncodeTime > 0 &&
+      sinceLastEncode >= MAX_GAP_MS;
+    const shouldEncode =
+      isBaseline || diffPct >= DIFF_THRESHOLD_PCT || isHeartbeat;
 
     let entry: CycleEntry;
     const id = r.nextEntryId++;
@@ -300,6 +351,7 @@ export function useScreenCapture(
       }
       if (blob) {
         r.totalEncodedBytes += blob.size;
+        r.lastEncodeTime = cycleStart;
         entry = {
           id,
           ts: cycleStart,
@@ -432,6 +484,7 @@ export function useScreenCapture(
     r.effectiveInterval = r.baseInterval;
     r.captureStartTime = Date.now();
     r.lastBigDiffTime = r.captureStartTime;
+    r.lastEncodeTime = 0;
     r.stream = stream;
     r.track = stream.getVideoTracks()[0] ?? null;
     r.isRunning = true;
@@ -479,6 +532,61 @@ export function useScreenCapture(
     scheduleNext(0);
   }, [isSupported, isStarting, scheduleNext, stop]);
 
+  /**
+   * Out-of-band frame capture for the "I need help" button. Grabs the
+   * latest video frame, applies the same ROI crop as the loop, and
+   * encodes to WebP at the same quality. Doesn't touch diff state or
+   * the cycle counter — the autonomous loop continues uninterrupted.
+   *
+   * Resolves with `null` if:
+   *   - the capture isn't running (no stream)
+   *   - grabFrame fails (track ended mid-call)
+   *   - the encode rejects (rare, browser-specific)
+   * Callers should check for null and surface a "couldn't grab frame"
+   * toast to the user instead of silently dropping the help request.
+   */
+  const captureNow = useCallback(async (): Promise<Blob | null> => {
+    const r = runtime.current;
+    if (!r.isRunning) return null;
+    let frame: ImageBitmap | HTMLCanvasElement | null = null;
+    try {
+      frame = await grabFrame(r.imageCapture, videoRef.current);
+    } catch (err) {
+      console.warn("[capture] captureNow grabFrame failed", err);
+      return null;
+    }
+    if (!frame) return null;
+    if (roiRef.current) {
+      ensureCanvases();
+      frame = cropFrame(
+        frame,
+        roiRef.current,
+        canvases.current.crop as HTMLCanvasElement,
+        canvases.current.cropCtx as CanvasRenderingContext2D,
+      );
+    }
+    ensureCanvases();
+    let blob: Blob | null = null;
+    try {
+      blob = await encodeWebp(
+        frame,
+        canvases.current.encode as HTMLCanvasElement,
+        canvases.current.encodeCtx as CanvasRenderingContext2D,
+      );
+    } catch (err) {
+      console.warn("[capture] captureNow encode failed", err);
+      blob = null;
+    }
+    if (frame && "close" in frame && typeof frame.close === "function") {
+      try {
+        frame.close();
+      } catch {
+        // ImageBitmap.close() can throw on some platforms; ignore.
+      }
+    }
+    return blob;
+  }, []);
+
   // Always tear down on unmount — leaving a MediaStream attached is rude.
   useEffect(() => {
     return () => {
@@ -512,6 +620,7 @@ export function useScreenCapture(
     dismissError,
     isSupported,
     costSaved: stats.cyclesSkipped * COST_PER_SKIP,
+    captureNow,
   };
 }
 
@@ -602,11 +711,17 @@ function encodeWebp(
     if (canvas.height !== h) canvas.height = h;
     ctx.clearRect(0, 0, w, h);
     ctx.drawImage(src as CanvasImageSource, 0, 0);
+    // Quality 0.92 (was 0.7). Mathpix needs sharp glyph edges to OCR
+    // handwritten math reliably; 0.7 was producing visible compression
+    // ringing on thin pen strokes which manifested as low-confidence /
+    // partial reads ("just x=3" when the page actually had a sequence).
+    // The size hit is real (~150KB → ~280KB at 1920×1080) but well
+    // within the 8s/cycle bandwidth budget.
     canvas.toBlob(
       (blob) =>
         blob ? resolve(blob) : reject(new Error("toBlob returned null")),
       "image/webp",
-      0.7,
+      0.92,
     );
   });
 }

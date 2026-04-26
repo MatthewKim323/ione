@@ -42,7 +42,7 @@ import type {
   CanonicalSolution,
   TrajectoryFrame,
 } from "../agents/types.js";
-import { getStruggleProfile } from "../lib/memory.js";
+import { getStruggleSnapshot } from "../lib/memory.js";
 import { assertBudget } from "../lib/cost.js";
 import { maybeStoreFrame } from "../lib/frameStorage.js";
 
@@ -80,6 +80,19 @@ const PayloadSchema = z.object({
   seconds_since_last_change: z.number().int().nonnegative(),
   client_ts: z.string().optional(),
   trajectory: z.array(TrajectoryFrameSchema).max(10).default([]),
+  /**
+   * "explain" — student pressed "I need help". The orchestrator skips
+   * the policy gate, cooldown, and dedup, and runs the intervention
+   * agent in EXPLAIN mode (walks the next step, names the rule,
+   * finishes the problem if applicable). null = autonomous capture.
+   *
+   * z.preprocess to accept either null or omitted from the JSON body
+   * (the frontend always sends `null` to make the field type-stable).
+   */
+  assistance_mode: z
+    .union([z.literal("explain"), z.null()])
+    .optional()
+    .default(null),
 });
 
 cycleRoute.post("/", async (c) => {
@@ -143,18 +156,26 @@ cycleRoute.post("/", async (c) => {
   const frameBase64 = Buffer.from(arrayBuffer).toString("base64");
 
   // Pull recent hints for cooldown / dedup, plus the longitudinal struggle
-  // profile compiled from the user's confirmed claims. Both are best-effort —
-  // a missing memory profile is just `null`, not an error.
-  const [recentHints, struggleProfile] = await Promise.all([
+  // snapshot (profile + the actual claims it was compiled from with their
+  // source filenames). The snapshot powers BOTH (a) the agents — they get
+  // the compiled profile — and (b) the AgentTrace UI, which gets the claim
+  // references rendered as receipts so the demo audience can see "memory
+  // was actually consulted, here's exactly what came back".
+  //
+  // Best-effort: a missing snapshot just means cold-start (no prior facts),
+  // which we surface as `had_profile=false` to the UI rather than as an
+  // error.
+  const [recentHints, struggleSnapshot] = await Promise.all([
     fetchRecentHints({ sessionId: session.id }),
-    getStruggleProfile(userId).catch((e) => {
+    getStruggleSnapshot(userId).catch((e) => {
       logger.warn(
         { err: errMsg(e), userId },
-        "getStruggleProfile failed — falling through with null",
+        "getStruggleSnapshot failed — falling through with empty snapshot",
       );
-      return null;
+      return { profile: null, references: [], claim_count: 0 };
     }),
   ]);
+  const struggleProfile = struggleSnapshot.profile;
 
   const cycleId = crypto.randomUUID();
   c.header("x-margin-cycle-id", cycleId);
@@ -168,6 +189,26 @@ cycleRoute.post("/", async (c) => {
     const canonical = (session.canonical_solution_json ?? null) as
       | CanonicalSolution
       | null;
+
+    // Emit the kg_lookup signal FIRST so the AgentTrace shows the "memory
+    // referenced" stage before any model agent starts work. This is the
+    // visible proof that the longitudinal knowledge graph was consulted on
+    // every cycle, with concrete receipts (predicate + source filename).
+    //
+    // We always emit the event — even on cold start (no profile, zero
+    // claims) — because "we looked, found nothing yet" is itself meaningful
+    // for the demo and clearly distinguishes "running blind" from "running
+    // with memory" once files have been ingested.
+    const kgEvent: CycleEvent = {
+      type: "kg_lookup",
+      had_profile: Boolean(struggleSnapshot.profile),
+      claim_count: struggleSnapshot.claim_count,
+      pattern_summary: struggleSnapshot.profile?.pattern_summary ?? null,
+      dominant_error: struggleSnapshot.profile?.error_type ?? null,
+      frequency: struggleSnapshot.profile?.frequency ?? null,
+      references: struggleSnapshot.references,
+    };
+    await stream.write(formatSseEvent(kgEvent));
 
     let result: Awaited<ReturnType<typeof runCycle>> | null = null;
     try {
@@ -188,6 +229,7 @@ cycleRoute.post("/", async (c) => {
         trajectory,
         recentHints,
         struggleProfile,
+        assistanceMode: payload.assistance_mode ?? undefined,
       });
     } catch (e) {
       logger.error({ err: errMsg(e), cycleId }, "orchestrator threw");

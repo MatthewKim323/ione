@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Math as KaTeXMath } from "../design/Math";
-import type { CycleEvent } from "../../lib/tutor/cycleClient";
+import type { CycleEvent, KgReference } from "../../lib/tutor/cycleClient";
 
 /**
  * AgentTrace — live, per-cycle timeline of which orchestrator agents ran,
@@ -16,10 +16,12 @@ import type { CycleEvent } from "../../lib/tutor/cycleClient";
  *     OCR  ──┐
  *            ├─→  Reasoning ∥ Predictive  ─→  Policy  ─→  (Intervention)  ─→  Done
  *
- * The events the wire actually carries are { ocr, confidence, hint, done },
- * and that's enough to reconstruct the full chain because each event has a
- * forced-after-its-stage emit point in orchestrator.ts. Reading order:
+ * The events the wire actually carries are { kg_lookup, ocr, confidence,
+ * hint, done }, and that's enough to reconstruct the full chain because
+ * each event has a forced-after-its-stage emit point in routes/cycle.ts +
+ * orchestrator.ts. Reading order:
  *
+ *   • `kg_lookup` arrives → struggle profile + claim references loaded
  *   • `ocr` arrives  → OCR done, has confidence/page_state
  *   • `confidence` arrives → Reasoning + Predictive + Policy all complete
  *   • `hint` arrives  → Intervention also fired and produced a hint
@@ -28,6 +30,12 @@ import type { CycleEvent } from "../../lib/tutor/cycleClient";
  * If `hint` never arrived but `confidence` did, Intervention was *skipped*
  * (policy decided silence) — we show that as "— silent" with the policy
  * reason, which is exactly how the hand-pencil ribbon decides.
+ *
+ * The kg_lookup event is what makes the longitudinal knowledge graph
+ * VISIBLE in the cycle: we render a "memory" stage chip that fires before
+ * OCR and surfaces every claim that fed into Predictive/Intervention. This
+ * is how the demo audience sees that the tutor isn't running cold — it's
+ * referencing the user's actual ingested files.
  */
 
 export type CycleLog = {
@@ -37,13 +45,42 @@ export type CycleLog = {
   id: string;
   startedAt: number;
   finishedAt: number | null;
+  /**
+   * Knowledge-graph snapshot consulted at the start of the cycle. Null until
+   * the `kg_lookup` event lands. Populated even on cold-start (had_profile=
+   * false, references empty) so we can show the difference between "we
+   * looked, found nothing yet" and "we haven't looked yet".
+   */
+  kg:
+    | {
+        hadProfile: boolean;
+        claimCount: number;
+        patternSummary: string | null;
+        dominantError: string | null;
+        frequency: string | null;
+        references: KgReference[];
+      }
+    | null;
   /** Per-stage outputs we plucked from CycleEvents. Null = not seen yet. */
   ocr:
     | {
         confidence: number;
         pageState: "fresh_problem" | "in_progress" | "near_complete" | "stalled_or_stuck";
         currentStepLatex: string | null;
+        /**
+         * Every prior line of work the OCR pipeline saw, in order. We render
+         * these alongside the current step so the trace shows the full chain
+         * of equations the student wrote — not just the one Sonnet picked.
+         */
+        completedStepsLatex: string[];
         problemText: string | null;
+        /**
+         * Raw Mathpix transcription for the whole frame. Surfaced as a
+         * receipt so the user can confirm OCR caught everything on the page,
+         * even if Sonnet didn't lift any of it into current_step_latex.
+         */
+        mathpixLatex: string | null;
+        mathpixConfidence: number | null;
       }
     | null;
   confidence:
@@ -55,9 +92,27 @@ export type CycleLog = {
   hint:
     | {
         text: string;
-        type: "error_callout" | "scaffolding_question" | "encouragement" | "redirect";
+        type:
+          | "error_callout"
+          | "scaffolding_question"
+          | "encouragement"
+          | "redirect"
+          /**
+           * Only present when the student pressed "I need help" — the
+           * intervention agent ran in EXPLAIN mode (full walkthrough,
+           * names the rule, may give the answer). The trace renders this
+           * with a "you asked" tag so it's visibly distinct from autonomous
+           * hints.
+           */
+          | "explanation";
         predicted: boolean;
         severity?: 1 | 2 | 3 | 4 | 5;
+        /**
+         * Mirrors `assistance` from the SSE hint event. When "explain", we
+         * know this hint was a direct user request, not an autonomous
+         * intervention — used to badge the intervention chip + receipt.
+         */
+        assistance?: "explain";
       }
     | null;
   costUsd: number | null;
@@ -71,6 +126,18 @@ export type CycleLog = {
  */
 export function applyCycleEvent(prev: CycleLog, evt: CycleEvent): CycleLog {
   switch (evt.type) {
+    case "kg_lookup":
+      return {
+        ...prev,
+        kg: {
+          hadProfile: evt.had_profile,
+          claimCount: evt.claim_count,
+          patternSummary: evt.pattern_summary,
+          dominantError: evt.dominant_error,
+          frequency: evt.frequency,
+          references: evt.references,
+        },
+      };
     case "ocr":
       return {
         ...prev,
@@ -78,7 +145,10 @@ export function applyCycleEvent(prev: CycleLog, evt: CycleEvent): CycleLog {
           confidence: evt.confidence,
           pageState: evt.page_state,
           currentStepLatex: evt.current_step_latex,
+          completedStepsLatex: evt.completed_steps_latex,
           problemText: evt.problem_text,
+          mathpixLatex: evt.mathpix_latex,
+          mathpixConfidence: evt.mathpix_confidence,
         },
       };
     case "confidence":
@@ -94,6 +164,7 @@ export function applyCycleEvent(prev: CycleLog, evt: CycleEvent): CycleLog {
           type: evt.hint_type,
           predicted: evt.predicted,
           severity: evt.severity,
+          assistance: evt.assistance,
         },
       };
     case "done":
@@ -117,6 +188,7 @@ export function newCycleLog(index: number): CycleLog {
     id: `pending-${index}`,
     startedAt: Date.now(),
     finishedAt: null,
+    kg: null,
     ocr: null,
     confidence: null,
     hint: null,
@@ -128,6 +200,7 @@ export function newCycleLog(index: number): CycleLog {
 // ─── stage status derivation ──────────────────────────────────────────────
 
 type StageId =
+  | "memory"
   | "ocr"
   | "reasoning"
   | "predictive"
@@ -147,6 +220,7 @@ type Stage = {
 };
 
 function deriveStages(log: CycleLog, isLive: boolean): Stage[] {
+  const memoryDone = log.kg !== null;
   const ocrDone = log.ocr !== null;
   const policyDone = log.confidence !== null;
   const interventionDone = log.hint !== null;
@@ -158,15 +232,17 @@ function deriveStages(log: CycleLog, isLive: boolean): Stage[] {
 
   const liveCursor: StageId | null = !isLive
     ? null
-    : !ocrDone
-      ? "ocr"
-      : !fanOutDone
-        ? "reasoning" // shows under both reasoning + predictive while we wait
-        : !policyDone
-          ? "policy"
-          : !cycleFinished && !interventionDone
-            ? "intervention"
-            : null;
+    : !memoryDone
+      ? "memory"
+      : !ocrDone
+        ? "ocr"
+        : !fanOutDone
+          ? "reasoning" // shows under both reasoning + predictive while we wait
+          : !policyDone
+            ? "policy"
+            : !cycleFinished && !interventionDone
+              ? "intervention"
+              : null;
 
   const status = (id: StageId, complete: boolean): StageStatus => {
     if (complete) return "done";
@@ -184,6 +260,17 @@ function deriveStages(log: CycleLog, isLive: boolean): Stage[] {
       : "pending";
 
   return [
+    {
+      id: "memory",
+      label: "memory",
+      monogram: "M",
+      status: status("memory", memoryDone),
+      detail: log.kg
+        ? log.kg.hadProfile
+          ? `${log.kg.claimCount} fact${log.kg.claimCount === 1 ? "" : "s"} · ${prettyError(log.kg.dominantError)}`
+          : "cold start · no facts yet"
+        : null,
+    },
     {
       id: "ocr",
       label: "ocr",
@@ -241,6 +328,7 @@ const HINT_LABEL: Record<NonNullable<CycleLog["hint"]>["type"], string> = {
   scaffolding_question: "scaffolding ?",
   encouragement: "encouragement",
   redirect: "redirect",
+  explanation: "explain (user asked)",
 };
 
 function prettyPageState(s: NonNullable<CycleLog["ocr"]>["pageState"]): string {
@@ -267,6 +355,53 @@ function prettyConfidence(l: NonNullable<CycleLog["confidence"]>["level"]): stri
     case "sienna":
       return "real problem";
   }
+}
+
+/**
+ * Best-effort label for the dominant_error string from the StruggleProfile.
+ * The backend writes a small open vocabulary (sign_error, arithmetic_error,
+ * concept_gap, …) — we humanize the common ones and fall back to a tidy
+ * underscore-stripped form for anything else.
+ */
+function prettyError(err: string | null | undefined): string {
+  if (!err) return "no dominant pattern";
+  const map: Record<string, string> = {
+    sign_error: "sign errors",
+    arithmetic_error: "arithmetic slips",
+    concept_gap: "concept gaps",
+    skipped_step: "skipped steps",
+    misread_problem: "misreads",
+  };
+  return map[err] ?? err.replace(/_/g, " ");
+}
+
+/**
+ * Predicate names live in the DB as snake_case strings the extractors emit
+ * (weak_at_topic, made_sign_error, …). For receipts we want a label the
+ * demo audience can read at a glance; this drops the verb prefix and
+ * spaces things out.
+ */
+function prettyPredicate(p: string): string {
+  const map: Record<string, string> = {
+    weak_at_topic: "weak at",
+    strong_at_topic: "strong at",
+    needs_review_on: "needs review",
+    made_sign_error: "sign error",
+    made_arithmetic_error: "arithmetic error",
+    made_concept_gap: "concept gap",
+    skipped_step: "skipped step",
+    misread_problem: "misread",
+    prefers_explanation_style: "prefers",
+    mastered_topic: "mastered",
+    ran_out_of_time: "time pressure",
+    source_file_ingested: "ingested",
+    teacher_is: "teacher",
+    speaks_language: "speaks",
+    essay_theme: "essay theme",
+    essay_word_count: "essay length",
+    scored_on_exam: "exam score",
+  };
+  return map[p] ?? p.replace(/_/g, " ");
 }
 
 // ─── component ────────────────────────────────────────────────────────────
@@ -497,25 +632,45 @@ function CycleRow({
       </div>
 
       {/* receipts: derived facts from the agents that actually ran.
-          These are the "agentic thought processes" and the closest thing the
-          per-cycle stream has to KG citations: each line points at the agent
-          that produced it. */}
-      {(cycle.ocr || cycle.confidence || cycle.hint) && (
+          These are the "agentic thought processes" plus the actual KG
+          citations: every memory receipt points at the source file the
+          claim was extracted from, every agent receipt points at the
+          agent that produced it. */}
+      {(cycle.kg || cycle.ocr || cycle.confidence || cycle.hint) && (
         <div className="mt-3 space-y-1.5 pl-1">
-          {cycle.ocr?.currentStepLatex && (
+          {cycle.kg && cycle.kg.hadProfile && cycle.kg.patternSummary && (
             <Receipt
-              from="ocr"
-              tone="paper-mute"
+              from="memory"
+              tone="brass"
               body={
                 <span className="text-paper-faint">
-                  read{" "}
-                  <span className="text-ink-deep">
-                    <KaTeXMath tex={cycle.ocr.currentStepLatex} />
+                  recalls{" "}
+                  <span className="text-ink-deep italic" style={{ fontFamily: "var(--font-display)" }}>
+                    "{cycle.kg.patternSummary}"
                   </span>
+                  {cycle.kg.frequency ? (
+                    <span className="text-paper-faint"> · {cycle.kg.frequency}</span>
+                  ) : null}
                 </span>
               }
             />
           )}
+          {cycle.kg && cycle.kg.references.length > 0 && (
+            <KgReferenceList refs={cycle.kg.references} />
+          )}
+          {cycle.kg && !cycle.kg.hadProfile && (
+            <Receipt
+              from="memory"
+              tone="paper-mute"
+              body={
+                <span className="text-paper-faint italic" style={{ fontFamily: "var(--font-display)" }}>
+                  no prior facts about this student yet — running cold. upload
+                  files in the dashboard to give the tutor longitudinal memory.
+                </span>
+              }
+            />
+          )}
+          {cycle.ocr && <OcrReceipt ocr={cycle.ocr} />}
           {cycle.confidence && (
             <Receipt
               from="policy"
@@ -527,14 +682,39 @@ function CycleRow({
           )}
           {cycle.hint && (
             <Receipt
-              from="intervention"
+              from={
+                cycle.hint.assistance === "explain"
+                  ? "intervention · explain"
+                  : "intervention"
+              }
               tone={cycle.hint.type === "error_callout" ? "red-pencil" : "brass"}
               body={
                 <span className="text-ink-deep">
                   {cycle.hint.predicted && (
                     <span className="text-brass">[predicted] </span>
                   )}
-                  <span style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}>
+                  {cycle.hint.assistance === "explain" && (
+                    <span
+                      className="text-brass mr-1"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "10px",
+                        letterSpacing: "0.06em",
+                      }}
+                    >
+                      [user asked]
+                    </span>
+                  )}
+                  <span
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      fontStyle: "italic",
+                      whiteSpace:
+                        cycle.hint.assistance === "explain"
+                          ? "pre-wrap"
+                          : "normal",
+                    }}
+                  >
                     "{cycle.hint.text}"
                   </span>
                 </span>
@@ -651,6 +831,199 @@ function StageChip({ stage, connector }: { stage: Stage; connector: boolean }) {
 }
 
 // ─── receipt — one line, one author ────────────────────────────────────────
+
+/**
+ * A compact list of claim receipts pulled from the knowledge graph for
+ * THIS cycle. Each row is `predicate · "object" · source.md` so the demo
+ * audience can immediately see (a) what fact, (b) the value, (c) which
+ * file it was extracted from. Long lists are clipped at 5 visible rows
+ * with a "+N more" tail so the trace panel doesn't blow up.
+ */
+function KgReferenceList({ refs }: { refs: KgReference[] }) {
+  const VISIBLE = 5;
+  const shown = refs.slice(0, VISIBLE);
+  const extra = refs.length - shown.length;
+  return (
+    <div className="flex items-start gap-2 text-[12.5px] leading-snug">
+      <div
+        className="self-stretch w-px shrink-0 mt-0.5 mb-0.5"
+        style={{ backgroundColor: "var(--color-brass)", opacity: 0.55 }}
+        aria-hidden
+      />
+      <span
+        className="text-[9.5px] tracking-[0.18em] uppercase pt-0.5 shrink-0"
+        style={{
+          fontFamily: "var(--font-mono)",
+          color: "var(--color-brass)",
+          opacity: 0.85,
+        }}
+      >
+        kg
+      </span>
+      <ul className="min-w-0 flex flex-col gap-0.5">
+        {shown.map((ref, i) => (
+          <li
+            key={`${ref.predicate}-${i}`}
+            className="text-paper-faint text-[11.5px] leading-snug truncate"
+            style={{ fontFamily: "var(--font-display)" }}
+            title={`${ref.predicate} · ${ref.object_label}${ref.source_filename ? ` · ${ref.source_filename}` : ""}`}
+          >
+            <span className="text-paper-mute">{prettyPredicate(ref.predicate)}</span>
+            {ref.object_label ? (
+              <>
+                {" "}
+                <span className="text-ink-deep italic">"{ref.object_label}"</span>
+              </>
+            ) : null}
+            {ref.source_filename ? (
+              <span
+                className="text-brass/80 ml-1"
+                style={{ fontFamily: "var(--font-mono)", fontSize: "10px" }}
+              >
+                · {ref.source_filename}
+              </span>
+            ) : null}
+          </li>
+        ))}
+        {extra > 0 && (
+          <li
+            className="text-paper-faint/70 text-[10.5px] tracking-[0.04em] italic"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            + {extra} more fact{extra === 1 ? "" : "s"} indexed for this cycle
+          </li>
+        )}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * OCR receipt — shows the full chain of equations the OCR pipeline read,
+ * not just the single step Sonnet flagged as "current". This is what
+ * actually proves to a demo audience that ione "saw the whole page" —
+ * if you wrote out 5 lines and the trace only shows 1, that's a UX bug,
+ * not the model failing.
+ *
+ * Layout:
+ *   ─ ocr  read        (1 line, completed step #1)        · 12.3% conf
+ *                      (1 line, completed step #2)
+ *                      (1 line, current step — bold)
+ *                      ▸ raw mathpix transcription (collapsed by default)
+ *
+ * Long completed-step lists are clipped at 4 visible rows with a "+N
+ * earlier steps" tail so the panel stays readable.
+ */
+function OcrReceipt({ ocr }: { ocr: NonNullable<CycleLog["ocr"]> }) {
+  const VISIBLE_PRIOR = 4;
+  const completed = ocr.completedStepsLatex ?? [];
+  const shownCompleted = completed.slice(-VISIBLE_PRIOR);
+  const hidden = completed.length - shownCompleted.length;
+
+  // If neither Sonnet nor Mathpix lifted any LaTeX off the page, don't
+  // render an empty receipt — the trace already shows OCR confidence in
+  // the stage chip above.
+  const hasAnything =
+    ocr.currentStepLatex || completed.length > 0 || ocr.mathpixLatex;
+  if (!hasAnything) return null;
+
+  return (
+    <div className="flex items-start gap-2 text-[12.5px] leading-snug">
+      <div
+        className="self-stretch w-px shrink-0 mt-0.5 mb-0.5"
+        style={{ backgroundColor: "var(--color-paper-mute)", opacity: 0.7 }}
+        aria-hidden
+      />
+      <span
+        className="text-[9.5px] tracking-[0.18em] uppercase pt-0.5 shrink-0"
+        style={{
+          fontFamily: "var(--font-mono)",
+          color: "var(--color-paper-mute)",
+          opacity: 0.85,
+        }}
+      >
+        ocr
+      </span>
+      <div className="min-w-0 flex flex-col gap-0.5">
+        <span
+          className="text-paper-faint text-[10px] tracking-[0.06em]"
+          style={{ fontFamily: "var(--font-mono)" }}
+        >
+          read{" "}
+          <span className="text-paper-mute">
+            {completed.length + (ocr.currentStepLatex ? 1 : 0)} line
+            {completed.length + (ocr.currentStepLatex ? 1 : 0) === 1 ? "" : "s"}
+          </span>
+          {ocr.mathpixConfidence !== null && (
+            <span className="text-paper-faint">
+              {" · "}
+              {(ocr.mathpixConfidence * 100).toFixed(0)}% mathpix
+            </span>
+          )}
+        </span>
+
+        {hidden > 0 && (
+          <div
+            className="text-paper-faint/70 text-[10.5px] italic"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            … {hidden} earlier step{hidden === 1 ? "" : "s"}
+          </div>
+        )}
+
+        {shownCompleted.map((step, i) => (
+          <div
+            key={`prior-${i}`}
+            className="text-paper-mute min-w-0 break-words"
+            title={step}
+          >
+            <KaTeXMath tex={step} />
+          </div>
+        ))}
+
+        {ocr.currentStepLatex && (
+          <div
+            className="text-ink-deep min-w-0 break-words"
+            title={ocr.currentStepLatex}
+          >
+            <KaTeXMath tex={ocr.currentStepLatex} />
+            <span
+              className="ml-2 text-[9px] tracking-[0.16em] uppercase text-red-pencil/70"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              · current
+            </span>
+          </div>
+        )}
+
+        {/* Mathpix raw transcription — only show if it has content that
+            Sonnet's structured output didn't capture. This is the
+            "raw OCR" receipt — proves ione actually saw the page. */}
+        {ocr.mathpixLatex &&
+          ocr.mathpixLatex.trim() &&
+          ocr.mathpixLatex !== ocr.currentStepLatex && (
+            <details className="mt-1 group">
+              <summary
+                className="text-paper-faint/80 text-[10px] tracking-[0.14em] uppercase cursor-pointer hover:text-paper-mute transition-colors select-none"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                ▸ raw mathpix transcription
+              </summary>
+              <div
+                className="mt-1.5 pl-2 border-l border-line/60 text-paper-mute text-[11px] leading-relaxed whitespace-pre-wrap break-words"
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "10.5px",
+                }}
+              >
+                {ocr.mathpixLatex}
+              </div>
+            </details>
+          )}
+      </div>
+    </div>
+  );
+}
 
 function Receipt({
   from,

@@ -52,6 +52,13 @@ const EnvSchema = z.object({
   COST_CAP_USD_PER_USER_DAY: z.coerce.number().positive().default(5),
   COST_CAP_USD_BUILD: z.coerce.number().positive().default(8),
 
+  // Policy cooldown — ms since the most recent hint during which ione will
+  // stay silent for sub-severity-5 errors. Default 60_000 mirrors
+  // AGENT_PROMPTS.md §3 rule 2 ("don't be Clippy"). Set to 0 in .env.local
+  // when recording demos so every error speaks; production should leave
+  // this at the default to avoid badgering students.
+  POLICY_COOLDOWN_MS: z.coerce.number().int().nonnegative().default(60_000),
+
   // Behavior toggles
   STORE_FRAMES: z
     .enum(["0", "1"])

@@ -36,7 +36,16 @@ export function createApp(): Hono<AppEnv> {
       credentials: true,
       allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowHeaders: ["Authorization", "Content-Type", "x-margin-session"],
-      exposeHeaders: ["x-margin-cycle-id"],
+      exposeHeaders: [
+        "x-margin-cycle-id",
+        // Audio passthrough surfaces these so the dashboard / tutor UI can
+        // tell the user when their configured voice was paywalled and we
+        // fell back to a free-tier voice (see api/src/integrations/elevenlabs.ts).
+        "x-voice-id",
+        "x-voice-fell-back",
+        "x-audio-source",
+        "x-hint-cycle",
+      ],
       maxAge: 600,
     }),
   );

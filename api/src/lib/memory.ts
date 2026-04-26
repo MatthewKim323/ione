@@ -36,10 +36,45 @@ type ClaimRow = {
   created_at: string;
 };
 
+/**
+ * Joined claim row used by the cycle pipeline so the AgentTrace can show
+ * "memory referenced N facts" with per-fact source-filename pills. Same
+ * underlying table as ClaimRow, plus the source_file relation.
+ */
+type ClaimRowWithSource = ClaimRow & {
+  source_file_id: string | null;
+  source_files: { filename: string | null } | null;
+};
+
 type ProfileRow = {
   grade: string | null;
   current_class: string | null;
   hint_frequency: string | null;
+};
+
+/**
+ * One claim surfaced in the live cycle's `kg_lookup` SSE event so the
+ * frontend can render "indexed: weak_at_topic 'chain rule' · failed-exam.md".
+ *
+ * Predicates are kept as the raw string from the DB (e.g. `made_sign_error`)
+ * so the UI can decide how to humanize them. `object_label` is a best-effort
+ * one-line render of whatever the extractor stored under `object` — string,
+ * `{value}`, `{topic}`, etc.
+ */
+export type KgReference = {
+  predicate: string;
+  object_label: string;
+  source_filename: string | null;
+  status: string;
+  confidence: number;
+};
+
+export type StruggleSnapshot = {
+  profile: StruggleProfile | null;
+  /** Up to 8 highest-confidence claims that fed the profile, with provenance. */
+  references: KgReference[];
+  /** Total claims considered (after status/confidence filtering). */
+  claim_count: number;
 };
 
 /** Public entry point — fetch + compile in one call. */
@@ -52,6 +87,45 @@ export async function getStruggleProfile(
   ]);
   if (!claims.length && !profile) return null;
   return compileStruggleProfile(claims, profile);
+}
+
+/**
+ * Cycle-scoped snapshot: the same profile we feed Predictive + Intervention,
+ * plus a structured list of which claims (and which source files) it was
+ * compiled from. Used by routes/cycle.ts to emit a `kg_lookup` SSE event so
+ * the AgentTrace can render real receipts alongside the agent stages.
+ */
+export async function getStruggleSnapshot(
+  userId: string,
+): Promise<StruggleSnapshot> {
+  const [claims, profile] = await Promise.all([
+    fetchClaimsWithSource(userId),
+    fetchProfileRow(userId),
+  ]);
+  if (!claims.length && !profile) {
+    return { profile: null, references: [], claim_count: 0 };
+  }
+  // Strip source_files before handing to the compiler so it stays a pure
+  // function over ClaimRow.
+  const compiled = compileStruggleProfile(
+    claims.map(({ source_file_id, source_files, ...rest }) => {
+      void source_file_id;
+      void source_files;
+      return rest;
+    }),
+    profile,
+  );
+
+  // Surface the highest-confidence confirmed (or high-pending) claims with
+  // their source filename. We keep this small (8) so the SSE payload stays
+  // tiny and the trace UI doesn't drown the orchestration timeline.
+  const references = pickReferenceClaims(claims, 8);
+
+  return {
+    profile: compiled,
+    references,
+    claim_count: claims.length,
+  };
 }
 
 /**
@@ -203,6 +277,106 @@ async function fetchClaims(userId: string): Promise<ClaimRow[]> {
     return [];
   }
   return (data ?? []) as ClaimRow[];
+}
+
+/**
+ * Same query as fetchClaims, but pulls the joined source_files.filename so
+ * the cycle pipeline can show provenance ("from failed-exam.md") in the
+ * AgentTrace. We tolerate the join failing (older rows have null source_file_id).
+ */
+async function fetchClaimsWithSource(
+  userId: string,
+): Promise<ClaimRowWithSource[]> {
+  const { data, error } = await supabaseAdmin()
+    .from("claims")
+    .select(
+      "predicate, object, status, confidence, reasoning, created_at, source_file_id, source_files:source_files!claims_source_file_id_fkey(filename)",
+    )
+    .eq("owner", userId)
+    .in("status", ["confirmed", "pending"])
+    .order("created_at", { ascending: false })
+    .limit(MAX_CLAIMS);
+  if (error) {
+    console.warn("[memory] fetchClaimsWithSource failed", error);
+    return [];
+  }
+  // Supabase's PostgREST embed sometimes returns the related row as an array
+  // and sometimes as a single object depending on cardinality semantics. We
+  // normalize to `{filename: string | null} | null` to keep the UI simple.
+  return ((data ?? []) as RawClaimRowWithSource[]).map((row) => ({
+    ...row,
+    source_files: pickJoinedSourceFile(row.source_files),
+  })) as ClaimRowWithSource[];
+}
+
+type RawClaimRowWithSource = ClaimRow & {
+  source_file_id: string | null;
+  source_files:
+    | { filename: string | null }
+    | { filename: string | null }[]
+    | null;
+};
+
+function pickJoinedSourceFile(
+  raw: RawClaimRowWithSource["source_files"],
+): { filename: string | null } | null {
+  if (!raw) return null;
+  if (Array.isArray(raw)) return raw[0] ?? null;
+  return raw;
+}
+
+/**
+ * Pick the most demo-relevant claims to surface as receipts. We rank by:
+ *   1. status=confirmed first, pending second
+ *   2. higher confidence first
+ *   3. predicates we recognize as "struggle facets" (weak_at_topic, etc.)
+ *      bubble above generic ones (source_file_ingested) so the receipts feel
+ *      meaningful, not just "we read your file".
+ */
+function pickReferenceClaims(
+  claims: ClaimRowWithSource[],
+  limit: number,
+): KgReference[] {
+  // Weight the predicates the StruggleProfile actually uses higher so we
+  // surface the ones that ACTUALLY informed Predictive/Intervention.
+  const FACET_WEIGHT: Record<string, number> = {
+    weak_at_topic: 5,
+    needs_review_on: 5,
+    made_sign_error: 5,
+    made_arithmetic_error: 5,
+    made_concept_gap: 5,
+    skipped_step: 5,
+    misread_problem: 5,
+    strong_at_topic: 4,
+    mastered_topic: 4,
+    prefers_explanation_style: 4,
+    ran_out_of_time: 3,
+  };
+
+  const scored = claims
+    // Mirror compileStruggleProfile's filter so the references shown reflect
+    // the exact same set of claims that fed the profile.
+    .filter(
+      (c) =>
+        c.status === "confirmed" || c.confidence >= PENDING_CONFIDENCE_FLOOR,
+    )
+    .map((c) => ({
+      claim: c,
+      score:
+        (c.status === "confirmed" ? 2 : 1) +
+        (FACET_WEIGHT[c.predicate] ?? 1) +
+        c.confidence,
+    }));
+
+  scored.sort((a, b) => b.score - a.score);
+
+  return scored.slice(0, limit).map(({ claim }) => ({
+    predicate: claim.predicate,
+    object_label: shortObject(claim.object) ?? stringObject(claim.object) ?? "",
+    source_filename: claim.source_files?.filename ?? null,
+    status: claim.status,
+    confidence: claim.confidence,
+  }));
 }
 
 async function fetchProfileRow(userId: string): Promise<ProfileRow | null> {

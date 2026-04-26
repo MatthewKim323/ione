@@ -70,7 +70,16 @@ export function TutorWorkspace() {
   const [totalCost, setTotalCost] = useState(0);
   const [latestOcr, setLatestOcr] = useState<{
     confidence: number;
+    /** Single line Sonnet flagged as the student's current step. */
     latex: string | null;
+    /** Every prior line OCR saw, in order. Lets the debug banner show the
+     *  full chain, not just the line Sonnet picked. */
+    completedSteps: string[];
+    /** Raw Mathpix transcription for the entire frame. Surfaced when
+     *  Sonnet's output is sparse so the user can verify ione actually
+     *  read the page. */
+    mathpixLatex: string | null;
+    mathpixConfidence: number | null;
   } | null>(null);
   const [roi, setRoi] = useState<RoiRect | null>(null);
   const [pickingRoi, setPickingRoi] = useState(false);
@@ -86,6 +95,14 @@ export function TutorWorkspace() {
   const stallRef = useRef<StallDetector>(new StallDetector());
   const cycleIndexRef = useRef(0);
   const inFlightRef = useRef(false);
+  /**
+   * Tracks whether the user-triggered "I need help" path is currently
+   * running. Distinct from `inFlightRef` so the help button disables
+   * itself (instead of silently dropping). The button itself respects
+   * BOTH this and inFlightRef — if an autonomous cycle is mid-flight,
+   * it defers with a toast rather than colliding on AgentTrace state.
+   */
+  const [helpInFlight, setHelpInFlight] = useState(false);
 
   // Drive a session. We lazy-create on first encoded frame so the user
   // can decline screen share without orphaning a tutor_sessions row.
@@ -131,7 +148,7 @@ export function TutorWorkspace() {
   });
 
   const postCycle = useCallback(
-    async (blob: Blob) => {
+    async (blob: Blob, opts?: { assistanceMode?: "explain" }) => {
       if (inFlightRef.current) return; // serialize for now; Phase 2 / E4 swaps for queue
       const sid = await ensureSession();
       if (!sid) return;
@@ -157,6 +174,7 @@ export function TutorWorkspace() {
           isStalled: stall.isStalled,
           secondsSinceLastChange: stall.secondsSinceLastChange,
           trajectory: trajectoryRef.current.slice(-5),
+          assistanceMode: opts?.assistanceMode,
         });
 
         let surfacedHint = false;
@@ -238,6 +256,57 @@ export function TutorWorkspace() {
     [capture, ensureSession],
   );
 
+  /**
+   * Handler for the "I need help" button. The student already had a hint
+   * (or is just stuck) and is explicitly asking ione to teach. We:
+   *   1. Bail if capture isn't running (no session to send the frame to).
+   *   2. Defer with a toast if an autonomous cycle is mid-flight — both
+   *      paths share AgentTrace state and we can't safely interleave.
+   *   3. captureNow() to grab a fresh frame *outside* the diff-gate, so
+   *      the explain request always has the most current page state.
+   *   4. postCycle with assistanceMode='explain' — orchestrator bypasses
+   *      the policy gate and the intervention agent runs in EXPLAIN mode.
+   */
+  const requestHelp = useCallback(async () => {
+    if (!capture.isRunning) {
+      toast.warn("share your screen first.", {
+        id: "help_no_capture",
+        description: "ione needs to see what you're working on to help.",
+        ttlMs: 4000,
+      });
+      return;
+    }
+    if (helpInFlight) return; // button is disabled, but guard anyway
+    if (inFlightRef.current) {
+      toast.info("ione is mid-thought — try again in a sec.", {
+        id: "help_busy",
+        ttlMs: 3500,
+      });
+      return;
+    }
+    setHelpInFlight(true);
+    try {
+      const blob = await capture.captureNow();
+      if (!blob) {
+        toast.warn("couldn't grab a frame — is the share still active?", {
+          id: "help_no_frame",
+          ttlMs: 4000,
+        });
+        return;
+      }
+      await postCycle(blob, { assistanceMode: "explain" });
+    } catch (e) {
+      console.error("[tutor] requestHelp failed", e);
+      toast.warn("ione couldn't help that time.", {
+        id: "help_error",
+        description: e instanceof Error ? e.message : String(e),
+        ttlMs: 4500,
+      });
+    } finally {
+      setHelpInFlight(false);
+    }
+  }, [capture, helpInFlight, postCycle]);
+
   // Drain an SSE event into local state; call hooks supplied by the caller.
   const handleEvent = useCallback(
     (
@@ -252,6 +321,9 @@ export function TutorWorkspace() {
           setLatestOcr({
             confidence: evt.confidence,
             latex: evt.current_step_latex,
+            completedSteps: evt.completed_steps_latex ?? [],
+            mathpixLatex: evt.mathpix_latex,
+            mathpixConfidence: evt.mathpix_confidence,
           });
           cb.onSnapshot({
             page_state: evt.page_state,
@@ -349,6 +421,7 @@ export function TutorWorkspace() {
       <BrowserCompatBanner />
       <NotebookLayout
         variant="desk"
+        resizableThreeColumn={{ storageKey: "ione:tutor:notebook-cols-v1" }}
         left={
           // Left rail — agent orchestration trace. Lives outside the
           // <main> column so the eye lands on `iPad mirror → marginalia`
@@ -371,6 +444,26 @@ export function TutorWorkspace() {
                   </h1>
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* "I need help" — only shown while a session is live.
+                      Sits to the LEFT of audio/stop because it's the
+                      primary student-facing action: the autonomous loop
+                      already runs on its own, but this is the button
+                      they reach for when nudges aren't enough. Disabled
+                      while a help cycle is mid-flight (so we don't
+                      double-fire) and while ending the session. */}
+                  {capture.isRunning && (
+                    <PencilButton
+                      surface="desk"
+                      size="sm"
+                      onClick={() => {
+                        void requestHelp();
+                      }}
+                      disabled={helpInFlight || endingSession}
+                      title="ask ione to walk you through the next step"
+                    >
+                      {helpInFlight ? "ione is thinking…" : "i need help"}
+                    </PencilButton>
+                  )}
                   <PencilButton
                     tone="ghost"
                     surface="desk"
@@ -495,6 +588,9 @@ export function TutorWorkspace() {
               <OcrDebugBanner
                 confidence={latestOcr?.confidence ?? null}
                 latex={latestOcr?.latex ?? null}
+                completedSteps={latestOcr?.completedSteps ?? []}
+                mathpixLatex={latestOcr?.mathpixLatex ?? null}
+                mathpixConfidence={latestOcr?.mathpixConfidence ?? null}
               />
 
               <footer className="mt-auto pt-6 border-t border-line flex items-baseline justify-between font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">

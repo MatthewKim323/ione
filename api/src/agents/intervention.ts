@@ -13,7 +13,10 @@
  */
 
 import { sonnetJson } from "../integrations/anthropic.js";
-import { INTERVENTION_AGENT_SYSTEM } from "./prompts.js";
+import {
+  INTERVENTION_AGENT_SYSTEM,
+  INTERVENTION_AGENT_EXPLAIN_SYSTEM,
+} from "./prompts.js";
 import type {
   InterventionOutput,
   ReasoningOutput,
@@ -31,6 +34,13 @@ export type InterventionAgentInput = {
   isStalled: boolean;
   struggleProfile: StruggleProfile | null;
   cost?: CycleCost;
+  /**
+   * When set to "explain", we swap the autonomous Socratic prompt for
+   * the EXPLAIN-mode prompt. The student pressed "I need help" — we
+   * stop hinting and start teaching. Cooldown / dedup all bypassed by
+   * the orchestrator before this is called.
+   */
+  assistanceMode?: "explain";
 };
 
 export type InterventionAgentResult = {
@@ -45,6 +55,7 @@ const HINT_TYPES: HintType[] = [
   "scaffolding_question",
   "encouragement",
   "redirect",
+  "explanation",
 ];
 
 export async function runInterventionAgent(
@@ -54,29 +65,56 @@ export async function runInterventionAgent(
     ? formatProfile(input.struggleProfile)
     : "(no longitudinal profile available)";
 
-  const userPayload = [
-    "## Reasoning",
-    JSON.stringify(input.reasoning, null, 2),
-    "",
-    "## Recent hints",
-    input.recentHints.length
-      ? JSON.stringify(input.recentHints, null, 2)
-      : "[]",
-    "",
-    "## Cooldown active",
-    String(input.cooldownActive),
-    "",
-    "## Is stalled",
-    String(input.isStalled),
-    "",
-    "## Struggle profile",
-    profileBlock,
-  ].join("\n");
+  const isExplain = input.assistanceMode === "explain";
+
+  // Explain-mode user payload skips the "cooldown active / is stalled"
+  // signals — they're irrelevant when the student explicitly asked for
+  // help — and instead frames the request directly. Less context for
+  // Sonnet to second-guess itself with.
+  const userPayload = isExplain
+    ? [
+        "## Student request",
+        "The student pressed the \"I need help\" button. Walk them through the next step (or finish the problem if they're nearly done). Do not hold back — they already had hints.",
+        "",
+        "## Reasoning (current frame)",
+        JSON.stringify(input.reasoning, null, 2),
+        "",
+        "## Recent hints (do not repeat verbatim, but you may build on them)",
+        input.recentHints.length
+          ? JSON.stringify(input.recentHints, null, 2)
+          : "[]",
+        "",
+        "## Struggle profile",
+        profileBlock,
+      ].join("\n")
+    : [
+        "## Reasoning",
+        JSON.stringify(input.reasoning, null, 2),
+        "",
+        "## Recent hints",
+        input.recentHints.length
+          ? JSON.stringify(input.recentHints, null, 2)
+          : "[]",
+        "",
+        "## Cooldown active",
+        String(input.cooldownActive),
+        "",
+        "## Is stalled",
+        String(input.isStalled),
+        "",
+        "## Struggle profile",
+        profileBlock,
+      ].join("\n");
 
   const sonnet = await sonnetJson<InterventionOutput>({
-    system: INTERVENTION_AGENT_SYSTEM,
+    system: isExplain
+      ? INTERVENTION_AGENT_EXPLAIN_SYSTEM
+      : INTERVENTION_AGENT_SYSTEM,
     user: userPayload,
-    maxTokens: 400,
+    // Explain-mode walkthroughs run longer — 2 to 6 sentences plus
+    // multi-line LaTeX. Bump tokens so the JSON doesn't truncate
+    // mid-sentence (causing parse errors and angry users).
+    maxTokens: isExplain ? 900 : 400,
     cacheSystem: true,
   });
   input.cost?.add("intervention", sonnet.usd);
@@ -93,7 +131,7 @@ export async function runInterventionAgent(
     );
   }
 
-  const out = normalize(sonnet.parsed.value);
+  const out = normalize(sonnet.parsed.value, { isExplain });
   return { output: out, raw: sonnet.raw, usd: sonnet.usd, ms: sonnet.ms };
 }
 
@@ -106,17 +144,21 @@ function formatProfile(p: StruggleProfile): string {
   ].join("\n");
 }
 
-function normalize(raw: Partial<InterventionOutput>): InterventionOutput {
-  const should = Boolean(raw.should_speak ?? false);
-  const hintType: HintType | null =
+function normalize(
+  raw: Partial<InterventionOutput>,
+  opts: { isExplain: boolean },
+): InterventionOutput {
+  // In explain-mode, should_speak is forced true regardless of what the
+  // model returns — the user pressed the button. Same for hint_type.
+  const should = opts.isExplain ? true : Boolean(raw.should_speak ?? false);
+  let hintType: HintType | null =
     raw.hint_type === null || raw.hint_type === undefined
       ? null
       : HINT_TYPES.includes(raw.hint_type as HintType)
         ? (raw.hint_type as HintType)
         : null;
+  if (opts.isExplain) hintType = "explanation";
 
-  // If should_speak is false, force null on hint_text and hint_type so
-  // downstream code never has to second-guess.
   return {
     should_speak: should,
     hint_text:

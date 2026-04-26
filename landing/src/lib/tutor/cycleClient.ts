@@ -11,6 +11,19 @@ import { supabase } from "../supabase";
  * stream using fetch + ReadableStream.
  */
 
+/**
+ * Mirrors api/src/lib/sse.ts → KgReferencePayload. One claim referenced for
+ * the current cycle, with provenance, so the AgentTrace can show
+ * "weak_at_topic · 'chain rule' · failed-exam.md".
+ */
+export type KgReference = {
+  predicate: string;
+  object_label: string;
+  source_filename: string | null;
+  status: string;
+  confidence: number;
+};
+
 export type CycleEvent =
   | {
       type: "confidence";
@@ -25,21 +38,66 @@ export type CycleEvent =
         | "error_callout"
         | "scaffolding_question"
         | "encouragement"
-        | "redirect";
+        | "redirect"
+        /**
+         * Only emitted when the student explicitly pressed the
+         * "I need help" button. Different from the four autonomous
+         * hint types — this one drops Socratic questioning and walks
+         * the student through the actual method.
+         */
+        | "explanation";
       audio_url: string | null;
       predicted: boolean;
       severity?: 1 | 2 | 3 | 4 | 5;
+      /**
+       * Set to "explain" when the cycle was triggered by the help
+       * button. Lets AgentTrace and HintCard render a distinct marker
+       * ("user asked for help") so the trace clearly shows this hint
+       * wasn't autonomous.
+       */
+      assistance?: "explain";
     }
   | {
       type: "ocr";
       problem_text: string | null;
       current_step_latex: string | null;
+      /**
+       * Completed lines the student has already finished, in order. Lets
+       * AgentTrace render the full trail of work the OCR pipeline saw —
+       * not just the single line Sonnet picked as "current". Mirrors
+       * api/src/lib/sse.ts.
+       */
+      completed_steps_latex: string[];
+      /**
+       * Unfiltered Mathpix transcription for the whole frame. Surfaced in
+       * the agent trace receipts so the demo can show "ione actually
+       * read all of this" rather than just the one line Sonnet flagged.
+       */
+      mathpix_latex: string | null;
+      mathpix_confidence: number | null;
       confidence: number;
       page_state:
         | "fresh_problem"
         | "in_progress"
         | "near_complete"
         | "stalled_or_stuck";
+    }
+  | {
+      /**
+       * Emitted at the start of every cycle, BEFORE OCR/Reasoning/etc, with
+       * the longitudinal struggle profile + the actual claims it was
+       * compiled from. AgentTrace renders this as a dedicated "memory" stage
+       * with per-claim receipts. `had_profile=false` means cold start (no
+       * prior history yet) — show that explicitly so the demo audience can
+       * see the difference once files have been ingested.
+       */
+      type: "kg_lookup";
+      had_profile: boolean;
+      claim_count: number;
+      pattern_summary: string | null;
+      dominant_error: string | null;
+      frequency: string | null;
+      references: KgReference[];
     }
   | { type: "done"; cycle_id: string; cost_usd: number; ms: number }
   | { type: "error"; message: string; code?: string };
@@ -112,6 +170,13 @@ export type SendCycleInput = {
   prevCycleId?: string;
   clientTs?: string;
   signal?: AbortSignal;
+  /**
+   * When set, tells the orchestrator to bypass its silence-bias policy
+   * and force the intervention agent into "explain mode" — a
+   * step-by-step walkthrough including the actual method. Only set when
+   * the student presses the "I need help" button.
+   */
+  assistanceMode?: "explain";
 };
 
 export type SendCycleHandle = {
@@ -142,6 +207,7 @@ export async function sendCycle(input: SendCycleInput): Promise<SendCycleHandle>
       seconds_since_last_change: input.secondsSinceLastChange,
       client_ts: input.clientTs ?? new Date().toISOString(),
       trajectory: input.trajectory.slice(-5),
+      assistance_mode: input.assistanceMode ?? null,
     }),
   );
 

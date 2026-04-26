@@ -68,9 +68,13 @@ audioRoute.post("/preview", async (c) => {
   );
 
   let stream: ReadableStream<Uint8Array>;
+  let voiceId = "";
+  let fellBack = false;
   try {
     const handle = await streamSpeech(text);
     stream = handle.stream;
+    voiceId = handle.voiceId;
+    fellBack = handle.fellBack;
   } catch (e) {
     if (isAppError(e)) throw e;
     const msg = e instanceof Error ? e.message : String(e);
@@ -81,6 +85,10 @@ audioRoute.post("/preview", async (c) => {
   c.header("Content-Type", "audio/mpeg");
   c.header("Cache-Control", "no-store");
   c.header("X-Audio-Source", "preview");
+  // Surface fallback state to the dashboard so it can warn the user that
+  // their configured voice is paywalled and we used a free-tier voice.
+  c.header("X-Voice-Id", voiceId);
+  c.header("X-Voice-Fell-Back", fellBack ? "1" : "0");
   return c.body(stream);
 });
 
@@ -109,9 +117,13 @@ audioRoute.get("/:hintId", async (c) => {
   }
 
   let stream: ReadableStream<Uint8Array>;
+  let voiceId = "";
+  let fellBack = false;
   try {
     const handle = await streamSpeech(cached.text);
     stream = handle.stream;
+    voiceId = handle.voiceId;
+    fellBack = handle.fellBack;
   } catch (e) {
     if (isAppError(e)) throw e;
     const msg = e instanceof Error ? e.message : String(e);
@@ -127,6 +139,8 @@ audioRoute.get("/:hintId", async (c) => {
   // MSE expects chunked transfer.
   c.header("Cache-Control", "no-store");
   c.header("X-Hint-Cycle", cached.cycleId);
+  c.header("X-Voice-Id", voiceId);
+  c.header("X-Voice-Fell-Back", fellBack ? "1" : "0");
 
   return c.body(stream);
 });

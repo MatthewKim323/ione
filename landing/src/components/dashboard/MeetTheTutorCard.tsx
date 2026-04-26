@@ -17,12 +17,19 @@ import { authedFetch } from "../../lib/api";
  *   1. POST /api/audio/preview → real ElevenLabs MP3 (the tutor voice).
  *   2. If that fails (TTS not configured, network), fall back to a local
  *      synthesised hum so the orb still moves and the demo never goes silent.
+ *
+ * Voice fallback signal:
+ *   ElevenLabs paywalls Voice Library voices (e.g. jqcCZkN6Knx8BJ5TBdYR)
+ *   on free-tier accounts. The api detects this 402 and transparently
+ *   retries with a free-accessible voice (Bella). It tells us via the
+ *   X-Voice-Fell-Back response header so we can surface the truth.
  */
 export function MeetTheTutorCard() {
   const [playing, setPlaying] = useState(false);
   const [status, setStatus] = useState<
-    "idle" | "loading" | "live" | "fallback" | "error"
+    "idle" | "loading" | "live" | "live_fallback" | "fallback" | "error"
   >("idle");
+  const [statusDetail, setStatusDetail] = useState<string>("");
   const previewUrlRef = useRef<string | null>(null);
   const liveUrlRef = useRef<string | null>(null);
   const inFlightRef = useRef<AbortController | null>(null);
@@ -65,6 +72,7 @@ export function MeetTheTutorCard() {
 
     setPlaying(true);
     setStatus("loading");
+    setStatusDetail("");
 
     // Try real ElevenLabs first. We pass an empty body so the API picks the
     // canned line — keeps the surface honest about what ione will actually
@@ -80,6 +88,8 @@ export function MeetTheTutorCard() {
         const detail = await res.text().catch(() => "");
         throw new Error(`preview ${res.status}: ${detail.slice(0, 200)}`);
       }
+      const fellBack = res.headers.get("X-Voice-Fell-Back") === "1";
+      const voiceId = res.headers.get("X-Voice-Id") ?? "";
       const blob = await res.blob();
       if (ac.signal.aborted) return;
       if (liveUrlRef.current) URL.revokeObjectURL(liveUrlRef.current);
@@ -90,7 +100,8 @@ export function MeetTheTutorCard() {
       el.src = liveUrlRef.current;
       el.currentTime = 0;
       await el.play();
-      setStatus("live");
+      setStatus(fellBack ? "live_fallback" : "live");
+      setStatusDetail(voiceId);
       return;
     } catch (e) {
       if (ac.signal.aborted) return;
@@ -100,7 +111,7 @@ export function MeetTheTutorCard() {
       );
     }
 
-    // Fallback — keeps the orb alive even when TTS is offline.
+    // Last-resort synth — only fires if elevenlabs is unreachable entirely.
     try {
       await playSynthFallback();
       setStatus("fallback");
@@ -191,16 +202,18 @@ export function MeetTheTutorCard() {
               </Link>
             </div>
             <p
-              className="font-sub text-[10px] tracking-wide text-paper-mute mt-4 h-4 max-w-[42ch] mx-auto lg:mx-0 leading-relaxed"
+              className="font-sub text-[10px] tracking-wide text-paper-mute mt-4 max-w-[46ch] mx-auto lg:mx-0 leading-relaxed min-h-[2.4em]"
               aria-live="polite"
             >
               {status === "live"
-                ? "live · streamed from elevenlabs (voice id jqcCZkN6…)"
-                : status === "fallback"
-                  ? "tts unreachable — playing local synth so the orb still moves"
-                  : status === "error"
-                    ? "audio failed to start — check console / try again"
-                    : ""}
+                ? `live · streamed from elevenlabs (${statusDetail.slice(0, 8)}…)`
+                : status === "live_fallback"
+                  ? "live · configured voice is paywalled on free elevenlabs — using bella for now. upgrade to starter to unlock your tutor voice."
+                  : status === "fallback"
+                    ? "elevenlabs unreachable — playing local synth so the orb still moves. check api server + key."
+                    : status === "error"
+                      ? "audio failed to start — check console / try again"
+                      : ""}
             </p>
             <p className="font-sub text-[10px] tracking-wide text-paper-mute mt-4 max-w-[42ch] mx-auto lg:mx-0 leading-relaxed">
               screen capture and "start session" live on the next page — this

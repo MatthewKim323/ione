@@ -57,13 +57,19 @@ export async function runOcrAgent(input: OcrAgentInput): Promise<OcrAgentResult>
     "(see attached)",
   ].join("\n");
 
+  // 1600 tokens (was 700). The OCR agent has to return the full
+  // problem_text plus an array of every completed step's LaTeX — on a
+  // dense page with 5+ equations that easily blew past 700, causing
+  // Sonnet to truncate mid-JSON and the parser to silently drop
+  // completed_steps_latex. Symptom in the wild: "ocr read x=3 with 40%
+  // conf" even though the iPad page had a whole sequence of derivations.
   const sonnet = await sonnetVisionJson<OcrOutput>({
     system: OCR_AGENT_SYSTEM,
     imageBase64: input.frameWebpBase64,
     imageMediaType: "image/webp",
     textBefore: userPayload,
     cacheSystem: true,
-    maxTokens: 700,
+    maxTokens: 1600,
   });
   input.cost?.add("ocr_sonnet", sonnet.usd);
 
