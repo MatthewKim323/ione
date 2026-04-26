@@ -159,7 +159,7 @@ export function Hero() {
             <span className="inline-block h-px w-8 bg-ink/25" />
           </span>
           <span className="tabular-nums text-ink/60">
-            01 <span className="text-ink/35">/ 04</span>
+            01 <span className="text-ink/35">/ 03</span>
           </span>
         </motion.div>
       </div>

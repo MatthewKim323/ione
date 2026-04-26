@@ -81,7 +81,7 @@
 }
 
 @layer components {
-  /* "© ione — 001 / pedagogy" section labels                      */
+  /* "© ione — 001 / section" section labels                      */
   .section-label {
     font-family: var(--font-sub);
     font-size: 0.6875rem;

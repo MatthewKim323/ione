@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { SectionLabel } from "./SectionLabel";
+import { InteractiveGradient } from "./InteractiveGradient";
 import { EnterCTA } from "./EnterCTA";
 import { Link } from "react-router-dom";
 
@@ -27,30 +27,8 @@ export function Closer() {
       </div>
 
       <div className="relative max-w-[1380px] mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-15%" }}
-          transition={{ duration: 0.6 }}
-        >
-          <SectionLabel number="004" name="start" />
-        </motion.div>
-
-        <div className="mt-16 grid grid-cols-1 lg:grid-cols-12 gap-x-12 gap-y-16 items-end">
-          <div className="lg:col-span-7">
-            {/* the headline is rendered as a margin annotation — */}
-            {/* a quote of the kind of hint ione actually says.    */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true, margin: "-10%" }}
-              transition={{ duration: 0.7 }}
-              className="meta-label mb-4 flex items-center gap-3 text-ink/55"
-            >
-              <span className="text-red-pencil">▌</span>
-              <span>a hint · t = 92s</span>
-            </motion.div>
-
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-12 gap-y-16 items-end">
+          <InteractiveGradient className="lg:col-span-7 rounded-2xl bg-[#f2f2f2] px-4 py-6 sm:px-5 sm:py-8 -mx-1 sm:mx-0">
             <motion.h2
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -100,7 +78,7 @@ export function Closer() {
             >
               works with iPad + goodnotes · no setup · email + password
             </motion.div>
-          </div>
+          </InteractiveGradient>
 
           {/* right column — a small "session card" summary */}
           <motion.div
