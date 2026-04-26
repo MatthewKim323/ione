@@ -44,8 +44,14 @@ export function TitlePage() {
           fontSize: "clamp(7rem, 22vw, 22rem)",
           letterSpacing: "-0.04em",
           lineHeight: 0.9,
-          color: "#BFEC00",
+          color: "#ABD400",
           fontStyle: "italic",
+          // Soft shadow — short close drop for "lift" + a slightly
+          // larger diffuse halo so the high-chroma lime feels seated
+          // on the cream paper instead of floating off it.
+          textShadow:
+            "0 1px 0 rgba(0,0,0,0.10)," +
+            " 0 4px 14px rgba(0,0,0,0.12)",
         }}
       >
         ione<span style={{ color: "#c4302b", fontStyle: "normal" }}>.</span>
