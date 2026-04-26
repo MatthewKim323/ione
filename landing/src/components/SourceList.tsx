@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { listSourceFiles } from "../lib/graph/query";
 import { deleteSource } from "../lib/graph/ingest";
@@ -30,6 +30,13 @@ interface SourceListProps {
 export function SourceList({ reloadKey = 0 }: SourceListProps) {
   const [files, setFiles] = useState<SourceFile[]>([]);
   const [loading, setLoading] = useState(true);
+  const sourceStreamNameRef = useRef<string | null>(null);
+  if (!sourceStreamNameRef.current) {
+    sourceStreamNameRef.current =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? `source-files-${crypto.randomUUID()}`
+        : `source-files-${Math.random().toString(36).slice(2, 11)}`;
+  }
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -47,7 +54,7 @@ export function SourceList({ reloadKey = 0 }: SourceListProps) {
   // will only ever surface this student's own activity.
   useEffect(() => {
     const channel = supabase
-      .channel("source-files-stream")
+      .channel(sourceStreamNameRef.current!)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "source_files" },
@@ -73,10 +80,10 @@ export function SourceList({ reloadKey = 0 }: SourceListProps) {
   }, []);
 
   return (
-    <div className="border border-ink-line bg-ink-raise/40 p-6 sm:p-8">
+    <div className="notebook-card p-6 sm:p-8">
       <div className="flex items-baseline justify-between mb-5">
-        <div className="section-label">© ione — sources read</div>
-        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint">
+        <div className="section-label-light">© ione — sources read</div>
+        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
           {files.length} {files.length === 1 ? "file" : "files"}
         </span>
       </div>
@@ -102,7 +109,7 @@ export function SourceList({ reloadKey = 0 }: SourceListProps) {
       )}
 
       {!loading && files.length > 0 && (
-        <ul className="divide-y divide-ink-line -mx-1">
+        <ul className="divide-y divide-line-soft -mx-1">
           {files.map((file) => (
             <li
               key={file.id}
@@ -115,12 +122,12 @@ export function SourceList({ reloadKey = 0 }: SourceListProps) {
               >
                 <div className="flex items-baseline gap-2 mb-0.5">
                   <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-red-pencil">
-                    {KIND_LABEL[file.kind]}
+                    {KIND_LABEL[file.kind as SourceKind] ?? file.kind}
                   </span>
                   <StatusDot status={file.status} />
                 </div>
                 <div
-                  className="text-paper text-[15px] truncate group-hover/link:text-red-pencil transition-colors"
+                  className="text-ink-deep text-[15px] truncate group-hover/link:text-red-pencil transition-colors"
                   style={{ fontFamily: "var(--font-display)" }}
                   title={file.filename}
                 >
@@ -157,7 +164,10 @@ function StatusDot({ status }: { status: SourceFile["status"] }) {
     extracted: { color: "bg-moss", label: "read" },
     failed: { color: "bg-red-pencil", label: "failed" },
   };
-  const m = map[status];
+  const m = map[status] ?? {
+    color: "bg-paper-mute",
+    label: String(status),
+  };
   return (
     <span className="inline-flex items-center gap-1.5 font-sub text-[9px] tracking-[0.18em] uppercase text-paper-mute">
       <span className={`block w-1.5 h-1.5 rounded-full ${m.color}`} />

@@ -134,12 +134,21 @@ without RLS policies. Re-run `0001_profiles.sql` end-to-end.
 final upsert; if that upsert errored, the toast shows it. Check console.
 
 **Document upload says "couldn't upload — bucket not found".**
-The `source-files` storage bucket wasn't created. Re-run
-`0002_knowledge_graph.sql` — the `insert into storage.buckets` block at
-the bottom is what makes the bucket. Confirm with:
+The `source-files` storage bucket wasn't created. In the **Storage**
+tab, create a **private** bucket named `source-files` (or re-run
+`0002_knowledge_graph.sql` if your DB role is allowed to insert into
+`storage.buckets` — the hosted SQL editor often is not, which yields
+`must be owner of table buckets`). Confirm with:
 ```sql
 select id from storage.buckets where id = 'source-files';
 ```
+
+**SQL Editor: `must be owner of table buckets` (42501) when running a migration.**
+Hosted projects usually restrict who may `insert` into `storage.buckets`.
+Create the bucket in **Storage → New bucket** first (name and public flag
+as documented in the migration), then run only the **policy** parts of
+the file in SQL Editor. The same applies to `0005_session_frames_storage.sql`
+(`tutor_frames` bucket) if you use session frame storage.
 
 **Document upload says "new row violates row-level security policy".**
 RLS on `source_files` requires `owner = auth.uid()`. Make sure

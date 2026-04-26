@@ -1,14 +1,16 @@
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
+import { useEffect } from "react";
 import type { ReactNode } from "react";
 
 /**
  * Shared chrome for /login, /signup, and /onboarding pages.
  *
- * Visual: a single ruled-paper "page" centered on the ink background, with the
- * brand mark up top and a meta line above the form.  Auth pages all use the
- * same layout so navigating between them feels like turning pages in the same
- * notebook, not jumping between unrelated screens.
+ * Visual: a sheet of cream parchment resting on the warm off-white desk
+ * (matching the landing page bg). The brand mark up top, a meta line above
+ * the form, a red pencil margin rule on the left of the page. All auth
+ * surfaces share the same layout so navigating between them feels like
+ * turning pages in the same notebook.
  */
 export function AuthLayout({
   meta,
@@ -26,18 +28,30 @@ export function AuthLayout({
   /** Use the wider page format for steps with embedded panels (e.g. doc upload). */
   wide?: boolean;
 }) {
+  // Match the landing page bg so the desk feels continuous across surfaces.
+  useEffect(() => {
+    const prevBody = document.body.style.backgroundColor;
+    const prevHtml = document.documentElement.style.backgroundColor;
+    document.body.style.backgroundColor = "#f2f2f2";
+    document.documentElement.style.backgroundColor = "#f2f2f2";
+    return () => {
+      document.body.style.backgroundColor = prevBody;
+      document.documentElement.style.backgroundColor = prevHtml;
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen flex flex-col bg-ink">
+    <div className="min-h-screen flex flex-col desk-page">
       <header className="px-6 sm:px-10 pt-6 sm:pt-8 flex items-center justify-between">
         <Link
           to="/"
-          className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute hover:text-paper transition-colors"
+          className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute hover:text-ink-deep transition-colors"
         >
           ← back
         </Link>
         <Link
           to="/"
-          className="text-paper text-2xl leading-none"
+          className="text-ink-deep text-2xl leading-none"
           style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
         >
           ione<span className="text-neon">.</span>
@@ -54,23 +68,17 @@ export function AuthLayout({
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className={`w-full ${wide ? "max-w-[680px]" : "max-w-[460px]"} relative`}
         >
-          {/* the page */}
-          <div className="relative ruled-paper border border-ink-line bg-ink-deep px-8 py-10 sm:px-10 sm:py-12">
-            {/* red margin rule on the left side, like a real notebook page */}
-            <div
-              aria-hidden
-              className="absolute left-[28px] top-0 bottom-0 w-px bg-red-pencil/40"
-            />
-
-            <div className="section-label mb-6">{meta}</div>
+          {/* the sheet of paper resting on the desk */}
+          <div className="notebook-card with-margin-rule ruled-paper-light px-8 py-10 sm:px-10 sm:py-12">
+            <div className="section-label-light mb-6">{meta}</div>
             <h1
-              className="h-editorial text-[2.25rem] sm:text-[2.625rem] mb-3"
+              className="h-display-light text-[2.25rem] sm:text-[2.625rem] mb-3"
               style={{ fontStyle: "italic" }}
             >
               {title}
             </h1>
             {subtitle && (
-              <p className="text-paper-dim text-sm leading-relaxed mb-8 max-w-[36ch]">
+              <p className="text-paper-faint text-sm leading-relaxed mb-8 max-w-[36ch]">
                 {subtitle}
               </p>
             )}
@@ -85,7 +93,7 @@ export function AuthLayout({
         </motion.div>
       </main>
 
-      <footer className="px-6 sm:px-10 pb-6 font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint flex justify-between">
+      <footer className="px-6 sm:px-10 pb-6 font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute flex justify-between">
         <span>© ione</span>
         <span>tutor in the margin</span>
       </footer>

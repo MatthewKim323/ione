@@ -16,7 +16,7 @@
  * drops a `claim_rejected` event so future passes from the same chunk
  * don't immediately re-propose it.
  *
- * Lives inline on /dashboard/memory (above the inventory) when there's
+ * Lives inline on /dashboard/graph (above the inventory) when there's
  * anything pending. Otherwise renders nothing.
  */
 import { useEffect, useMemo, useState } from "react";
@@ -144,31 +144,37 @@ export function ProposalReview() {
     setBusyId(null);
   }
 
-  if (loading) return null;
+  if (loading) {
+    return (
+      <p className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute mb-10">
+        loading proposals…
+      </p>
+    );
+  }
   if (sorted.length === 0) return null;
 
   return (
     <section className="mb-14">
       <div className="flex items-baseline justify-between mb-3">
         <div>
-          <div className="section-label">© ione — proposals</div>
+          <div className="section-label-light">© ione — proposals</div>
           <h2
-            className="h-display text-[1.7rem] sm:text-[2rem] leading-tight mt-1"
+            className="h-display-light text-[1.7rem] sm:text-[2rem] leading-tight mt-1"
             style={{ fontStyle: "italic" }}
           >
             i think — please confirm.
           </h2>
         </div>
-        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint">
+        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
           {sorted.length} pending
         </span>
       </div>
-      <p className="text-paper-dim text-sm leading-relaxed max-w-[60ch] mb-6">
+      <p className="text-paper-faint text-sm leading-relaxed max-w-[60ch] mb-6">
         these claims are too consequential to act on without your sign-off.
         confirm and ione may use them in future hints. reject and they're
         suppressed permanently from this source.
       </p>
-      <ul className="border border-ink-line bg-ink-deep ruled-paper divide-y divide-ink-line">
+      <ul className="notebook-card ruled-paper-light divide-y divide-line-soft overflow-hidden">
         {sorted.map((claim) => (
           <ProposalRow
             key={claim.id}
@@ -215,27 +221,30 @@ function ProposalRow({
           </span>
         )}
         <span className="font-sub text-[9px] tracking-wide text-paper-mute">
-          {(claim.confidence * 100).toFixed(0)}% confidence
+          {typeof claim.confidence === "number" &&
+          Number.isFinite(claim.confidence)
+            ? `${(claim.confidence * 100).toFixed(0)}% confidence`
+            : "—"}
         </span>
       </div>
       <p
-        className="text-paper text-[16px] leading-snug mb-2"
+        className="text-ink-deep text-[16px] leading-snug mb-2"
         style={{ fontFamily: "var(--font-display)" }}
       >
         {renderObject(claim.object)}
       </p>
       {claim.reasoning && (
         <p
-          className="text-paper-dim text-sm mb-2 max-w-[68ch] leading-relaxed"
+          className="text-paper-faint text-sm mb-2 max-w-[68ch] leading-relaxed"
           style={{ fontStyle: "italic" }}
         >
           "{truncate(claim.reasoning, 220)}"
         </p>
       )}
       {claim.sourceFile && (
-        <div className="font-sub text-[10px] tracking-wide text-paper-faint mb-3">
+        <div className="font-sub text-[10px] tracking-wide text-paper-mute mb-3">
           cited from{" "}
-          <span className="text-paper-mute">
+          <span className="text-ink-deep">
             {claim.sourceFile.title ?? claim.sourceFile.filename}
           </span>
           {claim.chunk?.position != null && ` · chunk ${claim.chunk.position}`}
@@ -274,7 +283,21 @@ function renderObject(value: unknown): string {
   }
 }
 
-function truncate(s: string, max: number): string {
+function truncate(raw: unknown, max: number): string {
+  const s =
+    raw == null
+      ? ""
+      : typeof raw === "string"
+        ? raw
+        : typeof raw === "number" || typeof raw === "boolean"
+          ? String(raw)
+          : (() => {
+              try {
+                return JSON.stringify(raw);
+              } catch {
+                return String(raw);
+              }
+            })();
   if (s.length <= max) return s;
   return s.slice(0, max - 1).trimEnd() + "…";
 }

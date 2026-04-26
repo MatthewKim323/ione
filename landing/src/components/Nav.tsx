@@ -1,148 +1,250 @@
-import { useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { Link } from "react-router-dom";
-import { SKIP_FX } from "../lib/prerender";
 import { useAuth } from "../lib/auth";
 
-const STATUS_CYCLE = [
-  { label: "watching", value: "8.0s / cycle" },
-  { label: "silence", value: "87%" },
-  { label: "compute", value: "$0.02 / cycle" },
-  { label: "memory", value: "backboard" },
-];
+type DockSlot = "home" | "search" | "user";
 
-function GitHubIcon({ className }: { className?: string }) {
+const INDICATOR_EASE = "cubic-bezier(0.34, 1.2, 0.64, 1)";
+
+function IconHome({ className }: { className?: string }) {
   return (
     <svg
       className={className}
+      width="22"
+      height="22"
       viewBox="0 0 24 24"
-      fill="currentColor"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
       aria-hidden
     >
-      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+      <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z" />
+    </svg>
+  );
+}
+
+function IconSearch({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.25"
+      strokeLinecap="round"
+      aria-hidden
+    >
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m20 20-4.2-4.2" />
+    </svg>
+  );
+}
+
+function IconUser({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.25"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M20 21a8 8 0 0 0-16 0" />
+      <circle cx="12" cy="8" r="3.5" />
     </svg>
   );
 }
 
 export function Nav() {
   const { session, profile } = useAuth();
-  const isAuthed = !!session;
-  const [pct, setPct] = useState(SKIP_FX ? 96 : 0);
-  const [statusIdx, setStatusIdx] = useState(0);
+  const barRef = useRef<HTMLDivElement>(null);
+  const homeSlotRef = useRef<HTMLDivElement>(null);
+  const searchSlotRef = useRef<HTMLDivElement>(null);
+  const userSlotRef = useRef<HTMLDivElement>(null);
+
+  const [demoInView, setDemoInView] = useState(false);
+  const [hoverSlot, setHoverSlot] = useState<DockSlot | null>(null);
+  const [indicator, setIndicator] = useState({
+    left: 0,
+    top: 0,
+    width: 0,
+    height: 0,
+    ready: false,
+  });
+
+  const ioActive: DockSlot = demoInView ? "search" : "home";
+  const active: DockSlot = hoverSlot ?? ioActive;
+
+  const userHref =
+    session && profile?.onboarded_at
+      ? "/dashboard"
+      : session
+        ? "/onboarding"
+        : "/login";
+
+  const measure = useCallback(() => {
+    const bar = barRef.current;
+    const slotEl =
+      active === "home"
+        ? homeSlotRef.current
+        : active === "search"
+          ? searchSlotRef.current
+          : userSlotRef.current;
+    if (!bar || !slotEl) return;
+    const br = bar.getBoundingClientRect();
+    const sr = slotEl.getBoundingClientRect();
+    setIndicator({
+      left: sr.left - br.left,
+      top: sr.top - br.top,
+      width: sr.width,
+      height: sr.height,
+      ready: true,
+    });
+  }, [active]);
+
+  useLayoutEffect(() => {
+    measure();
+  }, [measure]);
 
   useEffect(() => {
-    if (SKIP_FX) return;
-    let raf = 0;
-    const start = performance.now();
-    const dur = 1700;
-    const tick = (t: number) => {
-      const elapsed = Math.min(1, (t - start) / dur);
-      const eased = 1 - Math.pow(1 - elapsed, 3);
-      setPct(Math.floor(eased * 96));
-      if (elapsed < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
+    const onResize = () => measure();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [measure]);
 
   useEffect(() => {
-    const id = setInterval(() => {
-      setStatusIdx((i) => (i + 1) % STATUS_CYCLE.length);
-    }, 3200);
-    return () => clearInterval(id);
+    const demo = document.getElementById("demo");
+    if (!demo) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        const e = entries[0];
+        if (!e) return;
+        setDemoInView(e.isIntersecting && e.intersectionRatio >= 0.35);
+      },
+      { threshold: [0, 0.15, 0.35, 0.5, 0.75, 1] },
+    );
+    io.observe(demo);
+    return () => io.disconnect();
   }, []);
 
-  const booted = pct >= 96;
-  const status = STATUS_CYCLE[statusIdx];
+  const scrollHome = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const scrollSearch = () => {
+    document.getElementById("demo")?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  };
 
   return (
     <nav
-      className="fixed top-0 left-0 right-0 z-50 flex justify-center px-3 pt-3 sm:pt-4 pointer-events-none"
+      className="floating-nav fixed top-6 left-1/2 z-50 -translate-x-1/2 px-3 sm:top-8"
       aria-label="Primary"
     >
-      {/* Glossy chrome capsule — metallic rim + inner glass, compact. */}
       <div
-        className="pointer-events-auto w-fit max-w-[calc(100vw-1.5rem)] rounded-full p-px shadow-[0_4px_24px_rgba(0,0,0,0.25),0_0_0_1px_rgba(255,255,255,0.06)_inset]"
-        style={{
-          background:
-            "linear-gradient(165deg, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.22) 35%, rgba(180,190,210,0.15) 55%, rgba(40,45,55,0.5) 100%)",
-        }}
+        ref={barRef}
+        className="floating-nav__shell relative"
+        style={
+          {
+            backgroundColor: "rgba(10, 6, 18, 0.78)",
+            "--floating-nav-plate": "rgba(10, 6, 18, 0.9)",
+          } as CSSProperties
+        }
       >
-        <div
-          className="flex items-center gap-1.5 rounded-full px-2 py-0.5 sm:px-2.5 sm:py-1 backdrop-blur-xl"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.06) 45%, rgba(8,10,14,0.55) 100%)",
-            boxShadow:
-              "inset 0 1px 0 rgba(255,255,255,0.55)," +
-              "inset 0 -1px 0 rgba(0,0,0,0.35)," +
-              "inset 0 0 20px rgba(255,255,255,0.04)",
-            WebkitBackdropFilter: "blur(18px)",
-          }}
-        >
-          {/* Left: status */}
-          <div className="min-w-0 shrink pl-0.5 font-sub text-[7px] sm:text-[8px] tracking-[0.14em] uppercase text-paper/85 leading-none">
-            {!booted ? (
-              <span className="tabular-nums text-paper">{pct}%</span>
-            ) : (
-              <span className="flex items-baseline gap-1">
-                <span className="text-red-pencil text-[6px] sm:text-[7px]">
-                  ●
-                </span>
-                <span className="hidden min-[380px]:inline text-paper-mute">
-                  {status.label}
-                </span>
-                <span className="tabular-nums text-paper truncate max-w-[4.2rem] sm:max-w-[5.5rem]">
-                  {status.value}
-                </span>
-              </span>
-            )}
+        {indicator.ready && (
+          <div
+            className="floating-nav__indicator"
+            style={{
+              left: indicator.left,
+              top: indicator.top,
+              width: indicator.width,
+              height: indicator.height,
+              transitionProperty: "left, top, width, height, opacity",
+              transitionDuration: "0.48s",
+              transitionTimingFunction: INDICATOR_EASE,
+            }}
+            aria-hidden
+          >
+            <div className="floating-nav__ind-glow" />
+            <div className="floating-nav__ind-clip">
+              <div className="floating-nav__ind-spin" />
+            </div>
+            <div className="floating-nav__ind-plate" />
+          </div>
+        )}
+
+        <div className="floating-nav__row">
+          <div
+            ref={homeSlotRef}
+            className="floating-nav__slot"
+            onMouseEnter={() => setHoverSlot("home")}
+            onMouseLeave={() => setHoverSlot(null)}
+          >
+            <button
+              type="button"
+              className={`floating-nav__btn ${active === "home" ? "floating-nav__btn--on" : ""}`}
+              aria-label="Home"
+              aria-current={active === "home" ? "true" : undefined}
+              onClick={scrollHome}
+            >
+              <IconHome />
+            </button>
           </div>
 
-          <span
-            className="h-2.5 w-px shrink-0 bg-gradient-to-b from-transparent via-white/35 to-transparent"
-            aria-hidden
-          />
+          <span className="floating-nav__div" aria-hidden />
 
-          {/* Center: nav (no wordmark) */}
-          <div className="flex flex-1 items-center justify-center gap-2.5 sm:gap-3 px-0.5 font-sub text-[7px] sm:text-[8px] tracking-[0.14em] sm:tracking-[0.16em] uppercase">
-            <a
-              href="#pipeline"
-              className="text-paper/90 transition hover:text-paper"
+          <div
+            ref={searchSlotRef}
+            className="floating-nav__slot"
+            onMouseEnter={() => setHoverSlot("search")}
+            onMouseLeave={() => setHoverSlot(null)}
+          >
+            <button
+              type="button"
+              className={`floating-nav__btn ${active === "search" ? "floating-nav__btn--on" : ""}`}
+              aria-label="Search demo"
+              aria-current={active === "search" ? "true" : undefined}
+              onClick={scrollSearch}
             >
-              how
-            </a>
-            <a
-              href="https://github.com/MatthewKim323/ione"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex text-paper/75 transition hover:text-paper"
-              aria-label="ione on GitHub"
-            >
-              <GitHubIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 opacity-90" />
-            </a>
+              <IconSearch />
+            </button>
           </div>
 
-          <span
-            className="h-2.5 w-px shrink-0 bg-gradient-to-b from-transparent via-white/35 to-transparent"
-            aria-hidden
-          />
+          <span className="floating-nav__div" aria-hidden />
 
-          {/* Right: CTA */}
-          {isAuthed ? (
+          <div
+            ref={userSlotRef}
+            className="floating-nav__slot"
+            onMouseEnter={() => setHoverSlot("user")}
+            onMouseLeave={() => setHoverSlot(null)}
+          >
             <Link
-              to={profile?.onboarded_at ? "/dashboard" : "/onboarding"}
-              className="shrink-0 rounded-full bg-gradient-to-b from-white to-paper/95 px-2 py-0.5 sm:px-2.5 sm:py-1 font-sub text-[7px] sm:text-[8px] font-semibold uppercase tracking-[0.12em] text-ink-deep shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] transition hover:brightness-105 active:scale-[0.97]"
+              to={userHref}
+              className={`floating-nav__btn ${active === "user" ? "floating-nav__btn--on" : ""}`}
+              aria-label="Account"
+              aria-current={active === "user" ? "page" : undefined}
             >
-              home
+              <IconUser />
             </Link>
-          ) : (
-            <Link
-              to="/login"
-              className="shrink-0 rounded-full bg-gradient-to-b from-white to-paper/95 px-2 py-0.5 sm:px-2.5 sm:py-1 font-sub text-[7px] sm:text-[8px] font-semibold uppercase tracking-[0.12em] text-ink-deep shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] transition hover:brightness-105 active:scale-[0.97]"
-            >
-              login
-            </Link>
-          )}
+          </div>
         </div>
       </div>
     </nav>

@@ -20,6 +20,14 @@ import { CostMeter, type CostMeterCycle } from "./CostMeter";
 import { OcrDebugBanner } from "./OcrDebugBanner";
 import { RoiPicker } from "./RoiPicker";
 import { BrowserCompatBanner } from "./BrowserCompatBanner";
+import { WispOrb } from "./WispOrb";
+import {
+  AgentTrace,
+  applyCycleEvent,
+  newCycleLog,
+  type CycleLog,
+} from "./AgentTrace";
+import { KGReceipts } from "./KGReceipts";
 
 /**
  * The main /tutor surface. Coordinates:
@@ -65,6 +73,13 @@ export function TutorWorkspace() {
   } | null>(null);
   const [roi, setRoi] = useState<RoiRect | null>(null);
   const [pickingRoi, setPickingRoi] = useState(false);
+
+  // Live agent-trace log: one CycleLog per /api/cycle request, mutated in
+  // place as SSE events stream in. AgentTrace is a thin renderer over this.
+  const [cycleLog, setCycleLog] = useState<CycleLog[]>([]);
+  // Bumped when a session ends (or starts) so KGReceipts re-fetches the
+  // struggle profile after fresh claims have been written.
+  const [kgRefreshKey, setKgRefreshKey] = useState(0);
 
   const trajectoryRef = useRef<TrajectoryFrame[]>([]);
   const stallRef = useRef<StallDetector>(new StallDetector());
@@ -123,6 +138,18 @@ export function TutorWorkspace() {
       try {
         const stall = stallRef.current.snapshot();
         const idx = cycleIndexRef.current++;
+
+        // Seed a new CycleLog *before* the SSE stream opens — that way the
+        // AgentTrace shows a fresh row with `OCR · running` the instant the
+        // user shares the screen, instead of the rail staying empty until
+        // the first event lands ~1s later. We cap to 64 to keep the array
+        // bounded; AgentTrace already trims to last 12 for display.
+        setCycleLog((prev) => {
+          const next = [...prev, newCycleLog(idx)];
+          if (next.length > 64) next.splice(0, next.length - 64);
+          return next;
+        });
+
         const handle = await sendCycle({
           sessionId: sid,
           frame: blob,
@@ -146,6 +173,16 @@ export function TutorWorkspace() {
         };
 
         for await (const evt of handle.events) {
+          // Mutate the *most-recent* CycleLog with this event. We index by
+          // cycle position, not id — the synthetic `pending-<idx>` becomes
+          // the real cycle id only when `done` arrives.
+          setCycleLog((prev) => {
+            if (prev.length === 0) return prev;
+            const last = prev[prev.length - 1]!;
+            const updated = applyCycleEvent(last, evt);
+            if (updated === last) return prev;
+            return [...prev.slice(0, -1), updated];
+          });
           handleEvent(evt, {
             onSurfacedHint: () => (surfacedHint = true),
             onSnapshot: (s) => (snapshot = { ...snapshot, ...s }),
@@ -285,6 +322,10 @@ export function TutorWorkspace() {
         setSessionId(null);
         stallRef.current.reset();
         stallRef.current.stop();
+        // Session is over and the orchestrator has just flushed its claims
+        // to the KG. Bump the refresh key so KGReceipts re-fetches the
+        // struggle profile and shows the new receipts.
+        setKgRefreshKey((k) => k + 1);
       }
     }
   }, [capture, sessionId]);
@@ -303,18 +344,26 @@ export function TutorWorkspace() {
   }, [capture.error]);
 
   return (
-    <Notebook className="min-h-[80vh]">
+    <Notebook className="min-h-[80vh]" variant="desk">
       <BrowserCompatBanner />
       <NotebookLayout
+        variant="desk"
+        left={
+          // Left rail — agent orchestration trace. Lives outside the
+          // <main> column so the eye lands on `iPad mirror → marginalia`
+          // first; the rail then *expands* the user's understanding of
+          // what's happening behind the scenes.
+          <AgentTrace cycles={cycleLog} />
+        }
         main={
           <div className="flex gap-6">
             <ConfidenceRibbon level={confidence.level} reason={confidence.reason} />
             <div className="flex-1 min-w-0 flex flex-col gap-6">
-              <header className="flex items-baseline justify-between">
+              <header className="flex items-baseline justify-between gap-4 flex-wrap">
                 <div>
-                  <div className="section-label">live · tutor session</div>
+                  <div className="section-label-light">live · tutor session</div>
                   <h1
-                    className="h-display text-3xl mt-1"
+                    className="h-display-light text-3xl mt-1"
                     style={{ fontStyle: "italic" }}
                   >
                     a quiet pair of eyes.
@@ -323,27 +372,39 @@ export function TutorWorkspace() {
                 <div className="flex items-center gap-2">
                   <PencilButton
                     tone="ghost"
+                    surface="desk"
                     size="sm"
                     onClick={() => setAudioMuted((m) => !m)}
                   >
                     {audioMuted ? "audio off" : "audio on"}
                   </PencilButton>
                   {capture.isRunning ? (
-                    <PencilButton tone="red" size="sm" onClick={handleStop} disabled={endingSession}>
+                    <PencilButton
+                      tone="red"
+                      surface="desk"
+                      size="sm"
+                      onClick={handleStop}
+                      disabled={endingSession}
+                    >
                       {endingSession ? "ending…" : "stop session"}
                     </PencilButton>
                   ) : (
-                    <PencilButton size="sm" onClick={capture.start} disabled={!capture.isSupported}>
+                    <PencilButton
+                      surface="desk"
+                      size="sm"
+                      onClick={capture.start}
+                      disabled={!capture.isSupported}
+                    >
                       start session
                     </PencilButton>
                   )}
                 </div>
               </header>
 
-              <HairlineRule ticks />
+              <HairlineRule ticks tone="line" />
 
               {/* live preview — re-uses the capture surface video element */}
-              <div className="relative aspect-[4/3] w-full border border-ink-line bg-ink overflow-hidden">
+              <div className="relative aspect-[4/3] w-full border border-line bg-paper-tint overflow-hidden">
                 <video
                   ref={capture.videoRef}
                   autoPlay
@@ -360,7 +421,7 @@ export function TutorWorkspace() {
                       awaiting share
                     </span>
                     <span
-                      className="text-paper-dim text-sm leading-relaxed max-w-[28ch]"
+                      className="text-paper-faint text-sm leading-relaxed max-w-[28ch]"
                       style={{
                         fontFamily: "var(--font-display)",
                         fontStyle: "italic",
@@ -386,7 +447,7 @@ export function TutorWorkspace() {
                       <button
                         type="button"
                         onClick={() => setRoi(null)}
-                        className="font-sub text-[10px] tracking-[0.16em] uppercase px-2 py-1 bg-ink/70 text-paper-dim hover:text-paper border border-ink-line"
+                        className="font-sub text-[10px] tracking-[0.16em] uppercase px-2 py-1 bg-paper/90 text-paper-faint hover:text-ink-deep border border-line"
                       >
                         clear region
                       </button>
@@ -394,7 +455,7 @@ export function TutorWorkspace() {
                     <button
                       type="button"
                       onClick={() => setPickingRoi((v) => !v)}
-                      className="font-sub text-[10px] tracking-[0.16em] uppercase px-2 py-1 bg-ink/70 text-paper-dim hover:text-paper border border-ink-line"
+                      className="font-sub text-[10px] tracking-[0.16em] uppercase px-2 py-1 bg-paper/90 text-paper-faint hover:text-ink-deep border border-line"
                     >
                       {pickingRoi ? "cancel" : roi ? "re-select region" : "select region"}
                     </button>
@@ -407,7 +468,7 @@ export function TutorWorkspace() {
                   <div className="text-red-pencil text-sm" style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}>
                     {capture.error.headline}
                   </div>
-                  <div className="text-paper-dim text-[13px]">{capture.error.body}</div>
+                  <div className="text-paper-faint text-[13px]">{capture.error.body}</div>
                 </div>
               )}
 
@@ -416,10 +477,10 @@ export function TutorWorkspace() {
                 latex={latestOcr?.latex ?? null}
               />
 
-              <footer className="mt-auto pt-6 border-t border-ink-line flex items-baseline justify-between font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+              <footer className="mt-auto pt-6 border-t border-line flex items-baseline justify-between font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
                 <span>cycles · {capture.stats.cyclesRun}</span>
                 <span>encoded · {(capture.stats.totalEncodedBytes / 1024).toFixed(1)} kb</span>
-                <span className="text-paper-dim">
+                <span className="text-paper-faint">
                   cost · ${totalCost.toFixed(4)}
                 </span>
               </footer>
@@ -428,10 +489,39 @@ export function TutorWorkspace() {
         }
         margin={
           <div className="flex flex-col gap-8 min-h-full">
+            {/* Voice orb — pulses on hint TTS via the shared AudioBus.
+                Always rendered (even when muted) so the user sees idle
+                breathing while waiting for the next hint, and the WebGL
+                context stays warm so the first hint's reaction isn't a
+                cold start. */}
+            <div className="flex flex-col items-center">
+              <div className="section-label-light mb-3 self-start">voice</div>
+              <WispOrb size={220} />
+              <div
+                className={[
+                  "mt-2 font-mono text-[10px] tracking-[0.18em] uppercase",
+                  audioMuted ? "text-paper-mute" : "text-paper-faint",
+                ].join(" ")}
+              >
+                {audioMuted ? "audio muted" : "speaks on hint"}
+              </div>
+            </div>
+
             <div>
-              <div className="section-label mb-3">marginalia</div>
+              <div className="section-label-light mb-3">marginalia</div>
               <HintStack incoming={latestHint} audioMuted={audioMuted} />
             </div>
+
+            {/* Knowledge-graph receipts — surfaces the StruggleProfile and
+                the actual cited claims that the reasoning agent is using
+                to predict where this student tends to slip. This is the
+                "knowledge from KG" pane (live agent thought is on the left
+                in AgentTrace). */}
+            <div>
+              <div className="section-label-light mb-3">knowledge graph</div>
+              <KGReceipts refreshKey={kgRefreshKey} />
+            </div>
+
             {import.meta.env.DEV && (
               <div className="mt-auto">
                 <CostMeter cycles={costCycles} totalUsd={totalCost} />

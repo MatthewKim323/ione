@@ -49,6 +49,8 @@ import type { CycleEvent } from "../lib/sse.js";
 import { CycleCost } from "../lib/cost.js";
 import { logger } from "../lib/logger.js";
 import { isAppError } from "../lib/errors.js";
+import { cacheHintForAudio } from "../lib/hintCache.js";
+import { elevenLabsConfigured } from "../integrations/elevenlabs.js";
 
 export type OrchestratorInput = {
   /** WebP image, base64-encoded (no data: prefix). */
@@ -354,12 +356,30 @@ export async function runCycle(
         spoke = true;
         const predicted = verdict.kind === "speak_predictive";
         const severity = reasoning.severity ?? null;
+        // Phase 2 / E7 — only advertise audio if the TTS provider is wired
+        // up. The frontend's audioStream.ts treats a truthy `audio_url` as
+        // "fetch /api/audio/<id>", so we keep this null when ElevenLabs is
+        // disabled to avoid useless 4xx fetches in dev.
+        const audioUrl = elevenLabsConfigured()
+          ? `/api/audio/${input.cycleId}`
+          : null;
+        if (audioUrl) {
+          // Stash the text BEFORE the SSE event leaves so the audio fetch
+          // (which can race the SSE roundtrip on fast networks) always
+          // finds something to synthesize.
+          cacheHintForAudio({
+            hintId: input.cycleId,
+            text: intervention.hint_text,
+            cycleId: input.cycleId,
+            sessionId: input.session.id,
+          });
+        }
         events.push({
           type: "hint",
           id: input.cycleId,
           text: intervention.hint_text,
           hint_type: intervention.hint_type,
-          audio_url: null, // Phase 2 / E7 wires the audio passthrough
+          audio_url: audioUrl,
           predicted,
           severity: severity as 1 | 2 | 3 | 4 | 5 | undefined,
         });

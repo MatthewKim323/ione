@@ -8,11 +8,14 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 export function PencilButton({
   children,
   tone = "ink",
+  surface = "ink",
   size = "md",
   className,
   ...rest
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   tone?: "ink" | "red" | "ghost";
+  /** `desk` uses `.cta-light` so buttons read correctly on parchment / desk. */
+  surface?: "ink" | "desk";
   size?: "sm" | "md" | "lg";
   children: ReactNode;
 }) {
@@ -23,18 +26,24 @@ export function PencilButton({
         ? "px-6 py-3.5 text-[13px] tracking-[0.18em]"
         : "px-5 py-3 text-[11px] tracking-[0.18em]";
 
+  const base = surface === "desk" ? "cta-light" : "cta";
+
   const toneCls =
     tone === "red"
-      ? "border-red-pencil text-red-pencil hover:bg-red-pencil hover:text-paper"
+      ? surface === "desk"
+        ? "border-red-pencil text-red-pencil hover:bg-red-pencil hover:text-paper"
+        : "border-red-pencil text-red-pencil hover:bg-red-pencil hover:text-paper"
       : tone === "ghost"
-        ? "cta-ghost"
+        ? surface === "desk"
+          ? "cta-light-ghost"
+          : "cta-ghost"
         : "";
 
   return (
     <button
       type="button"
       className={[
-        "cta",
+        base,
         sizeCls,
         toneCls,
         "uppercase font-sub",

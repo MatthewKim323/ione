@@ -1,49 +1,24 @@
-import { useCallback, useId, useRef, useState } from "react";
+import { useCallback, useId, useState } from "react";
 import { motion } from "motion/react";
 import { ingestSource } from "../lib/graph/ingest";
-import type { SourceKind } from "../lib/database.types";
+import { inferSourceKind } from "../lib/graph/inferSourceKind";
 
 interface SourceUploadProps {
-  /** Called after a successful upload so the parent can refresh its list. */
+  /** Called after each successful upload so the parent can refresh its list. */
   onUploaded?: () => void;
-  /** Override the default kind picker copy (used in onboarding). */
+  /** Override the default heading. */
   heading?: string;
   /** Hide the surrounding card chrome (for use inside an existing card). */
   bare?: boolean;
 }
 
-const KIND_OPTIONS: { value: SourceKind; label: string; help: string }[] = [
-  {
-    value: "failed_exam",
-    label: "failed exam",
-    help: "the test you bombed — picture or scan",
-  },
-  {
-    value: "transcript",
-    label: "transcript",
-    help: "report card / grade history",
-  },
-  {
-    value: "practice_work",
-    label: "practice work",
-    help: "homework, scratch paper, notebook page",
-  },
-  {
-    value: "essay",
-    label: "essay",
-    help: "writing sample, especially with feedback",
-  },
-  { value: "syllabus", label: "syllabus", help: "your class's syllabus" },
-  {
-    value: "note",
-    label: "freeform note",
-    help: "anything you want ione to know — paste as .txt",
-  },
-];
+type Line =
+  | { kind: "ok"; filename: string; inferred: string }
+  | { kind: "err"; filename: string; msg: string };
 
 /**
- * The dropzone + kind picker. Visually styled like a margin-of-paper
- * "drop here" annotation rather than a generic file uploader.
+ * Bulk dropzone: many files, each gets an inferred `source_kind` per file.
+ * No per-batch type picker — one surface, one mental model.
  */
 export function SourceUpload({
   onUploaded,
@@ -51,125 +26,123 @@ export function SourceUpload({
   bare = false,
 }: SourceUploadProps) {
   const inputId = useId();
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [kind, setKind] = useState<SourceKind>("failed_exam");
   const [title, setTitle] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState<
-    | { kind: "idle" }
-    | { kind: "ok"; filename: string }
-    | { kind: "err"; msg: string }
-  >({ kind: "idle" });
+  const [lines, setLines] = useState<Line[]>([]);
 
-  const upload = useCallback(
-    async (file: File) => {
+  const uploadMany = useCallback(
+    async (files: FileList | File[]) => {
+      const list = Array.from(files).filter((f) => f.size > 0);
+      if (list.length === 0) return;
+
       setBusy(true);
-      setStatus({ kind: "idle" });
-      const res = await ingestSource({ file, kind, title: title.trim() });
-      setBusy(false);
-      if (res.ok) {
-        setStatus({ kind: "ok", filename: res.sourceFile.filename });
-        setTitle("");
-        onUploaded?.();
-      } else {
-        setStatus({ kind: "err", msg: res.error });
+      setLines([]);
+      const baseTitle = title.trim();
+      let anyOk = false;
+
+      for (let i = 0; i < list.length; i++) {
+        const file = list[i]!;
+        const kind = inferSourceKind(file);
+        const perTitle =
+          list.length === 1
+            ? baseTitle || undefined
+            : baseTitle
+              ? `${baseTitle} · ${file.name}`
+              : undefined;
+
+        const res = await ingestSource({
+          file,
+          kind,
+          title: perTitle,
+        });
+
+        if (res.ok) {
+          anyOk = true;
+          setLines((prev) => [
+            ...prev,
+            {
+              kind: "ok",
+              filename: res.sourceFile.filename,
+              inferred: kind.replace(/_/g, " "),
+            },
+          ]);
+          onUploaded?.();
+        } else {
+          setLines((prev) => [
+            ...prev,
+            { kind: "err", filename: file.name, msg: res.error },
+          ]);
+        }
       }
+
+      if (anyOk) setTitle("");
+      setBusy(false);
     },
-    [kind, title, onUploaded],
+    [title, onUploaded],
   );
 
   const onPick = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) void upload(file);
+      const fl = e.target.files;
+      if (fl && fl.length > 0) void uploadMany(fl);
       e.target.value = "";
     },
-    [upload],
+    [uploadMany],
   );
 
   const onDrop = useCallback(
     (e: React.DragEvent<HTMLLabelElement>) => {
       e.preventDefault();
       setDragOver(false);
-      const file = e.dataTransfer.files?.[0];
-      if (file) void upload(file);
+      const fl = e.dataTransfer.files;
+      if (fl && fl.length > 0) void uploadMany(fl);
     },
-    [upload],
+    [uploadMany],
   );
 
-  const wrapperClass = bare
-    ? ""
-    : "border border-ink-line bg-ink-raise/40 p-6 sm:p-8";
+  const wrapperClass = bare ? "" : "notebook-card p-6 sm:p-8";
 
   return (
     <div className={wrapperClass}>
       {!bare && (
         <div className="flex items-baseline justify-between mb-5">
-          <div className="section-label">+ new source</div>
-          <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint">
+          <div className="section-label-light">+ ingest</div>
+          <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
             stays in your account
           </span>
         </div>
       )}
 
       <h3
-        className="h-editorial text-[1.4rem] sm:text-[1.6rem] mb-4"
+        className="h-display-light text-[1.4rem] sm:text-[1.6rem] mb-4 leading-tight"
         style={{ fontStyle: "italic" }}
       >
         {heading}
       </h3>
 
-      {/* ── kind picker (chips) ─────────────────────────────────────── */}
-      <div
-        role="radiogroup"
-        aria-label="document type"
-        className="flex flex-wrap gap-2 mb-5"
-      >
-        {KIND_OPTIONS.map((opt) => {
-          const active = opt.value === kind;
-          return (
-            <button
-              key={opt.value}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              onClick={() => setKind(opt.value)}
-              title={opt.help}
-              className={`px-3 py-1.5 text-[11px] font-sub tracking-[0.14em] uppercase border transition-colors ${
-                active
-                  ? "border-red-pencil text-paper bg-red-pencil/15"
-                  : "border-ink-line text-paper-mute hover:text-paper hover:border-paper-faint"
-              }`}
-            >
-              {opt.label}
-            </button>
-          );
-        })}
-      </div>
-      <p className="font-sub text-[10px] tracking-wide text-paper-mute -mt-2 mb-5">
-        {KIND_OPTIONS.find((o) => o.value === kind)?.help}
+      <p className="font-sub text-[10px] tracking-wide text-paper-mute mb-5 max-w-[56ch]">
+        types are inferred per file (name + MIME). drop a whole folder of mixed
+        scans if you want — each file is indexed on its own.
       </p>
 
-      {/* ── optional title ──────────────────────────────────────────── */}
       <div className="mb-5">
         <label
           htmlFor={`${inputId}-title`}
           className="block font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute mb-2"
         >
-          label (optional)
+          batch label (optional)
         </label>
         <input
           id={`${inputId}-title`}
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder='e.g. "Algebra 2 — Chapter 5 test"'
-          className="w-full bg-transparent border-0 border-b border-paper-faint focus:border-red-pencil focus:outline-none px-0 py-2 text-paper placeholder:text-paper-faint font-sub text-sm transition-colors"
+          placeholder='e.g. "junior fall — everything"'
+          className="w-full bg-transparent border-0 border-b border-line focus:border-red-pencil focus:outline-none px-0 py-2 text-ink-deep placeholder:text-paper-mute/70 font-sub text-sm transition-colors"
         />
       </div>
 
-      {/* ── dropzone ────────────────────────────────────────────────── */}
       <label
         htmlFor={inputId}
         onDragOver={(e) => {
@@ -181,28 +154,28 @@ export function SourceUpload({
         className={`relative block cursor-pointer border border-dashed transition-colors px-6 py-10 text-center ${
           dragOver
             ? "border-red-pencil bg-red-pencil/5"
-            : "border-paper-faint hover:border-paper-mute"
+            : "border-paper-faint hover:border-ink-deep hover:bg-paper-warm/40"
         } ${busy ? "opacity-60 pointer-events-none" : ""}`}
       >
         <input
-          ref={inputRef}
           id={inputId}
           type="file"
+          multiple
           className="sr-only"
           onChange={onPick}
-          accept="image/*,application/pdf,text/plain,.md,.csv,.docx"
+          accept="image/*,application/pdf,text/plain,.md,.csv,.docx,audio/*"
         />
         <div
-          className="h-display text-[1.6rem] sm:text-[1.9rem] mb-2"
+          className="h-display-light text-[1.6rem] sm:text-[1.9rem] mb-2"
           style={{ fontStyle: "italic" }}
         >
-          {busy ? "uploading…" : "drop file here"}
+          {busy ? "indexing…" : "drop files here"}
         </div>
         <div className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
-          or click to browse · pdf · image · txt · ≤ 25 mb
+          or click to browse · pdf · image · txt · audio · many at once · ≤ 25
+          mb each
         </div>
 
-        {/* hand-drawn arrow in the corner */}
         <span
           className="absolute -top-3 -right-2 text-red-pencil text-2xl rotate-12 pointer-events-none"
           style={{ fontFamily: "var(--font-hand)" }}
@@ -211,24 +184,31 @@ export function SourceUpload({
         </span>
       </label>
 
-      {/* ── status ──────────────────────────────────────────────────── */}
-      {status.kind === "ok" && (
-        <motion.p
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-4 font-sub text-[11px] tracking-wide text-moss"
-        >
-          ✓ uploaded {status.filename}. ione will read it next.
-        </motion.p>
-      )}
-      {status.kind === "err" && (
-        <motion.p
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-4 font-sub text-[11px] tracking-wide text-red-pencil"
-        >
-          × {status.msg}
-        </motion.p>
+      {lines.length > 0 && (
+        <ul className="mt-5 space-y-2 text-left max-h-48 overflow-y-auto pr-1">
+          {lines.map((row, i) =>
+            row.kind === "ok" ? (
+              <motion.li
+                key={`${row.filename}-${i}`}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="font-sub text-[11px] tracking-wide text-moss"
+              >
+                ✓ {row.filename}{" "}
+                <span className="text-paper-mute">({row.inferred})</span>
+              </motion.li>
+            ) : (
+              <motion.li
+                key={`${row.filename}-err-${i}`}
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="font-sub text-[11px] tracking-wide text-red-pencil"
+              >
+                × {row.filename}: {row.msg}
+              </motion.li>
+            ),
+          )}
+        </ul>
       )}
     </div>
   );

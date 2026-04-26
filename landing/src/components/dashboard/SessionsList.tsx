@@ -79,14 +79,14 @@ export function SessionsList() {
   return (
     <section>
       <div className="mb-8">
-        <div className="section-label">© ione — sessions</div>
+        <div className="section-label-light">© ione — sessions</div>
         <h1
-          className="h-display text-[2rem] sm:text-[2.4rem] leading-tight mt-1"
+          className="h-display-light text-[2rem] sm:text-[2.4rem] leading-tight mt-1"
           style={{ fontStyle: "italic" }}
         >
           everything we worked on together.
         </h1>
-        <p className="text-paper-dim text-sm leading-relaxed max-w-[60ch] mt-3">
+        <p className="text-paper-faint text-sm leading-relaxed max-w-[60ch] mt-3">
           a session is one screen-share start to stop. tap a row to scrub
           through the cycles and see what each agent saw.
         </p>
@@ -113,23 +113,23 @@ export function SessionsList() {
           loading sessions…
         </div>
       ) : rows.length === 0 ? (
-        <div className="border border-ink-line bg-ink-deep px-6 py-10 text-center">
+        <div className="notebook-card px-6 py-10 text-center">
           <p className="text-paper-mute font-sub text-[11px] tracking-[0.18em] uppercase">
             no sessions yet
           </p>
-          <p className="text-paper-dim text-sm mt-3 max-w-[40ch] mx-auto">
+          <p className="text-paper-faint text-sm mt-3 max-w-[40ch] mx-auto">
             start a tutor session, finish it, and it'll appear here with
             full replay.
           </p>
           <Link
             to="/tutor"
-            className="inline-block mt-6 font-sub text-[11px] tracking-[0.22em] uppercase pencil-link"
+            className="inline-block mt-6 font-sub text-[11px] tracking-[0.22em] uppercase pencil-link-light"
           >
             → start a session
           </Link>
         </div>
       ) : (
-        <ul className="border border-ink-line bg-ink-deep ruled-paper divide-y divide-ink-line">
+        <ul className="notebook-card ruled-paper-light divide-y divide-line-soft overflow-hidden">
           {rows.map((r) => (
             <SessionRowItem key={r.id} row={r} />
           ))}
@@ -142,7 +142,7 @@ export function SessionsList() {
             type="button"
             onClick={() => setPage((p) => p + 1)}
             disabled={loading}
-            className="font-sub text-[11px] tracking-[0.22em] uppercase pencil-link"
+            className="font-sub text-[11px] tracking-[0.22em] uppercase pencil-link-light"
           >
             {loading ? "loading…" : "load more"}
           </button>
@@ -177,7 +177,7 @@ function SessionRowItem({ row }: { row: SessionRow }) {
     <li>
       <Link
         to={`/dashboard/sessions/${row.id}`}
-        className="block px-5 sm:px-7 py-5 hover:bg-ink-line/30 transition-colors group"
+        className="block px-5 sm:px-7 py-5 hover:bg-paper-warm/50 transition-colors group"
       >
         <div className="flex items-baseline justify-between gap-3 mb-1.5 flex-wrap">
           <div className="flex items-baseline gap-3 flex-wrap">
@@ -211,7 +211,7 @@ function SessionRowItem({ row }: { row: SessionRow }) {
           </span>
         </div>
         <p
-          className="text-paper text-[16px] leading-snug mb-2 line-clamp-2"
+          className="text-ink-deep text-[16px] leading-snug mb-2 line-clamp-2"
           style={{ fontFamily: "var(--font-display)" }}
         >
           {problem}

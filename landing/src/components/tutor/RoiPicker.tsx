@@ -88,9 +88,9 @@ export function RoiPicker({
       onPointerUp={onPointerUp}
     >
       {active && !drag && (
-        <div className="absolute inset-0 flex items-center justify-center bg-ink/60 pointer-events-none">
+        <div className="absolute inset-0 flex items-center justify-center bg-paper/88 pointer-events-none">
           <span
-            className="text-paper text-[14px] tracking-wide"
+            className="text-ink-deep text-[14px] tracking-wide"
             style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
           >
             drag a box around the math.
@@ -105,7 +105,7 @@ export function RoiPicker({
             top: `${Math.min(shown.y0, shown.y1) * 100}%`,
             width: `${Math.abs(shown.x1 - shown.x0) * 100}%`,
             height: `${Math.abs(shown.y1 - shown.y0) * 100}%`,
-            boxShadow: "0 0 0 9999px rgba(12,10,8,0.55)",
+            boxShadow: "0 0 0 9999px rgba(74, 70, 63, 0.42)",
           }}
         />
       )}

@@ -27,7 +27,7 @@ const STATUS_TONE: Record<
   "normal" | "idle" | "writing" | "stalled",
   string
 > = {
-  normal: "text-paper-dim",
+  normal: "text-paper-faint",
   idle: "text-moss",
   writing: "text-brass",
   stalled: "text-red-pencil",
@@ -60,19 +60,19 @@ export function CapturePanel({ capture }: { capture: UseScreenCaptureResult }) {
   const tone = STATUS_TONE[statusKey];
 
   return (
-    <div className="border border-ink-line bg-ink-raise p-8 sm:p-10">
+    <div className="notebook-card p-8 sm:p-10">
       {/* ── header pill ─────────────────────────────────────────────── */}
       <div className="flex items-baseline gap-3 mb-6">
         <span
           aria-hidden
           className={[
             "text-2xl leading-none transition-colors duration-500",
-            isRunning ? "text-red-pencil animate-pulse" : "text-paper-faint",
+            isRunning ? "text-red-pencil animate-pulse" : "text-paper-mute",
           ].join(" ")}
         >
           ●
         </span>
-        <span className="font-sub text-[11px] tracking-[0.22em] uppercase text-paper-dim">
+        <span className="font-sub text-[11px] tracking-[0.22em] uppercase text-paper-faint">
           {isRunning ? "capturing · live" : "not yet capturing"}
         </span>
       </div>
@@ -80,8 +80,8 @@ export function CapturePanel({ capture }: { capture: UseScreenCaptureResult }) {
       {/* ── live preview ────────────────────────────────────────────── */}
       <div
         className={[
-          "relative aspect-[4/3] w-full mb-6 border border-ink-line bg-ink overflow-hidden",
-          isRunning ? "" : "bg-[radial-gradient(circle_at_center,rgba(244,235,214,0.04),transparent_60%)]",
+          "relative aspect-[4/3] w-full mb-6 border border-line bg-paper-tint overflow-hidden",
+          isRunning ? "" : "bg-[radial-gradient(circle_at_center,rgba(196,48,43,0.04),transparent_60%)]",
         ].join(" ")}
       >
         <video
@@ -100,7 +100,7 @@ export function CapturePanel({ capture }: { capture: UseScreenCaptureResult }) {
               awaiting share
             </span>
             <span
-              className="text-paper-dim text-sm leading-relaxed max-w-[28ch]"
+              className="text-paper-faint text-sm leading-relaxed max-w-[28ch]"
               style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
             >
               your iPad will preview here once you start.
@@ -110,7 +110,7 @@ export function CapturePanel({ capture }: { capture: UseScreenCaptureResult }) {
         {/* subtle frame line overlay */}
         <div
           aria-hidden
-          className="absolute inset-0 ring-1 ring-inset ring-paper/[0.04] pointer-events-none"
+          className="absolute inset-0 ring-1 ring-inset ring-ink-deep/[0.04] pointer-events-none"
         />
       </div>
 
@@ -134,14 +134,14 @@ export function CapturePanel({ capture }: { capture: UseScreenCaptureResult }) {
             >
               {error.headline}
             </div>
-            <div className="text-paper-dim text-[13px] leading-relaxed">
+            <div className="text-paper-faint text-[13px] leading-relaxed">
               {error.body}
             </div>
           </div>
           <button
             type="button"
             onClick={dismissError}
-            className="text-paper-mute hover:text-paper transition-colors text-lg leading-none"
+            className="text-paper-mute hover:text-ink-deep transition-colors text-lg leading-none"
             aria-label="Dismiss"
           >
             ×
@@ -162,7 +162,7 @@ export function CapturePanel({ capture }: { capture: UseScreenCaptureResult }) {
         onClick={isRunning ? stop : start}
         disabled={!isSupported || isStarting}
         className={[
-          "cta w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed",
+          "cta-light w-full justify-center disabled:opacity-50 disabled:cursor-not-allowed",
           isRunning
             ? "border-red-pencil text-red-pencil hover:bg-red-pencil hover:text-paper hover:border-red-pencil"
             : "",
@@ -185,20 +185,20 @@ export function CapturePanel({ capture }: { capture: UseScreenCaptureResult }) {
       {!isRunning && !error && (
         <p className="text-paper-mute text-[12px] leading-relaxed mt-5">
           when chrome opens the picker, choose{" "}
-          <span className="text-paper-dim">window</span> and select{" "}
-          <span className="text-paper-dim">QuickTime Player</span> mirroring
+          <span className="text-ink-deep">window</span> and select{" "}
+          <span className="text-ink-deep">QuickTime Player</span> mirroring
           your iPad. nothing leaves the browser yet.
         </p>
       )}
 
       {/* ── cadence + adaptive status ───────────────────────────────── */}
-      <div className="mt-8 pt-6 border-t border-ink-line">
+      <div className="mt-8 pt-6 border-t border-line-soft">
         <div className="flex items-center justify-between mb-3">
           <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
             base cadence
           </span>
           <span
-            className="text-paper text-lg leading-none tabular-nums"
+            className="text-ink-deep text-lg leading-none tabular-nums"
             style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
           >
             {baseIntervalSec}s
@@ -267,18 +267,18 @@ export function CapturePanel({ capture }: { capture: UseScreenCaptureResult }) {
         }
         .cadence-slider::-webkit-slider-runnable-track {
           height: 1px;
-          background: var(--color-ink-line);
+          background: var(--color-line);
         }
         .cadence-slider::-moz-range-track {
           height: 1px;
-          background: var(--color-ink-line);
+          background: var(--color-line);
         }
         .cadence-slider::-webkit-slider-thumb {
           appearance: none;
           width: 12px;
           height: 12px;
           border-radius: 50%;
-          background: var(--color-paper);
+          background: var(--color-ink-deep);
           border: 0;
           margin-top: -5.5px;
           transition: transform 0.18s var(--ease-graphite),
@@ -292,7 +292,7 @@ export function CapturePanel({ capture }: { capture: UseScreenCaptureResult }) {
           width: 12px;
           height: 12px;
           border-radius: 50%;
-          background: var(--color-paper);
+          background: var(--color-ink-deep);
           border: 0;
           cursor: pointer;
         }
@@ -318,8 +318,8 @@ function Stat({
       </div>
       <div
         className={[
-          "h-display text-2xl leading-none tabular-nums",
-          tone === "moss" ? "text-moss" : "text-paper",
+          "h-display-light text-2xl leading-none tabular-nums",
+          tone === "moss" ? "text-moss" : "text-ink-deep",
         ].join(" ")}
         style={{ fontStyle: "italic" }}
       >
@@ -344,13 +344,13 @@ export function CaptureLog({ log }: { log: CycleEntry[] }) {
       className="mt-16"
     >
       <div className="flex items-baseline justify-between mb-5">
-        <div className="section-label">cycle log</div>
-        <div className="font-sub text-[10px] tracking-[0.18em] uppercase text-paper-faint">
+        <div className="section-label-light">cycle log</div>
+        <div className="font-sub text-[10px] tracking-[0.18em] uppercase text-paper-mute">
           newest first · last {log.length}
         </div>
       </div>
 
-      <ol className="border-t border-ink-line">
+      <ol className="border-t border-line">
         {log.map((entry) => (
           <LogRow key={entry.id} entry={entry} />
         ))}
@@ -387,14 +387,14 @@ function LogRow({ entry }: { entry: CycleEntry }) {
           encoded {entry.kb?.toFixed(1)} KB
         </span>
         <span className="text-moss/40 mx-2">→</span>
-        <span className="text-paper-dim font-sub text-[12px] tracking-tight">
+        <span className="text-paper-faint font-sub text-[12px] tracking-tight">
           POST /api/cycle
         </span>
       </>
     );
   } else {
     action = (
-      <span className="text-paper-faint italic">skipped (idle gate)</span>
+      <span className="text-paper-mute italic">skipped (idle gate)</span>
     );
   }
 
@@ -404,7 +404,7 @@ function LogRow({ entry }: { entry: CycleEntry }) {
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
       className={[
-        "grid grid-cols-[80px_84px_1fr] gap-4 items-baseline py-2 border-b border-ink-line/60 font-mono text-[13px] tabular-nums",
+        "grid grid-cols-[80px_84px_1fr] gap-4 items-baseline py-2 border-b border-line-soft/60 font-mono text-[13px] tabular-nums",
         actionTone,
       ].join(" ")}
     >
@@ -412,7 +412,7 @@ function LogRow({ entry }: { entry: CycleEntry }) {
       <span
         className={[
           "text-[12px]",
-          entry.type === "skipped" ? "text-paper-faint" : "text-paper-dim",
+          entry.type === "skipped" ? "text-paper-mute" : "text-paper-faint",
         ].join(" ")}
       >
         Δ {entry.diffPct.toFixed(1)}%

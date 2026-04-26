@@ -1,11 +1,8 @@
+import { useEffect } from "react";
 import { motion } from "motion/react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
-import { SourceList } from "../components/SourceList";
-import { SourceUpload } from "../components/SourceUpload";
-import { MemoryFeed } from "../components/MemoryFeed";
-import { CaptureLog, CapturePanel } from "../components/CaptureSurface";
-import { useScreenCapture } from "../lib/capture";
+import { MeetTheTutorCard } from "../components/dashboard/MeetTheTutorCard";
 import type {
   HintFrequency,
   MathClass,
@@ -53,7 +50,20 @@ const FREQ_LABELS: Record<HintFrequency, string> = {
 
 export default function Dashboard() {
   const { user, profile, signOut } = useAuth();
-  const capture = useScreenCapture({ baseIntervalSec: 8 });
+
+  // Sync the desk page background with the html/body so overscroll never
+  // shows the old dark ink. Mirrors the landing's PAGE_BG handling.
+  useEffect(() => {
+    const prevBody = document.body.style.backgroundColor;
+    const prevHtml = document.documentElement.style.backgroundColor;
+    document.body.style.backgroundColor = "#f2f2f2";
+    document.documentElement.style.backgroundColor = "#f2f2f2";
+    return () => {
+      document.body.style.backgroundColor = prevBody;
+      document.documentElement.style.backgroundColor = prevHtml;
+    };
+  }, []);
+
   if (!profile) return null; // route guard ensures we have one, but TS
 
   const firstName = profile.first_name;
@@ -66,43 +76,33 @@ export default function Dashboard() {
     .filter(Boolean);
 
   return (
-    <div className="min-h-screen bg-ink">
+    <div className="min-h-screen desk-page">
       {/* ── header ──────────────────────────────────────────────────── */}
-      <header className="border-b border-ink-line px-6 sm:px-10 py-5 flex items-center justify-between">
+      <header className="border-b border-line px-6 sm:px-10 py-5 flex items-center justify-between bg-desk/80 backdrop-blur-[2px] sticky top-0 z-20">
         <div className="flex items-center gap-4">
           <Link
             to="/"
             aria-label="back to landing"
-            className="text-paper text-2xl leading-none hover:opacity-80 transition-opacity"
+            className="text-ink-deep text-2xl leading-none hover:opacity-80 transition-opacity"
             style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
           >
             ione<span className="text-neon">.</span>
           </Link>
-          <span
-            className={[
-              "hidden sm:inline-flex items-center gap-2 font-sub text-[10px] tracking-[0.22em] uppercase",
-              capture.isRunning ? "text-red-pencil" : "text-paper-mute",
-            ].join(" ")}
-          >
-            <span
-              aria-hidden
-              className={capture.isRunning ? "animate-pulse" : ""}
-            >
-              ●
-            </span>
-            session / {capture.isRunning ? "live" : "idle"}
+          <span className="hidden sm:inline-flex items-center gap-2 font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+            <span aria-hidden>●</span>
+            your desk
           </span>
         </div>
         <div className="flex items-center gap-6">
           <Link
-            to="/dashboard/memory"
-            className="hidden sm:inline-block font-sub text-[11px] tracking-[0.14em] uppercase pencil-link"
+            to="/dashboard/graph"
+            className="font-sub text-[11px] tracking-[0.14em] uppercase pencil-link-light"
           >
-            memory
+            memory & graph
           </Link>
           <Link
             to="/"
-            className="hidden sm:inline-block font-sub text-[11px] tracking-[0.14em] uppercase pencil-link"
+            className="hidden sm:inline-block font-sub text-[11px] tracking-[0.14em] uppercase pencil-link-light"
           >
             ← landing
           </Link>
@@ -112,48 +112,51 @@ export default function Dashboard() {
           <button
             type="button"
             onClick={signOut}
-            className="font-sub text-[11px] tracking-[0.14em] uppercase pencil-link"
+            className="font-sub text-[11px] tracking-[0.14em] uppercase pencil-link-light"
           >
             sign out
           </button>
         </div>
       </header>
 
-      {/* ── main ────────────────────────────────────────────────────── */}
-      <main className="max-w-[1100px] mx-auto px-6 sm:px-10 pt-16 pb-24">
+      {/* ── main: hero is full-bleed; desk content stays in a reading column ─ */}
+      <main className="pt-10 sm:pt-12 pb-24 overflow-x-hidden">
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
         >
-          <div className="section-label mb-4">© ione — 000 / desk</div>
-          <h1
-            className="h-display text-[3.5rem] sm:text-[4.75rem] leading-[0.95] mb-8"
-            style={{ fontStyle: "italic" }}
-          >
-            welcome, {firstName.toLowerCase()}.
-          </h1>
-          <p className="text-paper-dim text-base sm:text-lg leading-relaxed max-w-[58ch] mb-16">
-            your notebook is open. when you're ready to start a session, ione
-            will watch your iPad work and intervene only when it'll genuinely
-            help. for now, this is the desk — quiet on purpose.
-          </p>
+          <MeetTheTutorCard />
         </motion.div>
 
-        {/* two-column session brief */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-12 gap-y-12">
-          {/* left: session brief */}
+        <div className="max-w-[1100px] mx-auto px-6 sm:px-10 mt-16 sm:mt-20">
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.65, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <div className="section-label-light mb-4">© ione — 000 / desk</div>
+            <h1 className="h-display-light text-[3.5rem] sm:text-[4.75rem] leading-[0.95] mb-2">
+              welcome,{" "}
+              <span className="h-forest">{firstName.toLowerCase()}.</span>
+            </h1>
+            <p className="text-paper-faint text-base sm:text-lg leading-relaxed max-w-[58ch] mb-12 mt-4">
+              the strip above is the live tutor — drift when it is quiet, surge
+              when it speaks. your session card and graph sit here on the calm
+              desk.
+            </p>
+          </motion.div>
+
           <motion.section
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
-            className="lg:col-span-7"
+            transition={{ duration: 0.6, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="section-label mb-4">session brief</div>
-            <div className="border border-ink-line bg-ink-deep ruled-paper p-8 sm:p-10 relative">
+            <div className="section-label-light mb-4">session brief</div>
+            <div className="notebook-card ruled-paper-light p-8 sm:p-10 relative">
               <div
                 aria-hidden
-                className="absolute left-[28px] top-0 bottom-0 w-px bg-red-pencil/30"
+                className="absolute left-[28px] top-3 bottom-3 w-px bg-red-pencil/40"
               />
 
               <BriefRow
@@ -168,7 +171,7 @@ export default function Dashboard() {
                   topics.length > 0 ? (
                     <span className="flex flex-wrap gap-x-3 gap-y-1">
                       {topics.map((t, i) => (
-                        <span key={t} className="text-paper">
+                        <span key={t} className="text-ink-deep">
                           {t}
                           {i < topics.length - 1 && (
                             <span className="text-paper-mute ml-3">·</span>
@@ -204,69 +207,37 @@ export default function Dashboard() {
               />
             </div>
           </motion.section>
-
-          {/* right: live capture surface */}
-          <motion.aside
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="lg:col-span-5"
-          >
-            <div className="section-label mb-4">capture</div>
-            <CapturePanel capture={capture} />
-
-            {/* margin note */}
-            <div
-              className="mt-6 pl-2"
-              style={{ fontFamily: "var(--font-hand)" }}
-            >
-              <span className="text-red-pencil text-2xl leading-tight">
-                tutor lives here →
-              </span>
-            </div>
-          </motion.aside>
         </div>
 
-        {/* full-width cycle log — only renders once a session is live */}
-        <CaptureLog log={capture.log} />
-
-        {/* ── knowledge graph: your sources ───────────────────────────── */}
+        {/* ── knowledge graph lives on /dashboard/graph (one ingest surface) ─ */}
         <motion.section
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="mt-24"
+          transition={{ duration: 0.6, delay: 0.28, ease: [0.16, 1, 0.3, 1] }}
+          className="max-w-[1100px] mx-auto px-6 sm:px-10 mt-24"
         >
-          <div className="flex items-baseline justify-between mb-4">
-            <div className="section-label">© ione — 001 / sources</div>
-            <span
-              className="hidden sm:inline-block font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint"
-              title="every claim ione makes will cite a chunk from one of these"
+          <div className="section-label-light mb-4">© ione — 001 / graph</div>
+          <div className="notebook-card ruled-paper-light p-8 sm:p-10 relative">
+            <div
+              aria-hidden
+              className="absolute left-[28px] top-3 bottom-3 w-px bg-red-pencil/40"
+            />
+            <h2
+              className="h-display-light text-[1.75rem] sm:text-[2.25rem] leading-tight mb-3 pl-2 sm:pl-0"
             >
-              receipts ↑ ground truth
-            </span>
-          </div>
-
-          <h2
-            className="h-display text-[1.75rem] sm:text-[2.25rem] leading-tight mb-3"
-            style={{ fontStyle: "italic" }}
-          >
-            what should ione <em>read</em>?
-          </h2>
-          <p className="text-paper-dim text-sm sm:text-base leading-relaxed max-w-[60ch] mb-10">
-            drop in failed exams, transcripts, scratch work, writing samples —
-            anything that shows where you actually struggle. ione builds a
-            knowledge graph of you from these. nothing leaves your account.
-          </p>
-
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-12 gap-y-10">
-            <div className="lg:col-span-7">
-              <SourceUpload />
-            </div>
-            <div className="lg:col-span-5 space-y-8">
-              <SourceList />
-              <MemoryFeed />
-            </div>
+              build your <em className="h-forest">knowledge graph</em>
+            </h2>
+            <p className="text-paper-faint text-sm sm:text-base leading-relaxed max-w-[58ch] mb-8 pl-2 sm:pl-0">
+              uploads, indexing, and “what does ione think it knows” all live
+              in one place now. drop a mixed bag of files at once — each file is
+              chunked and routed to extractors automatically.
+            </p>
+            <Link
+              to="/dashboard/graph"
+              className="inline-flex items-center gap-2 cta-light px-6 py-3 font-sub text-[11px] tracking-[0.18em] uppercase ml-2 sm:ml-0"
+            >
+              open memory & graph →
+            </Link>
           </div>
         </motion.section>
       </main>
@@ -289,7 +260,7 @@ function BriefRow({
     <div
       className={[
         "grid grid-cols-[3rem_1fr] gap-4 py-4",
-        last ? "" : "border-b border-ink-line",
+        last ? "" : "border-b border-line-soft",
       ].join(" ")}
     >
       <div
@@ -302,7 +273,7 @@ function BriefRow({
         <div className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute mb-1">
           {label}
         </div>
-        <div className="text-paper text-base leading-snug">{value}</div>
+        <div className="text-ink-deep text-base leading-snug">{value}</div>
       </div>
     </div>
   );

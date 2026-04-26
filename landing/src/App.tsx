@@ -44,21 +44,22 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          {/* More specific /dashboard/* routes first (defensive ordering). */}
           <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute requireOnboarded>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard/memory"
+            path="/dashboard/graph"
             element={
               <ProtectedRoute requireOnboarded>
                 <MemoryPage />
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="/dashboard/memory"
+            element={<Navigate to="/dashboard/graph" replace />}
+          />
+          <Route
+            path="/graph"
+            element={<Navigate to="/dashboard/graph" replace />}
           />
           <Route
             path="/dashboard/patterns"
@@ -89,6 +90,14 @@ export default function App() {
             element={
               <ProtectedRoute requireOnboarded>
                 <SourceDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute requireOnboarded>
+                <Dashboard />
               </ProtectedRoute>
             }
           />

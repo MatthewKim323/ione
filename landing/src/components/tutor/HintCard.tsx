@@ -1,9 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Marginalia, HandUnderline } from "../design/Marginalia";
 import { MathInText } from "../design/Math";
 import type { CycleEvent } from "../../lib/tutor/cycleClient";
 import { playHintAudio, type AudioController } from "../../lib/tutor/audioStream";
+import {
+  getSharedAudioElement,
+  primeAudioGraph,
+} from "../../lib/audio/audioBus";
 
 /**
  * One hint card — slides in from the right margin, sits for 6s, then fades
@@ -43,7 +47,6 @@ export function HintCard({
   onDismiss: (id: string) => void;
   audioMuted: boolean;
 }) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [phase, setPhase] = useState<"in" | "out">("in");
 
   // 6s linger then fade.
@@ -52,22 +55,33 @@ export function HintCard({
     return () => clearTimeout(t);
   }, [hint.id]);
 
-  // Play TTS if available.
+  // Play TTS through the shared AudioBus element so the wisp orb's
+  // AnalyserNode tap sees the same waveform. We don't keep our own <audio>
+  // ref anymore — that would route audio through a second element the
+  // analyser can't see, leaving the orb idle while ElevenLabs is talking.
   useEffect(() => {
     if (audioMuted || !hint.audio_url) return;
-    if (!audioRef.current) return;
     let controller: AudioController | null = null;
+    let cancelled = false;
     (async () => {
       try {
+        // Prime the WebAudio graph BEFORE play() so the analyser is wired
+        // before the first sample lands. We're still inside a user-gesture
+        // chain here (HintCard mounts in response to the SSE event that
+        // followed a click-to-start-session), so AudioContext won't throw.
+        await primeAudioGraph();
+        if (cancelled) return;
+        const audioEl = getSharedAudioElement();
         controller = await playHintAudio({
           hintId: hint.id,
-          audioEl: audioRef.current!,
+          audioEl,
         });
       } catch (e) {
         console.warn("[hint] audio play failed", e);
       }
     })();
     return () => {
+      cancelled = true;
       controller?.stop();
     };
   }, [hint.id, hint.audio_url, audioMuted]);
@@ -104,14 +118,7 @@ export function HintCard({
       <div className="mt-1.5 ml-1 max-w-[180px]">
         <HandUnderline color={`var(--color-${tone === "graphite" ? "paper-faint" : tone})`} />
       </div>
-
-      {/* hidden audio sink */}
-      <audio
-        ref={audioRef}
-        className="hidden"
-        preload="none"
-        playsInline
-      />
+      {/* No local <audio> — see ../../lib/audio/audioBus for the singleton sink. */}
     </motion.div>
   );
 }

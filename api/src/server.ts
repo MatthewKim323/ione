@@ -5,7 +5,9 @@ import { serve } from "@hono/node-server";
 import { env } from "./env.js";
 import { logger } from "./lib/logger.js";
 import { AppError, isAppError, toAppError } from "./lib/errors.js";
+import { audioRoute } from "./routes/audio.js";
 import { cycleRoute } from "./routes/cycle.js";
+import { profileRoute } from "./routes/profile.js";
 import { sessionsRoute } from "./routes/sessions.js";
 import { sourcesRoute } from "./routes/sources.js";
 
@@ -77,8 +79,10 @@ export function createApp(): Hono<AppEnv> {
   // Phase 1 / D
   app.route("/api/cycle", cycleRoute);
   app.route("/api/sessions", sessionsRoute);
-  // Phase 2 / E7
-  // app.route("/api/audio", audioRoute);
+  // Phase 2 / E7 — ElevenLabs TTS passthrough for hint audio.
+  app.route("/api/audio", audioRoute);
+  // Phase 2 / E8 — KG receipts surfaced into the tutor sidebar.
+  app.route("/api/me", profileRoute);
   // Phase 3 / F4
   app.route("/api/sources", sourcesRoute);
 

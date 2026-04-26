@@ -60,7 +60,7 @@ export function PatternsPanel() {
     return (
       <section>
         <Header summary={null} />
-        <p className="text-paper-dim text-sm leading-relaxed max-w-[60ch]">
+        <p className="text-paper-faint text-sm leading-relaxed max-w-[60ch]">
           ione hasn't watched you work yet. once you complete a few tutor
           sessions, four sparklines will appear here showing how often you
           slip, how long it takes you to start a problem, how often you
@@ -115,9 +115,9 @@ function Header({
 }) {
   return (
     <div className="mb-8">
-      <div className="section-label">© ione — patterns</div>
+      <div className="section-label-light">© ione — patterns</div>
       <h1
-        className="h-display text-[2rem] sm:text-[2.4rem] leading-tight mt-1"
+        className="h-display-light text-[2rem] sm:text-[2.4rem] leading-tight mt-1"
         style={{ fontStyle: "italic" }}
       >
         the shape of how you struggle.
@@ -184,6 +184,7 @@ function SparklineCard({
   const last = numeric[numeric.length - 1];
   const first = numeric[0];
   const trend = last - first;
+  const gradId = `pat-${String(valueKey)}`;
 
   return (
     <article>
@@ -197,13 +198,13 @@ function SparklineCard({
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 8 }}>
             <defs>
-              <linearGradient id={`grad-${title}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="rgb(180 60 50)" stopOpacity={0.45} />
-                <stop offset="100%" stopColor="rgb(180 60 50)" stopOpacity={0} />
+              <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="rgb(196 48 43)" stopOpacity={0.38} />
+                <stop offset="100%" stopColor="rgb(196 48 43)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <Tooltip
-              cursor={{ stroke: "rgb(120 110 100)", strokeWidth: 1, strokeDasharray: "2 2" }}
+              cursor={{ stroke: "rgb(212 200 173)", strokeWidth: 1, strokeDasharray: "2 2" }}
               content={(props) => (
                 <SparklineTooltip
                   {...(props as unknown as SparklineTooltipProps)}
@@ -214,11 +215,11 @@ function SparklineCard({
             <Area
               type="monotone"
               dataKey="value"
-              stroke="rgb(180 60 50)"
+              stroke="rgb(196 48 43)"
               strokeWidth={1.6}
-              fill={`url(#grad-${title})`}
-              dot={{ r: 2.5, fill: "rgb(180 60 50)", strokeWidth: 0 }}
-              activeDot={{ r: 4, fill: "rgb(180 60 50)", strokeWidth: 0 }}
+              fill={`url(#${gradId})`}
+              dot={{ r: 2.5, fill: "rgb(196 48 43)", strokeWidth: 0 }}
+              activeDot={{ r: 4, fill: "rgb(196 48 43)", strokeWidth: 0 }}
               isAnimationActive
               animationDuration={420}
               connectNulls
@@ -226,7 +227,7 @@ function SparklineCard({
           </AreaChart>
         </ResponsiveContainer>
       </div>
-      <div className="flex justify-between font-sub text-[9px] tracking-wide text-paper-faint mt-1 px-2">
+      <div className="flex justify-between font-sub text-[9px] tracking-wide text-paper-mute mt-1 px-2">
         <span>min {formatValue(min)}</span>
         <span>max {formatValue(max)}</span>
       </div>
@@ -249,12 +250,12 @@ function CardHeading({
     <header className="flex items-baseline justify-between flex-wrap gap-x-3 gap-y-1">
       <div>
         <h3
-          className="h-display text-[1.25rem] leading-tight"
+          className="h-display-light text-[1.25rem] leading-tight"
           style={{ fontStyle: "italic" }}
         >
           {title}
         </h3>
-        <p className="text-paper-dim text-xs leading-snug max-w-[56ch]">
+        <p className="text-paper-faint text-xs leading-snug max-w-[56ch]">
           {marginalia}
         </p>
       </div>
@@ -300,11 +301,11 @@ function SparklineTooltip({
   const date = `${d.getMonth() + 1}/${d.getDate()}`;
   return (
     <div
-      className="bg-ink-deep border border-ink-line px-2 py-1 font-sub text-[10px] tracking-wide text-paper-mute shadow-md"
+      className="bg-paper border border-line px-2 py-1 font-sub text-[10px] tracking-wide text-paper-mute shadow-md rounded-[2px]"
       style={{ pointerEvents: "none" }}
     >
       session {p.index} · {date} ·{" "}
-      <span className="text-paper">{formatValue(p.value)}</span>
+      <span className="text-ink-deep">{formatValue(p.value)}</span>
     </div>
   );
 }

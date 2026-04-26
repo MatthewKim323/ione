@@ -100,11 +100,11 @@ export function SourceDetail() {
   }
   if (err || !source) {
     return (
-      <div className="border border-ink-line bg-ink-deep px-6 py-10 text-center">
+      <div className="notebook-card px-6 py-10 text-center">
         <p className="text-red-pencil font-sub text-sm">{err ?? "not found"}</p>
         <Link
           to="/dashboard"
-          className="inline-block mt-4 font-sub text-[11px] tracking-[0.18em] uppercase pencil-link"
+          className="inline-block mt-4 font-sub text-[11px] tracking-[0.18em] uppercase pencil-link-light"
         >
           ← back to desk
         </Link>
@@ -118,15 +118,15 @@ export function SourceDetail() {
     <section>
       <Link
         to="/dashboard"
-        className="inline-block mb-5 font-sub text-[11px] tracking-[0.18em] uppercase pencil-link"
+        className="inline-block mb-5 font-sub text-[11px] tracking-[0.18em] uppercase pencil-link-light"
       >
         ← back to desk
       </Link>
 
       <header className="mb-8">
-        <div className="section-label">© ione — source · {source.kind}</div>
+        <div className="section-label-light">© ione — source · {source.kind}</div>
         <h1
-          className="h-display text-[1.7rem] sm:text-[2rem] leading-tight mt-1"
+          className="h-display-light text-[1.7rem] sm:text-[2rem] leading-tight mt-1"
           style={{ fontStyle: "italic" }}
         >
           {source.title ?? source.filename}
@@ -146,13 +146,13 @@ export function SourceDetail() {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-x-10 gap-y-8">
         <div className="lg:col-span-7">
-          <div className="section-label mb-2">chunks</div>
+          <div className="section-label-light mb-2">chunks</div>
           {chunks.length === 0 ? (
             <p className="text-paper-mute font-sub text-xs">
               no chunks yet — extraction may still be running.
             </p>
           ) : (
-            <ol className="border border-ink-line bg-ink-deep ruled-paper divide-y divide-ink-line max-h-[70vh] overflow-y-auto">
+            <ol className="notebook-card ruled-paper-light divide-y divide-line-soft max-h-[70vh] overflow-y-auto">
               {chunks.map((c) => {
                 const cClaims = claimsByChunk.get(c.id) ?? [];
                 const active = activeChunkId === c.id;
@@ -164,7 +164,7 @@ export function SourceDetail() {
                     }}
                     className={[
                       "px-5 py-4 cursor-pointer transition-colors",
-                      active ? "bg-red-pencil/10" : "hover:bg-ink-line/30",
+                      active ? "bg-red-pencil/10" : "hover:bg-paper-warm/50",
                     ].join(" ")}
                     onClick={() =>
                       setActiveChunkId(active ? null : c.id)
@@ -180,7 +180,7 @@ export function SourceDetail() {
                           : `${cClaims.length} claim${cClaims.length === 1 ? "" : "s"}`}
                       </span>
                     </div>
-                    <p className="text-paper text-sm leading-relaxed whitespace-pre-wrap">
+                    <p className="text-ink-deep text-sm leading-relaxed whitespace-pre-wrap">
                       {truncate(c.text, 600)}
                     </p>
                   </li>
@@ -191,7 +191,7 @@ export function SourceDetail() {
         </div>
 
         <aside className="lg:col-span-5">
-          <div className="section-label mb-2">claims</div>
+          <div className="section-label-light mb-2">claims</div>
           {claims.length === 0 ? (
             <p className="text-paper-mute font-sub text-xs">
               extraction hasn't produced any claims yet.
@@ -230,7 +230,7 @@ function ClaimItem({
   const isMed = claim.sensitivity === "medium";
   const status = claim.status;
   return (
-    <li className="border border-ink-line bg-ink-deep px-4 py-3">
+    <li className="border border-line bg-paper px-4 py-3 rounded-[2px] shadow-[0_1px_0_rgba(74,70,63,0.05)]">
       <div className="flex items-baseline justify-between gap-2 mb-1.5 flex-wrap">
         <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-red-pencil">
           {claim.predicate}
@@ -266,26 +266,26 @@ function ClaimItem({
         </div>
       </div>
       <p
-        className="text-paper text-[14px] leading-snug mb-2"
+        className="text-ink-deep text-[14px] leading-snug mb-2"
         style={{ fontFamily: "var(--font-display)" }}
       >
         {renderObject(claim.object)}
       </p>
       {claim.reasoning && (
         <p
-          className="text-paper-dim text-xs leading-snug mb-2"
+          className="text-paper-faint text-xs leading-snug mb-2"
           style={{ fontStyle: "italic" }}
         >
           "{truncate(claim.reasoning, 180)}"
         </p>
       )}
-      <div className="flex items-center gap-3 font-sub text-[10px] tracking-wide text-paper-faint">
+      <div className="flex items-center gap-3 font-sub text-[10px] tracking-wide text-paper-mute">
         <span>{claim.extracted_by}</span>
         {claim.source_chunk_id && (
           <button
             type="button"
             onClick={() => onJump(claim.source_chunk_id!)}
-            className="pencil-link"
+            className="pencil-link-light"
           >
             → cited chunk
           </button>

@@ -1,25 +1,27 @@
 /**
  * One-pixel rule with optional pencil-end ticks. Used as section separators
- * inside Notebook and the Tutor workspace. Default tone is `ink-line`; pass
- * `tone="paper"` for inverted backgrounds.
+ * inside Notebook and the Tutor workspace. Default tone is `ink-line`; use
+ * `tone="line"` on light desk surfaces.
  */
 export function HairlineRule({
   tone = "ink-line",
   ticks = false,
   className,
 }: {
-  tone?: "ink-line" | "paper" | "paper-faint" | "red-pencil";
+  tone?: "ink-line" | "line" | "paper" | "paper-faint" | "red-pencil";
   ticks?: boolean;
   className?: string;
 }) {
   const colorVar =
-    tone === "paper"
-      ? "var(--color-paper)"
-      : tone === "paper-faint"
-        ? "var(--color-paper-faint)"
-        : tone === "red-pencil"
-          ? "var(--color-red-pencil)"
-          : "var(--color-ink-line)";
+    tone === "line"
+      ? "var(--color-line)"
+      : tone === "paper"
+        ? "var(--color-paper)"
+        : tone === "paper-faint"
+          ? "var(--color-paper-faint)"
+          : tone === "red-pencil"
+            ? "var(--color-red-pencil)"
+            : "var(--color-ink-line)";
 
   return (
     <div

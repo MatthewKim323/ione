@@ -9,6 +9,7 @@ import { OptionPill } from "../components/OptionPill";
 import { OptionRow } from "../components/OptionRow";
 import { SourceUpload } from "../components/SourceUpload";
 import { SourceList } from "../components/SourceList";
+import { GlowButton } from "../components/design/GlowButton";
 import type {
   Grade,
   HintFrequency,
@@ -229,15 +230,15 @@ export default function Onboarding() {
             </div>
 
             <div className="flex justify-end mt-10">
-              <button
+              <GlowButton
                 type="button"
                 disabled={!step1Valid}
                 onClick={() => setStep(1)}
-                className="cta disabled:opacity-40 disabled:cursor-not-allowed"
+                className="glow-btn--on-light disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 next
                 <span aria-hidden>→</span>
-              </button>
+              </GlowButton>
             </div>
           </motion.div>
         )}
@@ -286,19 +287,19 @@ export default function Onboarding() {
               <button
                 type="button"
                 onClick={() => setStep(0)}
-                className="font-sub text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-paper transition-colors"
+                className="font-sub text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-ink-deep transition-colors"
               >
                 ← back
               </button>
-              <button
+              <GlowButton
                 type="button"
                 disabled={!step2Valid}
                 onClick={() => setStep(2)}
-                className="cta disabled:opacity-40 disabled:cursor-not-allowed"
+                className="glow-btn--on-light disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 next
                 <span aria-hidden>→</span>
-              </button>
+              </GlowButton>
             </div>
           </motion.div>
         )}
@@ -352,11 +353,11 @@ export default function Onboarding() {
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="font-sub text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-paper transition-colors"
+                className="font-sub text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-ink-deep transition-colors"
               >
                 ← back
               </button>
-              <button
+              <GlowButton
                 type="button"
                 disabled={submitting}
                 onClick={() => {
@@ -366,11 +367,11 @@ export default function Onboarding() {
                     void saveProfileThenAdvance();
                   }
                 }}
-                className="cta disabled:opacity-50 disabled:cursor-wait"
+                className="glow-btn--on-light disabled:opacity-50 disabled:cursor-wait"
               >
                 {submitting ? "saving…" : "next"}
                 <span aria-hidden>→</span>
-              </button>
+              </GlowButton>
             </div>
           </motion.div>
         )}
@@ -384,9 +385,10 @@ export default function Onboarding() {
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           >
             <p className="text-paper-dim text-sm leading-relaxed mb-6 max-w-[58ch]">
-              ione builds a private knowledge graph of you from these. failed
-              exams point to weak topics. transcripts point to which classes
-              are slipping. nothing leaves your account.
+              ione builds a private knowledge graph of you from these. drop
+              files here (you can add more later from memory & graph). each file
+              is classified from its name and type, then chunked for agents.
+              nothing leaves your account.
             </p>
 
             <SourceUpload
@@ -408,7 +410,7 @@ export default function Onboarding() {
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="font-sub text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-paper transition-colors"
+                className="font-sub text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-ink-deep transition-colors"
               >
                 ← back
               </button>
@@ -416,18 +418,18 @@ export default function Onboarding() {
                 <button
                   type="button"
                   onClick={finish}
-                  className="font-sub text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-paper transition-colors"
+                  className="font-sub text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-ink-deep transition-colors"
                 >
                   skip for now
                 </button>
-                <button
+                <GlowButton
                   type="button"
                   onClick={finish}
-                  className="cta hero-primary-cta"
+                  className="glow-btn--on-light"
                 >
                   open the tutor
                   <span aria-hidden>→</span>
-                </button>
+                </GlowButton>
               </div>
             </div>
           </motion.div>
@@ -449,7 +451,7 @@ function StepDots({ active, total }: { active: number; total: number }) {
               ? "bg-red-pencil"
               : i < active
                 ? "bg-paper-mute"
-                : "bg-ink-line",
+                : "bg-line",
           ].join(" ")}
           aria-current={i === active}
         />

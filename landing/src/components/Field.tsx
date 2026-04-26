@@ -9,7 +9,7 @@ interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
 /**
  * Form input styled like writing on ruled paper. Underline-only border
  * (no rounded box) so it reads as "filling in a blank" instead of a generic
- * web form field.
+ * web form field. Tuned for cream parchment cards on the warm-desk page.
  */
 export function Field({ label, hint, error, id, ...rest }: FieldProps) {
   const inputId = id ?? `field-${label.replace(/\s+/g, "-").toLowerCase()}`;
@@ -24,7 +24,7 @@ export function Field({ label, hint, error, id, ...rest }: FieldProps) {
       <input
         id={inputId}
         {...rest}
-        className={`w-full bg-transparent border-0 border-b border-paper-faint focus:border-red-pencil focus:outline-none px-0 py-2 text-paper placeholder:text-paper-faint font-sub text-sm transition-colors ${rest.className ?? ""}`}
+        className={`w-full bg-transparent border-0 border-b border-line focus:border-red-pencil focus:outline-none px-0 py-2 text-ink-deep placeholder:text-paper-mute/70 font-sub text-sm transition-colors ${rest.className ?? ""}`}
       />
       {hint && !error && (
         <p className="mt-1.5 font-sub text-[10px] tracking-wide text-paper-mute">

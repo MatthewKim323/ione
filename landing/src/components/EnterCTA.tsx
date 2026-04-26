@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
+import { GlowButton } from "./design/GlowButton";
 
 interface EnterCTAProps {
   variant?: "primary" | "ghost";
@@ -14,12 +14,10 @@ interface EnterCTAProps {
  */
 export function EnterCTA({
   variant = "primary",
-  className,
+  className = "",
   children,
 }: EnterCTAProps) {
   const { session, profile } = useAuth();
-  // Treat undefined (still loading) as logged-out so the link is always usable;
-  // if loading finishes and they're authed, the route guards will redirect.
   const to =
     session && profile && profile.onboarded_at
       ? "/dashboard"
@@ -27,17 +25,14 @@ export function EnterCTA({
         ? "/onboarding"
         : "/signup";
 
+  const isHeroSkin = className.includes("hero-primary");
+  const tone =
+    variant === "ghost" ? "ghost" : isHeroSkin ? "hero" : "default";
+
   return (
-    <Link
-      to={to}
-      className={[
-        "cta",
-        variant === "ghost" ? "cta-ghost" : "",
-        className ?? "",
-      ].join(" ")}
-    >
+    <GlowButton as="link" to={to} tone={tone} className={className}>
       {children ?? "open the tutor"}
       <span aria-hidden>→</span>
-    </Link>
+    </GlowButton>
   );
 }

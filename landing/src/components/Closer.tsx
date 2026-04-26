@@ -1,7 +1,7 @@
 import { motion } from "motion/react";
 import { InteractiveGradient } from "./InteractiveGradient";
 import { EnterCTA } from "./EnterCTA";
-import { Link } from "react-router-dom";
+import { GlowButton } from "./design/GlowButton";
 
 export function Closer() {
   return (
@@ -65,9 +65,9 @@ export function Closer() {
                 className="mt-12 flex flex-wrap items-center gap-5"
               >
                 <EnterCTA />
-                <Link to="/login" className="cta cta-ghost">
+                <GlowButton as="link" to="/login" tone="ghost">
                   already have an account?
-                </Link>
+                </GlowButton>
               </motion.div>
 
               <motion.div

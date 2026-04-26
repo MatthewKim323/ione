@@ -33,22 +33,22 @@ export function BrowserCompatBanner() {
           browser · heads up
         </div>
         <div
-          className="text-paper text-[15px]"
+          className="text-ink-deep text-[15px]"
           style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
         >
           {describeMissing(report.missing)}
         </div>
-        <div className="text-paper-dim text-[13px] mt-1.5 leading-relaxed">
-          ione is built around <span className="text-paper">Chrome 120+</span>{" "}
+        <div className="text-paper-faint text-[13px] mt-1.5 leading-relaxed">
+          ione is built around <span className="text-ink-deep">Chrome 120+</span>{" "}
           on a desktop or laptop. detected:{" "}
-          <span className="text-paper">{report.uaHint}</span>. open this page
+          <span className="text-ink-deep">{report.uaHint}</span>. open this page
           in chrome and the tutor will start working.
         </div>
       </div>
       <button
         type="button"
         onClick={() => setDismissed(true)}
-        className="font-sub text-[10px] tracking-[0.18em] uppercase text-paper-dim hover:text-paper transition-colors px-2 py-1"
+        className="font-sub text-[10px] tracking-[0.18em] uppercase text-paper-faint hover:text-ink-deep transition-colors px-2 py-1"
         aria-label="dismiss browser warning"
       >
         dismiss

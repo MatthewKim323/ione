@@ -6,7 +6,12 @@
  * The events table is the canonical broadcast bus: every claim write —
  * whether from a post-upload extractor, the orchestrator predicting an
  * error, or the student confirming a proposal — drops a row. We subscribe
- * to it once, hand callers narrow callbacks, and reuse the channel.
+ * to it once, hand callers narrow callbacks.
+ *
+ * Important: each hook instance must use a **unique** channel name. The
+ * Supabase client reuses an existing topic, so a fixed name like `kg-events`
+ * would merge MemoryFeed + ProposalReview + MemoryInspector — then
+ * `removeChannel` from one surface tears down the others and callbacks fight.
  *
  * Why not subscribe directly to claims?
  *   - claims has high RLS overhead per row insert
@@ -69,6 +74,14 @@ export function useGraphEvents(opts?: {
   const kindsRef = useRef(kinds);
   kindsRef.current = kinds;
 
+  const channelNameRef = useRef<string | null>(null);
+  if (!channelNameRef.current) {
+    channelNameRef.current =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? `kg-events-${crypto.randomUUID()}`
+        : `kg-events-${Math.random().toString(36).slice(2, 11)}`;
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -91,7 +104,7 @@ export function useGraphEvents(opts?: {
     void bootstrap();
 
     const channel = supabase
-      .channel("kg-events")
+      .channel(channelNameRef.current!)
       .on<GraphEvent>(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "events" },

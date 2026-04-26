@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { AuthLayout } from "../components/AuthLayout";
 import { Field } from "../components/Field";
+import { GlowButton } from "../components/design/GlowButton";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -54,7 +55,7 @@ export default function Login() {
       footer={
         <>
           new here?{" "}
-          <Link to="/signup" className="text-paper hover:text-red-pencil">
+          <Link to="/signup" className="text-ink-deep hover:text-red-pencil">
             create account
           </Link>
         </>
@@ -81,14 +82,14 @@ export default function Login() {
           error={error}
         />
 
-        <button
+        <GlowButton
           type="submit"
           disabled={submitting}
-          className="cta w-full justify-center mt-6 disabled:opacity-50 disabled:cursor-wait"
+          className="glow-btn--on-light glow-btn--block mt-6"
         >
           {submitting ? "opening…" : "log in"}
           <span aria-hidden>→</span>
-        </button>
+        </GlowButton>
       </form>
     </AuthLayout>
   );

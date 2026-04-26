@@ -29,7 +29,7 @@ const KIND_ACCENT: Record<string, string> = {
   claim_rejected: "text-red-pencil",
   extractor_completed: "text-moss",
   extractor_failed: "text-red-pencil",
-  tutor_hint_surfaced: "text-paper",
+  tutor_hint_surfaced: "text-ink-deep",
   tutor_hint_suppressed: "text-paper-mute",
 };
 
@@ -47,10 +47,11 @@ export function MemoryFeed({ bufferSize = 12 }: { bufferSize?: number }) {
   });
 
   return (
-    <div className="border border-ink-line bg-ink-raise/40 p-6 sm:p-7">
+    <div className="notebook-card p-6 sm:p-7">
       <div className="flex items-baseline justify-between mb-5">
-        <div className="section-label">© ione — memory feed</div>
-        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint">
+        <div className="section-label-light">© ione — memory feed</div>
+        <span className="inline-flex items-center gap-1.5 font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+          <span className="block w-1.5 h-1.5 rounded-full bg-moss animate-pulse" />
           live
         </span>
       </div>
@@ -84,10 +85,10 @@ export function MemoryFeed({ bufferSize = 12 }: { bufferSize?: number }) {
                 >
                   {label}
                 </span>
-                <span className="text-paper-dim flex-1 min-w-0 truncate">
+                <span className="text-paper-faint flex-1 min-w-0 truncate">
                   {headline}
                 </span>
-                <span className="font-sub text-[9px] tracking-wide text-paper-faint shrink-0">
+                <span className="font-sub text-[9px] tracking-wide text-paper-mute shrink-0">
                   {timeAgo(e.created_at)}
                 </span>
               </li>

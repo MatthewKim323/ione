@@ -204,11 +204,11 @@ export function SessionReplay() {
   }
   if (error || !meta) {
     return (
-      <div className="border border-ink-line bg-ink-deep px-6 py-10 text-center">
+      <div className="notebook-card px-6 py-10 text-center">
         <p className="text-red-pencil font-sub text-sm">{error ?? "not found"}</p>
         <Link
           to="/dashboard/sessions"
-          className="inline-block mt-4 font-sub text-[11px] tracking-[0.18em] uppercase pencil-link"
+          className="inline-block mt-4 font-sub text-[11px] tracking-[0.18em] uppercase pencil-link-light"
         >
           ← back to sessions
         </Link>
@@ -231,15 +231,15 @@ export function SessionReplay() {
     <section>
       <Link
         to="/dashboard/sessions"
-        className="inline-block mb-5 font-sub text-[11px] tracking-[0.18em] uppercase pencil-link"
+        className="inline-block mb-5 font-sub text-[11px] tracking-[0.18em] uppercase pencil-link-light"
       >
         ← all sessions
       </Link>
 
       <header className="mb-7">
-        <div className="section-label">© ione — session replay</div>
+        <div className="section-label-light">© ione — session replay</div>
         <h1
-          className="h-display text-[1.7rem] sm:text-[2rem] leading-tight mt-1"
+          className="h-display-light text-[1.7rem] sm:text-[2rem] leading-tight mt-1"
           style={{ fontStyle: "italic" }}
         >
           {problem}
@@ -264,7 +264,7 @@ export function SessionReplay() {
       </header>
 
       {cycles.length === 0 ? (
-        <div className="border border-ink-line bg-ink-deep px-6 py-10 text-center">
+        <div className="notebook-card px-6 py-10 text-center">
           <p className="text-paper-mute font-sub text-[11px] tracking-wide">
             this session has no recorded cycles.
           </p>
@@ -313,7 +313,7 @@ function Scrubber({
         <span>← →</span>
         <span>cycle {activeIdx + 1} of {cycles.length}</span>
       </div>
-      <div className="flex items-stretch gap-px overflow-x-auto pb-2 -mx-1 px-1 hairline-bottom">
+      <div className="flex items-stretch gap-px overflow-x-auto pb-2 -mx-1 px-1 border-b border-line-soft">
         {cycles.map((c, i) => {
           const active = i === activeIdx;
           const spoke = c.spoke;
@@ -326,9 +326,9 @@ function Scrubber({
           if (active) bar = "bg-red-pencil";
           else if (spoke || hasHint) bar = "bg-red-pencil/55";
           else if (errored) bar = "bg-brass/70";
-          else if (stalled) bar = "bg-paper-faint/70";
-          else if (suppressed) bar = "bg-ink-line";
-          else bar = "bg-ink-line/60";
+          else if (stalled) bar = "bg-paper-mute/45";
+          else if (suppressed) bar = "bg-line";
+          else bar = "bg-line-soft";
           return (
             <button
               key={c.id}
@@ -446,7 +446,7 @@ function FrameCard({
   frameUrl: string | null;
 }) {
   return (
-    <div className="border border-ink-line bg-paper-tint">
+    <div className="border border-line bg-paper-tint rounded-[2px] overflow-hidden">
       <div className="aspect-video bg-paper-tint flex items-center justify-center overflow-hidden">
         {frameUrl ? (
           <img
@@ -488,8 +488,8 @@ function AgentCard({
     json != null &&
     !(typeof json === "object" && json !== null && Object.keys(json).length === 0);
   return (
-    <article className="border border-ink-line bg-ink-deep">
-      <header className="px-5 py-3 flex items-baseline justify-between gap-3 hairline-bottom">
+    <article className="notebook-card">
+      <header className="px-5 py-3 flex items-baseline justify-between gap-3 border-b border-line-soft">
         <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
           {label}
         </span>
@@ -497,7 +497,7 @@ function AgentCard({
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
-            className="font-sub text-[10px] tracking-wide pencil-link"
+            className="font-sub text-[10px] tracking-wide pencil-link-light"
           >
             {open ? "hide json" : "show json"}
           </button>
@@ -505,13 +505,13 @@ function AgentCard({
       </header>
       <div className="px-5 py-4">
         <p
-          className="text-paper text-[15px] leading-snug mb-3"
+          className="text-ink-deep text-[15px] leading-snug mb-3"
           style={{ fontFamily: "var(--font-display)" }}
         >
           {summary}
         </p>
         {visible.length > 0 && (
-          <ul className="flex flex-wrap gap-x-3 gap-y-1 font-sub text-[10px] tracking-wide text-paper-faint">
+          <ul className="flex flex-wrap gap-x-3 gap-y-1 font-sub text-[10px] tracking-wide text-paper-mute">
             {visible.map((v, i) => (
               <li key={i}>{v}</li>
             ))}
@@ -519,7 +519,7 @@ function AgentCard({
         )}
       </div>
       {open && hasJson && (
-        <pre className="bg-ink-wash text-paper-dim text-[10px] leading-snug p-4 overflow-x-auto border-t border-ink-line max-h-72 overflow-y-auto">
+        <pre className="bg-desk/90 text-paper-faint font-mono text-[10px] leading-snug p-4 overflow-x-auto border-t border-line-soft max-h-72 overflow-y-auto">
           {JSON.stringify(json, null, 2)}
         </pre>
       )}
@@ -538,18 +538,18 @@ function PolicyCard({
   return (
     <article
       className={[
-        "border bg-ink-deep",
-        spoke ? "border-red-pencil/70" : "border-ink-line",
+        "notebook-card",
+        spoke ? "border-red-pencil/70" : "",
       ].join(" ")}
     >
-      <header className="px-5 py-3 flex items-baseline justify-between gap-3 hairline-bottom">
+      <header className="px-5 py-3 flex items-baseline justify-between gap-3 border-b border-line-soft">
         <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
           policy decision
         </span>
         <span
           className={[
             "font-sub text-[10px] tracking-[0.18em] uppercase",
-            spoke ? "text-red-pencil" : "text-paper-faint",
+            spoke ? "text-red-pencil" : "text-paper-mute",
           ].join(" ")}
         >
           {spoke ? "spoke" : "stayed silent"}
@@ -559,12 +559,12 @@ function PolicyCard({
         {spoke && hint ? (
           <>
             <p
-              className="text-paper text-[15px] leading-snug mb-3"
+              className="text-ink-deep text-[15px] leading-snug mb-3"
               style={{ fontFamily: "var(--font-display)" }}
             >
               "{hint.text}"
             </p>
-            <ul className="flex flex-wrap gap-x-3 gap-y-1 font-sub text-[10px] tracking-wide text-paper-faint">
+            <ul className="flex flex-wrap gap-x-3 gap-y-1 font-sub text-[10px] tracking-wide text-paper-mute">
               <li>{hint.hint_type}</li>
               {hint.predicted && <li className="text-brass">predicted</li>}
               {hint.severity != null && <li>severity {hint.severity}</li>}
@@ -578,7 +578,7 @@ function PolicyCard({
         ) : (
           <>
             <p
-              className="text-paper-dim text-[14px] leading-snug mb-3"
+              className="text-paper-faint text-[14px] leading-snug mb-3"
               style={{ fontStyle: "italic" }}
             >
               {whyDidntSpeak(cycle)}
@@ -623,8 +623,8 @@ function whyDidntSpeak(cycle: CycleRow): string {
 
 function SidebarStat({ rows }: { rows: [string, string][] }) {
   return (
-    <div className="border border-ink-line bg-ink-deep">
-      <header className="px-5 py-3 hairline-bottom">
+    <div className="notebook-card">
+      <header className="px-5 py-3 border-b border-line-soft">
         <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
           telemetry
         </span>
@@ -632,8 +632,8 @@ function SidebarStat({ rows }: { rows: [string, string][] }) {
       <dl className="px-5 py-4 grid grid-cols-2 gap-x-4 gap-y-2 font-sub text-[10px] tracking-wide">
         {rows.map(([k, v]) => (
           <div key={k} className="contents">
-            <dt className="text-paper-faint">{k}</dt>
-            <dd className="text-paper text-right">{v}</dd>
+            <dt className="text-paper-mute">{k}</dt>
+            <dd className="text-ink-deep text-right">{v}</dd>
           </div>
         ))}
       </dl>

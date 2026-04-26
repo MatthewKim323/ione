@@ -18,7 +18,7 @@
  *   - reject (sets status='rejected', surfaces in Patterns later)
  *   - delete (hard delete; also emits a `claim_disputed_by_user` event)
  *
- * Lives behind /dashboard/memory.
+ * Lives behind /dashboard/graph (canonical graph + memory URL).
  */
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
@@ -180,14 +180,13 @@ export function MemoryInspector() {
 
   return (
     <section>
-      <div className="section-label mb-4">© ione — 002 / memory</div>
+      <div className="section-label-light mb-4">© ione — 002 / memory</div>
       <h1
-        className="h-display text-[2.5rem] sm:text-[3.5rem] leading-[0.95] mb-4"
-        style={{ fontStyle: "italic" }}
+        className="h-display-light text-[2.5rem] sm:text-[3.5rem] leading-[0.95] mb-4"
       >
-        what i think i know.
+        what i <em className="h-forest">think</em> i know.
       </h1>
-      <p className="text-paper-dim text-base leading-relaxed max-w-[60ch] mb-12">
+      <p className="text-paper-faint text-base leading-relaxed max-w-[60ch] mb-12">
         every line below has a citation. if any of it is wrong — too
         confident, oversimplified, or just plain incorrect — reject it.
         ione will stop using it immediately and learn from the dispute.
@@ -200,24 +199,24 @@ export function MemoryInspector() {
       )}
 
       {!loading && rows.length === 0 && (
-        <div className="border border-ink-line bg-ink-deep ruled-paper p-10 sm:p-12">
+        <div className="notebook-card ruled-paper-light p-10 sm:p-12">
           <p
-            className="text-paper text-lg leading-snug max-w-[44ch] mb-3"
+            className="text-ink-deep text-lg leading-snug max-w-[44ch] mb-3"
             style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
           >
             empty cabinet — nothing yet.
           </p>
-          <p className="text-paper-dim text-sm leading-relaxed max-w-[60ch]">
+          <p className="text-paper-faint text-sm leading-relaxed max-w-[60ch]">
             ione builds your memory by reading what you upload (transcripts,
             failed exams, practice work, writing). once it has at least one
             source, this page fills in.
           </p>
-          <Link
-            to="/dashboard"
-            className="inline-block mt-6 font-sub text-[11px] tracking-[0.14em] uppercase pencil-link"
+          <a
+            href="#kg-ingest"
+            className="inline-block mt-6 font-sub text-[11px] tracking-[0.14em] uppercase pencil-link-light"
           >
-            ← upload a source
-          </Link>
+            ↑ upload sources above
+          </a>
         </div>
       )}
 
@@ -232,7 +231,7 @@ export function MemoryInspector() {
                   <button
                     type="button"
                     onClick={() => setShowMeta(true)}
-                    className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute hover:text-paper transition-colors"
+                    className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute hover:text-ink-deep transition-colors"
                   >
                     show {items.length} bookkeeping claim
                     {items.length === 1 ? "" : "s"} →
@@ -274,20 +273,20 @@ function CategoryGroup({
     <section>
       <div className="flex items-baseline justify-between mb-1.5">
         <h2
-          className="h-display text-[1.6rem] sm:text-[1.95rem] leading-tight"
+          className="h-display-light text-[1.6rem] sm:text-[1.95rem] leading-tight"
           style={{ fontStyle: "italic" }}
         >
           {CATEGORY_LABEL[category]}
         </h2>
-        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint">
+        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
           {claims.length} {claims.length === 1 ? "claim" : "claims"}
         </span>
       </div>
-      <p className="text-paper-mute text-sm mb-6 max-w-[60ch] leading-relaxed">
+      <p className="text-paper-faint text-sm mb-6 max-w-[60ch] leading-relaxed">
         {CATEGORY_BLURB[category]}
       </p>
-      <div className="border border-ink-line bg-ink-raise/40">
-        <ul className="divide-y divide-ink-line">
+      <div className="notebook-card">
+        <ul className="divide-y divide-line-soft">
           {claims.map((c) => (
             <ClaimRow
               key={c.id}
@@ -352,7 +351,7 @@ function ClaimRow({
           <ObjectLine value={claim.object} />
           {claim.reasoning && (
             <p
-              className="text-paper-dim text-sm mt-2 max-w-[68ch] leading-relaxed"
+              className="text-paper-faint text-sm mt-2 max-w-[68ch] leading-relaxed"
               style={{ fontStyle: "italic" }}
             >
               "{truncate(claim.reasoning, 220)}"
@@ -386,7 +385,7 @@ function ClaimRow({
 function ObjectLine({ value }: { value: unknown }) {
   if (value == null) {
     return (
-      <p className="text-paper text-[15px]" style={{ fontFamily: "var(--font-display)" }}>
+      <p className="text-ink-deep text-[15px]" style={{ fontFamily: "var(--font-display)" }}>
         <span className="text-paper-mute italic">no value</span>
       </p>
     );
@@ -394,7 +393,7 @@ function ObjectLine({ value }: { value: unknown }) {
   if (typeof value === "string") {
     return (
       <p
-        className="text-paper text-[15px] leading-snug"
+        className="text-ink-deep text-[15px] leading-snug"
         style={{ fontFamily: "var(--font-display)" }}
       >
         {value}
@@ -404,7 +403,7 @@ function ObjectLine({ value }: { value: unknown }) {
   if (typeof value === "number" || typeof value === "boolean") {
     return (
       <p
-        className="text-paper text-[15px]"
+        className="text-ink-deep text-[15px]"
         style={{ fontFamily: "var(--font-display)" }}
       >
         {String(value)}
@@ -420,17 +419,18 @@ function ObjectLine({ value }: { value: unknown }) {
     }
   })();
   return (
-    <p className="text-paper text-[14px] font-sub leading-snug break-all">
+    <p className="text-ink-deep text-[14px] font-sub leading-snug break-all">
       {truncate(json, 240)}
     </p>
   );
 }
 
-function ConfidenceBar({ value }: { value: number }) {
-  const pct = Math.max(0, Math.min(1, value));
+function ConfidenceBar({ value }: { value: unknown }) {
+  const n = typeof value === "number" ? value : Number(value);
+  const pct = Number.isFinite(n) ? Math.max(0, Math.min(1, n)) : 0;
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className="block w-16 h-px bg-paper-faint relative overflow-hidden">
+      <span className="block w-16 h-px bg-line relative overflow-hidden">
         <span
           className="absolute inset-y-0 left-0 bg-red-pencil"
           style={{ width: `${pct * 100}%` }}
@@ -471,7 +471,21 @@ function Citation({ claim }: { claim: ClaimWithSource }) {
   );
 }
 
-function truncate(s: string, max: number): string {
+function truncate(raw: unknown, max: number): string {
+  const s =
+    raw == null
+      ? ""
+      : typeof raw === "string"
+        ? raw
+        : typeof raw === "number" || typeof raw === "boolean"
+          ? String(raw)
+          : (() => {
+              try {
+                return JSON.stringify(raw);
+              } catch {
+                return String(raw);
+              }
+            })();
   if (s.length <= max) return s;
   return s.slice(0, max - 1).trimEnd() + "…";
 }

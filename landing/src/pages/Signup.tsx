@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
 import { AuthLayout } from "../components/AuthLayout";
 import { Field } from "../components/Field";
+import { GlowButton } from "../components/design/GlowButton";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -57,14 +58,14 @@ export default function Signup() {
         title={<>check your inbox.</>}
         subtitle={
           <>
-            we sent a confirmation link to <span className="text-paper">{email}</span>.
+            we sent a confirmation link to <span className="text-ink-deep">{email}</span>.
             click it and we'll pick right up.
           </>
         }
         footer={
           <>
             already confirmed?{" "}
-            <Link to="/login" className="text-paper hover:text-red-pencil">
+            <Link to="/login" className="text-ink-deep hover:text-red-pencil">
               log in
             </Link>
           </>
@@ -95,7 +96,7 @@ export default function Signup() {
       footer={
         <>
           have an account?{" "}
-          <Link to="/login" className="text-paper hover:text-red-pencil">
+          <Link to="/login" className="text-ink-deep hover:text-red-pencil">
             log in
           </Link>
         </>
@@ -132,14 +133,14 @@ export default function Signup() {
           error={error}
         />
 
-        <button
+        <GlowButton
           type="submit"
           disabled={submitting}
-          className="cta w-full justify-center mt-6 disabled:opacity-50 disabled:cursor-wait"
+          className="glow-btn--on-light glow-btn--block mt-6"
         >
           {submitting ? "drawing the line…" : "create account"}
           <span aria-hidden>→</span>
-        </button>
+        </GlowButton>
       </form>
     </AuthLayout>
   );

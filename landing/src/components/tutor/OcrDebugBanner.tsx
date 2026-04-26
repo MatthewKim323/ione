@@ -28,9 +28,9 @@ export function OcrDebugBanner({
       <span className="font-sub text-[10px] not-italic uppercase tracking-[0.2em] text-rust shrink-0">
         ocr · low confidence {(confidence * 100).toFixed(0)}%
       </span>
-      <span className="text-paper-dim shrink min-w-0 truncate">
+      <span className="text-paper-faint shrink min-w-0 truncate">
         thinks you wrote{" "}
-        <span className="text-paper">
+        <span className="text-ink-deep">
           <KaTeXMath tex={latex} />
         </span>
       </span>

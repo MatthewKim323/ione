@@ -18,15 +18,18 @@
 -- runtime. With `STORE_FRAMES=1`, expect ~50–80KB per cycle × ~7 cycles/min
 -- ≈ 30 MB/hour. Cheap enough we can leave it on for our own demos.
 --
--- How to run:
---   1. Open Supabase → SQL Editor
---   2. Paste this whole file → Run
+-- How to run
+-- -----------
+-- 1) Create the bucket in the *Dashboard* (the SQL role in **SQL Editor**
+--    is usually not the owner of `storage.buckets`, so `insert into
+--    storage.buckets` fails with: must be owner of table buckets (42501)):
+--      **Storage → New bucket →** name `tutor_frames`, **public** = off
+-- 2) Open **SQL Editor**, paste this file (from `-- per-user RLS` onward if
+--    the editor already choked on an older version), and **Run**
+--
+-- Confirm the bucket exists:
+--   select id, public from storage.buckets where id = 'tutor_frames';
 -- ============================================================================
-
--- ── bucket ───────────────────────────────────────────────────────────────
-insert into storage.buckets (id, name, public)
-values ('tutor_frames', 'tutor_frames', false)
-on conflict (id) do nothing;
 
 -- ── per-user RLS on storage.objects ──────────────────────────────────────
 -- Path convention enforced by the API:  <user_id>/<session_id>/<cycle_id>.webp
@@ -46,10 +49,6 @@ create policy "tutor_frames_read_own"
 -- service role writes to this bucket. Keeps clients from filling our
 -- storage with garbage.
 drop policy if exists "tutor_frames_no_client_writes" on storage.objects;
-
--- ── helpful comment ──────────────────────────────────────────────────────
-comment on table storage.buckets is
-  'Includes tutor_frames (private). Populated only when API runs with STORE_FRAMES=1.';
 
 -- ============================================================================
 -- end 0005_session_frames_storage.sql

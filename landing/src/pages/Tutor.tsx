@@ -1,20 +1,12 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { TutorWorkspace } from "../components/tutor/TutorWorkspace";
 import { BackupVideoStage } from "../components/tutor/BackupVideoStage";
 import { HairlineRule } from "../components/design/HairlineRule";
 
 /**
- * /tutor — the live tutoring surface. Wraps the TutorWorkspace with the
- * shared ink-deep desk background and a thin top nav for return-to-dashboard.
- *
- * Modes:
- *   default            → live agent loop (`<TutorWorkspace />`).
- *   ?mode=video        → Phase 5 / R6 stage failsafe — plays a pre-rendered
- *                        recording. Useful when the conference wifi cracks.
- *   ?mode=demo         → handled inside `<TutorWorkspace />`; lowers the
- *                        predictive threshold for the rehearsed seed problem
- *                        only (Phase 5 / R4).
+ * /tutor — live tutoring + agents. Light “desk” chrome matches /dashboard;
+ * the workspace itself is a cream notebook sheet (see Notebook variant).
  */
 export default function Tutor() {
   const [params] = useSearchParams();
@@ -23,23 +15,36 @@ export default function Tutor() {
   const subtitle = useMemo(() => {
     if (mode === "video") return "ione · tutor · video";
     if (mode === "demo") return "ione · tutor · demo";
-    return "ione · tutor";
+    return "ione · tutor · agents";
   }, [mode]);
 
+  useEffect(() => {
+    const prevBody = document.body.style.backgroundColor;
+    const prevHtml = document.documentElement.style.backgroundColor;
+    document.body.style.backgroundColor = "#f2f2f2";
+    document.documentElement.style.backgroundColor = "#f2f2f2";
+    return () => {
+      document.body.style.backgroundColor = prevBody;
+      document.documentElement.style.backgroundColor = prevHtml;
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-ink text-paper">
-      <header className="px-6 sm:px-10 py-5 flex items-center justify-between max-w-[1280px] mx-auto">
+    <div className="min-h-screen desk-page">
+      <header className="border-b border-line px-6 sm:px-10 py-5 flex items-center justify-between max-w-[1280px] mx-auto bg-desk/80 backdrop-blur-[2px] sticky top-0 z-20">
         <Link
           to="/dashboard"
-          className="font-sub text-[11px] tracking-[0.22em] uppercase text-paper-mute hover:text-paper transition-colors"
+          className="font-sub text-[11px] tracking-[0.22em] uppercase pencil-link-light"
         >
-          ← back to dashboard
+          ← back to desk
         </Link>
-        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint">
+        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
           {subtitle}
         </span>
       </header>
-      <HairlineRule />
+      <div className="max-w-[1280px] mx-auto px-6 sm:px-10">
+        <HairlineRule tone="line" className="my-0" />
+      </div>
       <main className="px-6 sm:px-10 py-8 max-w-[1280px] mx-auto">
         {mode === "video" ? <BackupVideoStage /> : <TutorWorkspace />}
       </main>
