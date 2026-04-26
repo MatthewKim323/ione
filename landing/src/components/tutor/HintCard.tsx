@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Marginalia, HandUnderline } from "../design/Marginalia";
 import { MathInText } from "../design/Math";
@@ -70,22 +70,50 @@ export function HintCard({
   audioMuted: boolean;
 }) {
   const [phase, setPhase] = useState<"in" | "out">("in");
+  // Track whether ElevenLabs TTS is actively rendering. We hold the card
+  // on screen for the full duration of the utterance so ione doesn't get
+  // cut off mid-sentence — that was the demo bug: cards unmounted on the
+  // per-type linger expiring, the unmount cleanup called controller.stop(),
+  // and the user heard ione clipped. Initialized true if we expect audio
+  // so the dismiss timer doesn't fire during the initial fetch + decode
+  // window.
+  const [audioPlaying, setAudioPlaying] = useState<boolean>(
+    () => Boolean(hint.audio_url) && !audioMuted,
+  );
+  // Hold a ref to the live audio controller so the mute kill-switch
+  // effect can stop playback regardless of which closure the playback
+  // effect originally captured. We can't read the live `audioMuted` from
+  // the playback effect's cleanup — it's stale by definition.
+  const controllerRef = useRef<AudioController | null>(null);
 
-  // Linger then fade. Explanation cards stick around 2x longer because
-  // they're 2-6 sentences of teaching, not a one-line nudge.
+  // Dismiss schedule. While audio plays, hold the card with a long
+  // safety cap (in case some media op never resolves). Once audio
+  // finishes, schedule the fade after a short read-tail. Without audio,
+  // honor the per-type linger like before.
   useEffect(() => {
-    const lingerMs = LINGER_MS_BY_TYPE[hint.hint_type] ?? 6000;
-    const t = setTimeout(() => setPhase("out"), lingerMs);
+    if (audioPlaying) {
+      const safety = window.setTimeout(() => setPhase("out"), 60_000);
+      return () => clearTimeout(safety);
+    }
+    const baseLingerMs = LINGER_MS_BY_TYPE[hint.hint_type] ?? 6000;
+    // After audio: 1.5s read-tail so the user can finish scanning the
+    // marginalia. Without audio: keep the original per-type behavior.
+    const tailMs = hint.audio_url ? 1500 : baseLingerMs;
+    const t = window.setTimeout(() => setPhase("out"), tailMs);
     return () => clearTimeout(t);
-  }, [hint.id, hint.hint_type]);
+  }, [hint.id, hint.hint_type, hint.audio_url, audioPlaying]);
 
   // Play TTS through the shared AudioBus element so the wisp orb's
-  // AnalyserNode tap sees the same waveform. We don't keep our own <audio>
-  // ref anymore — that would route audio through a second element the
-  // analyser can't see, leaving the orb idle while ElevenLabs is talking.
+  // AnalyserNode tap sees the same waveform. We don't keep our own
+  // <audio> ref anymore — that would route audio through a second
+  // element the analyser can't see, leaving the orb idle while
+  // ElevenLabs is talking.
   useEffect(() => {
-    if (audioMuted || !hint.audio_url) return;
-    let controller: AudioController | null = null;
+    if (audioMuted || !hint.audio_url) {
+      setAudioPlaying(false);
+      return;
+    }
+    setAudioPlaying(true);
     let cancelled = false;
     (async () => {
       try {
@@ -96,19 +124,48 @@ export function HintCard({
         await primeAudioGraph();
         if (cancelled) return;
         const audioEl = getSharedAudioElement();
-        controller = await playHintAudio({
+        const c = await playHintAudio({
           hintId: hint.id,
           audioEl,
         });
+        controllerRef.current = c;
+        try {
+          // Resolves on natural `ended`. If a newer hint arrives, it will
+          // reassign audioEl.src and the abort surfaces here as a reject —
+          // we swallow either way and clear `audioPlaying` so the dismiss
+          // timer can run instead of pinning on the safety cap.
+          await c.done;
+        } catch {
+          // ignore — handled below
+        }
+        if (controllerRef.current === c) controllerRef.current = null;
+        if (!cancelled) setAudioPlaying(false);
       } catch (e) {
         console.warn("[hint] audio play failed", e);
+        if (!cancelled) setAudioPlaying(false);
       }
     })();
     return () => {
       cancelled = true;
-      controller?.stop();
+      // INTENTIONAL: we do NOT call controller.stop() here. Stopping on
+      // unmount cut ione off whenever the card was dismissed before
+      // ElevenLabs finished — the visible-cutoff bug. The shared <audio>
+      // is a singleton owned by audioBus; if a newer hint arrives, its
+      // src reassignment naturally interrupts. Mute is handled by the
+      // dedicated kill-switch effect below, which has the live prop.
     };
   }, [hint.id, hint.audio_url, audioMuted]);
+
+  // Mute kill-switch. Lives in a dedicated effect so it reacts to the
+  // live `audioMuted` prop instead of whatever value the playback
+  // effect's cleanup closure captured at mount.
+  useEffect(() => {
+    if (audioMuted && controllerRef.current) {
+      controllerRef.current.stop();
+      controllerRef.current = null;
+      setAudioPlaying(false);
+    }
+  }, [audioMuted]);
 
   const tone = TONE_BY_TYPE[hint.hint_type];
   const prefix = hint.predicted ? "before — " : PREFIX_BY_TYPE[hint.hint_type];

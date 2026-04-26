@@ -146,6 +146,28 @@
     font-weight: 600;
   }
 
+  /* Landing title plate: hairline below ∫one. — generous gap under type, air before hero */
+  .intro-title-rule-wrap {
+    margin-top: clamp(4.25rem, 12vw, 8.5rem);
+    margin-bottom: clamp(2.5rem, 6.5vh, 4.75rem);
+  }
+
+  .intro-title-rule {
+    height: 1px;
+    width: 100%;
+    border-radius: 9999px;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.62) 0%,
+      rgba(255, 255, 255, 0.32) 38%,
+      rgba(255, 255, 255, 0.08) 78%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    box-shadow:
+      0 1px 0 rgba(0, 0, 0, 0.18),
+      0 0 24px rgba(255, 255, 255, 0.06);
+  }
+
   /* Notebook / margin rule — vertical line that mimics a page edge */
   .page-rule {
     background-image: linear-gradient(

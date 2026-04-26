@@ -169,7 +169,18 @@ function normalizeReasoning(raw: Partial<ReasoningOutput>): ReasoningOutput {
 
   const sevRaw =
     typeof raw.severity === "number" ? Math.round(raw.severity) : 1;
-  const severity = (Math.min(5, Math.max(1, sevRaw)) || 1) as Severity;
+  let severity = (Math.min(5, Math.max(1, sevRaw)) || 1) as Severity;
+
+  // Severity floor: a real major_error / off_track that propagates through
+  // the rest of the problem cannot honestly be "trivial" (severity 1) or
+  // "minor slip" (severity 2). Sonnet sometimes splits the diff — calls
+  // something major_error but then lowballs severity, which then loses to
+  // the policy gate. We refuse to ship a major_error below severity 4 so
+  // intervention actually fires. This pairs with the prompt rules that
+  // explicitly call wrong-derivative / dropped-chain-rule severity≥4.
+  if ((status === "major_error" || status === "off_track") && severity < 4) {
+    severity = 4 as Severity;
+  }
 
   return {
     step_status: status,

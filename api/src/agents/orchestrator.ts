@@ -238,8 +238,32 @@ export async function runCycle(
   }
 
   // ── Step 2: Canonical solution (once per session) ─────────────────────
-  const problemText = input.session.problem_text ?? ocr.problem_text;
-  let canonical: CanonicalSolution | null = input.session.canonical_solution;
+  // problem_text resolution. Three layers:
+  //   1. session.problem_text — set explicitly by /api/sessions for rehearsed demos.
+  //   2. ocr.problem_text     — Sonnet pulled it off the page.
+  //   3. synthesized          — student is doing freestyle derivative practice
+  //      with no explicit prompt (just `y = 3x², dy/dx = ...` pairs). Without
+  //      this fallback the orchestrator bails with "still reading the
+  //      problem" and reasoning never runs, so the page silently goes
+  //      unflagged. Symptom in the wild: writing four wrong derivatives in a
+  //      row and ione never speaks. We detect derivative-pair patterns in
+  //      completed_steps + current_step and synthesize a generic prompt so
+  //      canonical generation + the evaluator can both run.
+  const synthesized = !input.session.problem_text && !ocr.problem_text;
+  const problemText =
+    input.session.problem_text ??
+    ocr.problem_text ??
+    synthesizeProblemTextFromOcr(ocr);
+  // When we're on a synthesized derivative-practice page we DON'T reuse
+  // the cached canonical — the student may add a new `y = ...` line on
+  // any cycle, and a stale canonical for problem #1 confuses the
+  // evaluator when they're now working on problem #3. Canonical
+  // generation costs one Sonnet call (~$0.01) and avoids that whole
+  // category of stale-context bug. For real session-scoped problems
+  // (problem_text set explicitly), we keep the cache hot.
+  let canonical: CanonicalSolution | null = synthesized
+    ? null
+    : input.session.canonical_solution;
   let canonicalToCache: CanonicalSolution | null = null;
 
   if (!canonical && problemText) {
@@ -249,7 +273,9 @@ export async function runCycle(
         cost,
       });
       canonical = solution;
-      canonicalToCache = solution;
+      // Only cache real problem canonicals. Synthesized ones change
+      // shape every cycle and would just bloat the session row.
+      if (!synthesized) canonicalToCache = solution;
     } catch (e) {
       logger.warn(
         { err: errMsg(e), session: input.session.id },
@@ -690,6 +716,50 @@ function noCanonicalPersist(opts: {
     hint: null,
     canonicalToCache: opts.canonicalToCache,
   };
+}
+
+/**
+ * Detect derivative practice pages (worksheets where the student writes
+ * their own `y = expr` and then `dy/dx = ...`) and synthesize a problem
+ * statement so the canonical solver can run.
+ *
+ * Returns `null` when the page has no recognizable derivative pairs —
+ * we fall back to the existing "still reading the problem" path in
+ * that case rather than fabricate a problem out of nothing.
+ *
+ * Heuristic: scan completed_steps + current_step for lines that look
+ * like `y = <expr>` / `f(x) = <expr>`. If we find at least one, build
+ * a generic prompt that names every base function we saw. The
+ * downstream reasoning agent will then audit each pair on its own.
+ */
+function synthesizeProblemTextFromOcr(ocr: OcrOutput): string | null {
+  const steps = [
+    ...(ocr.completed_steps_latex ?? []),
+    ...(ocr.current_step_latex ? [ocr.current_step_latex] : []),
+  ];
+  // Match `y = ...`, `f(x) = ...`, `g(x) = ...`. We stop at the first =
+  // so we can keep just the function definition for the synthesized
+  // prompt. Strip surrounding LaTeX whitespace.
+  const baseFnRe = /^\s*(?:y|f\(x\)|g\(x\)|h\(x\))\s*=\s*(.+?)\s*$/i;
+  const fns: string[] = [];
+  for (const raw of steps) {
+    if (typeof raw !== "string") continue;
+    const m = baseFnRe.exec(raw);
+    if (!m) continue;
+    const expr = m[1]!.trim();
+    if (!expr) continue; // student just wrote "y =" with no rhs yet
+    if (fns.includes(expr)) continue; // dedup
+    fns.push(expr);
+  }
+  if (fns.length === 0) return null;
+  // Single function → focused prompt; multiple → "for each of the
+  // following". Either way the canonical agent can produce usable
+  // common_errors and the evaluator can audit each pair.
+  if (fns.length === 1) {
+    return `Find dy/dx for y = ${fns[0]}.`;
+  }
+  const list = fns.map((f) => `y = ${f}`).join("; ");
+  return `Find dy/dx for each of the following: ${list}.`;
 }
 
 // Eslint sanity — keep the `deriveConfidenceLevel` import alive for callers

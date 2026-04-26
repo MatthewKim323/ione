@@ -164,6 +164,12 @@ export type ElevenTranscript = {
   languageProbability: number | null;
   /** Best-effort cost estimate in USD (Scribe-v1 ≈ $0.40 per audio-hour). */
   usd: number;
+  /**
+   * Heuristic: true when Scribe heard nothing identifiable
+   * (empty text + language_probability < 0.05). The route surfaces this
+   * to the client so the UI can nudge "we didn't hear anything — try again".
+   */
+  silent: boolean;
 };
 
 /** Scribe pricing approximation — used for budget tracking, not billing. */
@@ -200,10 +206,22 @@ export async function transcribeAudio(
   const form = new FormData();
   form.append("file", blob, filename);
   form.append("model_id", "scribe_v1");
-  // Tag the language hint to English — most students will speak English on
-  // the demo, and Scribe still handles code-switching gracefully when this
-  // is wrong. Skip if you ever localize.
-  form.append("language_code", "eng");
+  // Intentionally NO language_code hint: Scribe's auto-detect is reliable
+  // and the explicit "eng" hint can over-constrain a quiet recording into
+  // a low-probability detection that comes back with empty text. Letting
+  // it auto-detect produces a meaningful language_probability we can read
+  // as a "did the model actually hear speech?" signal below.
+  // Disable Scribe's audio-event tagging. With the default (true), brief
+  // pauses, breaths, or clipped audio get annotated as "(silence)" /
+  // "(beep)" markers — which we then trim away to "", indistinguishable
+  // from a truly empty transcript. For a tutor PTT clip we only want
+  // raw words.
+  form.append("tag_audio_events", "false");
+  // Always request word-level timestamps so we get a populated words[]
+  // — used downstream to estimate duration when Scribe doesn't echo one.
+  form.append("timestamps_granularity", "word");
+
+  const bytesForwarded = blob.size;
 
   let res: Response;
   try {
@@ -226,13 +244,33 @@ export async function transcribeAudio(
 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
+    // Try to fish out request_id / transcription_id for support tickets.
+    let transcriptionId: string | null = null;
+    try {
+      const parsed = JSON.parse(body) as Record<string, unknown>;
+      if (typeof parsed.transcription_id === "string") {
+        transcriptionId = parsed.transcription_id;
+      }
+    } catch {
+      // body wasn't JSON; that's fine.
+    }
+    const requestId =
+      res.headers.get("x-request-id") ?? res.headers.get("request-id");
     logger.warn(
-      { status: res.status, body: body.slice(0, 240) },
+      {
+        status: res.status,
+        body: body.slice(0, 240),
+        transcriptionId,
+        requestId,
+        bytes: bytesForwarded,
+      },
       "elevenlabs scribe non-2xx",
     );
     throw new AppError(
       "upstream_error",
-      `elevenlabs scribe ${res.status}: ${body.slice(0, 200)}`,
+      `elevenlabs scribe ${res.status}${
+        requestId ? ` (req ${requestId})` : ""
+      }${transcriptionId ? ` (txn ${transcriptionId})` : ""}: ${body.slice(0, 200)}`,
     );
   }
 
@@ -252,6 +290,24 @@ export async function transcribeAudio(
     typeof obj.language_probability === "number"
       ? (obj.language_probability as number)
       : null;
+  const wordsCount = Array.isArray(obj.words) ? obj.words.length : 0;
+
+  // Scribe sometimes returns 200 with empty text — usually because the
+  // recording was actually silent, but occasionally because the audio
+  // bytes were mangled in transit. Don't throw (callers prefer a graceful
+  // empty result + UI nudge), but log loudly so we can spot a real bug.
+  if (text === "") {
+    logger.warn(
+      {
+        status: res.status,
+        languageCode,
+        languageProbability,
+        wordsCount,
+        bytes: bytesForwarded,
+      },
+      "elevenlabs scribe returned empty text",
+    );
+  }
 
   // Best-effort duration: Scribe doesn't always return one — we only get
   // back text + words[] (each with start/end). Sum the last word's end if
@@ -264,10 +320,18 @@ export async function transcribeAudio(
     }
   }
 
+  // Heuristic: empty text + very low language confidence == Scribe didn't
+  // hear identifiable speech. The route forwards this hint to the client.
+  const silent =
+    text === "" &&
+    typeof languageProbability === "number" &&
+    languageProbability < 0.05;
+
   return {
     text,
     languageCode,
     languageProbability,
     usd: priceScribe(durationSec),
+    silent,
   };
 }

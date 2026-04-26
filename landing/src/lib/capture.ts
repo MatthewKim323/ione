@@ -64,9 +64,15 @@ const DIFF_THRESHOLD_PCT = 0.5;
 const WRITING_DIFF_PCT = 1.5;
 const IDLE_DIFF_PCT = 0.15;
 const STALL_AFTER_MS = 60_000;
-const STALLED_INTERVAL_MS = 4_000;
-const WRITING_INTERVAL_MS = 6_000;
-const IDLE_INTERVAL_MS = 15_000;
+const STALLED_INTERVAL_MS = 6_000;
+// Autonomous cycles can take 5–9s end-to-end (OCR + reasoning + predictive
+// + intervention + TTS). Firing every 6s during active writing means we're
+// almost always in-flight, which blocks push-to-talk and feels relentless
+// during a demo. 10s gives the loop room to breathe and lets the user
+// actually press space to ask a question without colliding with an
+// autonomous cycle.
+const WRITING_INTERVAL_MS = 10_000;
+const IDLE_INTERVAL_MS = 18_000;
 /**
  * Hard floor on time between encoded frames. Even if the diff-gate keeps
  * skipping (e.g. student is writing very lightly, or the iPad is just
@@ -75,7 +81,7 @@ const IDLE_INTERVAL_MS = 15_000;
  * minutes during a slow-writing demo, which makes ione look broken even
  * though the loop is healthy.
  */
-const MAX_GAP_MS = 12_000;
+const MAX_GAP_MS = 18_000;
 const RECENT_DIFFS_KEEP = 24;
 const LOG_KEEP = 240;
 const COST_PER_SKIP = 0.005;

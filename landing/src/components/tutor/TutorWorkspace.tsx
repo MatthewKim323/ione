@@ -31,6 +31,7 @@ import {
   type CycleLog,
 } from "./AgentTrace";
 import { KGReceipts } from "./KGReceipts";
+import { MarginCollapsible } from "./MarginCollapsible";
 
 /**
  * The main /tutor surface. Coordinates:
@@ -98,6 +99,20 @@ export function TutorWorkspace() {
   const cycleIndexRef = useRef(0);
   const inFlightRef = useRef(false);
   /**
+   * True while the user is actively engaging ione — recording PTT, transcribing,
+   * waiting for an answer, or pressing "I need help". When set, autonomous
+   * frame-encode events are dropped on the floor (the next eligible frame
+   * after the user finishes will fire instead). This prevents two
+   * scenarios:
+   *   1. an autonomous cycle starts the moment the user begins recording,
+   *      monopolizing inFlightRef and forcing PTT to wait.
+   *   2. the model handles the user's spoken question and an autonomous
+   *      hint stomps on it 2 seconds later.
+   * Distinct from inFlightRef (which is ANY cycle in-flight, including
+   * the user's own request).
+   */
+  const userInteractingRef = useRef(false);
+  /**
    * Tracks whether the user-triggered "I need help" path is currently
    * running. Distinct from `inFlightRef` so the help button disables
    * itself (instead of silently dropping). The button itself respects
@@ -105,6 +120,27 @@ export function TutorWorkspace() {
    * it defers with a toast rather than colliding on AgentTrace state.
    */
   const [helpInFlight, setHelpInFlight] = useState(false);
+
+  /**
+   * Wait for any in-flight autonomous cycle to drain before kicking off a
+   * user-driven cycle (PTT or "I need help"). Polls inFlightRef every 100ms
+   * up to `timeoutMs`. Returns true if it drained, false if we timed out.
+   *
+   * We wait instead of bailing because the user just spent 1–4 seconds
+   * recording a question — telling them "ione is mid-thought, try again"
+   * after that is the worst possible UX. Better to wait the worst-case
+   * ~5s for the autonomous cycle to finish.
+   */
+  const waitForCycleDrain = useCallback(
+    async (timeoutMs = 8000): Promise<boolean> => {
+      const start = Date.now();
+      while (inFlightRef.current && Date.now() - start < timeoutMs) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+      return !inFlightRef.current;
+    },
+    [],
+  );
 
   // Push-to-talk state machine for the voice "ask out loud" path.
   //   recording   → mic is open, audio is being captured
@@ -151,12 +187,16 @@ export function TutorWorkspace() {
   }, [demoMode, sessionId]);
 
   // Capture loop wiring. onFrameEncoded fires after the diff gate accepts
-  // an image — we feed it directly to /api/cycle.
+  // an image — we feed it directly to /api/cycle, UNLESS the user is
+  // actively asking ione something (PTT / "I need help"). In that case
+  // we still mark the stall detector so cadence stays accurate, but skip
+  // the network call so the user-driven path isn't blocked.
   const capture = useScreenCapture({
     baseIntervalSec: 8,
     roi,
     onFrameEncoded: (blob, meta) => {
       stallRef.current.noteChange(meta.ts);
+      if (userInteractingRef.current) return;
       void postCycle(blob);
     },
   });
@@ -298,15 +338,22 @@ export function TutorWorkspace() {
       return;
     }
     if (helpInFlight) return; // button is disabled, but guard anyway
-    if (inFlightRef.current) {
-      toast.info("ione is mid-thought — try again in a sec.", {
-        id: "help_busy",
-        ttlMs: 3500,
-      });
-      return;
-    }
     setHelpInFlight(true);
+    userInteractingRef.current = true;
     try {
+      // If an autonomous cycle is mid-flight, give it up to 8s to finish
+      // before we send the help request. Beats the old behavior of
+      // toasting "ione is mid-thought" and bailing.
+      if (inFlightRef.current) {
+        const drained = await waitForCycleDrain();
+        if (!drained) {
+          toast.warn("ione is taking a sec — try again.", {
+            id: "help_drain_timeout",
+            ttlMs: 4000,
+          });
+          return;
+        }
+      }
       const blob = await capture.captureNow();
       if (!blob) {
         toast.warn("couldn't grab a frame — is the share still active?", {
@@ -325,14 +372,20 @@ export function TutorWorkspace() {
       });
     } finally {
       setHelpInFlight(false);
+      userInteractingRef.current = false;
     }
-  }, [capture, helpInFlight, postCycle]);
+  }, [capture, helpInFlight, postCycle, waitForCycleDrain]);
 
   /**
    * Push-to-talk: begin capturing audio. Called on button mousedown
    * AND on spacebar keydown (when capture is running and we're idle).
-   * Bails early if the screen share isn't running, an autonomous cycle
-   * is mid-flight, or another PTT press is already in flight.
+   *
+   * Recording can begin even if an autonomous cycle is currently
+   * in-flight — the mic is independent of the agent network. We just
+   * mark userInteractingRef so the autonomous loop stops kicking off
+   * NEW cycles, and we wait for any existing one to drain at send-time
+   * (see stopVoiceAndSend). This preserves the "press space, talk
+   * immediately" feel that makes PTT feel like a real tutor.
    *
    * The mic stream is kept warm across presses (see useMicCapture) so
    * subsequent presses don't re-prompt for permission.
@@ -347,14 +400,9 @@ export function TutorWorkspace() {
       return;
     }
     if (voiceState !== "idle") return;
-    if (helpInFlight || inFlightRef.current) {
-      toast.info("ione is mid-thought — try again in a sec.", {
-        id: "voice_busy",
-        ttlMs: 3500,
-      });
-      return;
-    }
+    if (helpInFlight) return; // button disabled but guard anyway
     setVoiceState("recording");
+    userInteractingRef.current = true;
     try {
       await mic.start();
     } catch (e) {
@@ -369,6 +417,7 @@ export function TutorWorkspace() {
         ttlMs: 5500,
       });
       setVoiceState("idle");
+      userInteractingRef.current = false;
     }
   }, [capture.isRunning, helpInFlight, mic, voiceState]);
 
@@ -389,6 +438,19 @@ export function TutorWorkspace() {
     if (!recording) {
       // too short or cancelled — quietly reset
       setVoiceState("idle");
+      userInteractingRef.current = false;
+      return;
+    }
+    // Pre-flight: if the analyser never saw any meaningful input, the
+    // mic is muted/blocked at the OS level. Skip the Scribe round-trip
+    // (it will return empty text anyway) and tell the user.
+    if (recording.peakLevel < 0.02) {
+      toast.info("i didn't hear anything — check your mic?", {
+        id: "voice_silent_mic",
+        ttlMs: 4500,
+      });
+      setVoiceState("idle");
+      userInteractingRef.current = false;
       return;
     }
     try {
@@ -398,14 +460,38 @@ export function TutorWorkspace() {
       });
       const text = transcript.text.trim();
       if (!text) {
-        toast.info("didn't catch that — try again.", {
-          id: "voice_empty_transcript",
-          ttlMs: 3500,
-        });
+        // Server tells us when Scribe heard nothing identifiable (low
+        // language_probability + empty text), so we can differentiate
+        // "you spoke too quietly" from "i couldn't make out the words".
+        if (transcript.hint === "silent_audio") {
+          toast.info("ione couldn't hear you — try speaking up?", {
+            id: "voice_empty_transcript",
+            ttlMs: 4000,
+          });
+        } else {
+          toast.info("didn't catch that — try again.", {
+            id: "voice_empty_transcript",
+            ttlMs: 3500,
+          });
+        }
         setVoiceState("idle");
         return;
       }
       setVoiceState("answering");
+      // Wait for any autonomous cycle that started before recording to
+      // finish before we kick off the user's voice cycle. This is the
+      // fix for the "mid thinking" complaint — instead of bailing, we
+      // give the in-flight one ~8s to drain and then proceed.
+      if (inFlightRef.current) {
+        const drained = await waitForCycleDrain();
+        if (!drained) {
+          toast.warn("ione is taking a sec — try again.", {
+            id: "voice_drain_timeout",
+            ttlMs: 4000,
+          });
+          return;
+        }
+      }
       const blob = await capture.captureNow();
       if (!blob) {
         toast.warn("couldn't grab a frame — is the share still active?", {
@@ -424,8 +510,9 @@ export function TutorWorkspace() {
       });
     } finally {
       setVoiceState("idle");
+      userInteractingRef.current = false;
     }
-  }, [capture, mic, postCycle, voiceState]);
+  }, [capture, mic, postCycle, voiceState, waitForCycleDrain]);
 
   /**
    * Cancel an in-flight recording (e.g. user released spacebar before
@@ -436,6 +523,7 @@ export function TutorWorkspace() {
     if (voiceState !== "recording") return;
     mic.cancel();
     setVoiceState("idle");
+    userInteractingRef.current = false;
   }, [mic, voiceState]);
 
   // Spacebar push-to-talk. Holding space starts recording, releasing
@@ -828,43 +916,39 @@ export function TutorWorkspace() {
           </div>
         }
         margin={
-          <div className="flex flex-col gap-8 min-h-full">
+          <div className="flex flex-col gap-5 min-h-full">
             {/* Voice orb — pulses on hint TTS via the shared AudioBus.
                 Always rendered (even when muted) so the user sees idle
                 breathing while waiting for the next hint, and the WebGL
                 context stays warm so the first hint's reaction isn't a
                 cold start. */}
-            <div className="flex flex-col items-center">
-              <div className="section-label-light mb-3 self-start">voice</div>
-              <div className="wisp-port-shell inline-flex max-w-full">
-                <div className="wisp-port-inner flex items-center justify-center p-2">
-                  <WispOrb size={220} />
+            <MarginCollapsible title="voice" defaultOpen>
+              <div className="flex flex-col items-center">
+                <div className="wisp-port-shell inline-flex max-w-full">
+                  <div className="wisp-port-inner flex items-center justify-center p-2">
+                    <WispOrb size={220} />
+                  </div>
+                </div>
+                <div
+                  className={[
+                    "mt-2 font-mono text-[10px] tracking-[0.18em] uppercase",
+                    audioMuted ? "text-paper-mute" : "text-paper-faint",
+                  ].join(" ")}
+                >
+                  {audioMuted ? "audio muted" : "speaks on hint"}
                 </div>
               </div>
-              <div
-                className={[
-                  "mt-2 font-mono text-[10px] tracking-[0.18em] uppercase",
-                  audioMuted ? "text-paper-mute" : "text-paper-faint",
-                ].join(" ")}
-              >
-                {audioMuted ? "audio muted" : "speaks on hint"}
-              </div>
-            </div>
+            </MarginCollapsible>
 
-            <div>
-              <div className="section-label-light mb-3">marginalia</div>
+            <MarginCollapsible title="marginalia" defaultOpen>
               <HintStack incoming={latestHint} audioMuted={audioMuted} />
-            </div>
+            </MarginCollapsible>
 
-            {/* Knowledge-graph receipts — surfaces the StruggleProfile and
-                the actual cited claims that the reasoning agent is using
-                to predict where this student tends to slip. This is the
-                "knowledge from KG" pane (live agent thought is on the left
-                in AgentTrace). */}
-            <div>
-              <div className="section-label-light mb-3">knowledge graph</div>
+            {/* Knowledge-graph receipts — collapsible shell matches voice /
+                marginalia; inner panels split overview vs claim list. */}
+            <MarginCollapsible title="knowledge graph" defaultOpen>
               <KGReceipts refreshKey={kgRefreshKey} />
-            </div>
+            </MarginCollapsible>
 
             {import.meta.env.DEV && (
               <div className="mt-auto">

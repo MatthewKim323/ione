@@ -126,47 +126,53 @@ function HandwrittenWordmark() {
 export function TitlePage() {
   return (
     <section className="relative min-h-screen" style={{ minHeight: "100vh" }}>
-      <div className="relative flex min-h-screen flex-col justify-center items-start px-6 py-8 sm:px-10 sm:py-10 md:px-14 md:py-12 lg:pl-20 text-left">
-        <h1
-          className="h-display"
-          style={{
-            fontSize: "clamp(7rem, 22vw, 22rem)",
-            letterSpacing: "-0.04em",
-            lineHeight: 0.9,
-            color: "#FFFFFF",
-            fontStyle: "italic",
-            textShadow:
-              "0 2px 0 rgba(0,0,0,0.32)," +
-              " 0 8px 24px rgba(0,0,0,0.4)," +
-              " 0 20px 52px rgba(0,0,0,0.32)",
-            position: "relative",
-            display: "inline-block",
-            overflow: "visible",
-          }}
-        >
-          <motion.div
-            className="inline-block w-full [text-rendering:optimizeLegibility]"
-            initial={{ opacity: 0, y: 28 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.85, delay: 0.06, ease: [0.16, 1, 0.3, 1] }}
-          >
-            <HandwrittenWordmark />
-          </motion.div>
-
-          <span
+      <div className="relative flex min-h-screen flex-col justify-center items-start px-6 py-8 sm:px-10 sm:py-10 md:px-14 md:py-12 lg:pl-20 text-left pb-[clamp(2.75rem,7vh,5.5rem)]">
+        <div className="flex w-full max-w-[min(100%,92vw)] flex-col items-stretch">
+          <h1
+            className="h-display"
             style={{
-              position: "absolute",
-              width: "1px",
-              height: "1px",
-              overflow: "hidden",
-              clip: "rect(0 0 0 0)",
-              clipPath: "inset(50%)",
-              whiteSpace: "nowrap",
+              fontSize: "clamp(7rem, 22vw, 22rem)",
+              letterSpacing: "-0.04em",
+              lineHeight: 0.9,
+              color: "#FFFFFF",
+              fontStyle: "italic",
+              textShadow:
+                "0 2px 0 rgba(0,0,0,0.32)," +
+                " 0 8px 24px rgba(0,0,0,0.4)," +
+                " 0 20px 52px rgba(0,0,0,0.32)",
+              position: "relative",
+              display: "inline-block",
+              overflow: "visible",
             }}
           >
-            ione.
-          </span>
-        </h1>
+            <motion.div
+              className="inline-block w-full [text-rendering:optimizeLegibility]"
+              initial={{ opacity: 0, y: 28 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.85, delay: 0.06, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <HandwrittenWordmark />
+            </motion.div>
+
+            <span
+              style={{
+                position: "absolute",
+                width: "1px",
+                height: "1px",
+                overflow: "hidden",
+                clip: "rect(0 0 0 0)",
+                clipPath: "inset(50%)",
+                whiteSpace: "nowrap",
+              }}
+            >
+              ione.
+            </span>
+          </h1>
+
+          <div className="intro-title-rule-wrap w-full" aria-hidden>
+            <div className="intro-title-rule" />
+          </div>
+        </div>
       </div>
     </section>
   );

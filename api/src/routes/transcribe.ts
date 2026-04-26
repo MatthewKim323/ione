@@ -19,7 +19,12 @@
  *
  * Response (application/json):
  *   { text: string, language_code: string|null, language_probability: number|null,
- *     usd: number, ms: number }
+ *     usd: number, ms: number, hint?: "silent_audio" }
+ *
+ * The optional `hint` field is set when Scribe returned 200 but the model
+ * heard nothing identifiable (very low language_probability + empty text).
+ * The frontend can use it to nudge the user to try again. Backward-compatible:
+ * older clients that ignore unknown fields keep working.
  */
 
 import { Hono } from "hono";
@@ -85,22 +90,57 @@ transcribeRoute.post("/", async (c) => {
   const ext = pickExt(mime);
   const filename = `voice-${Date.now()}.${ext}`;
 
+  // Materialize the bytes ourselves and rebuild a fresh Blob with an
+  // explicit MIME type. Hono's parseBody hands us a File-like object that
+  // *should* serialize cleanly through undici's multipart encoder, but
+  // we've seen reports of bytes getting mangled on that hop (Scribe then
+  // returns 200 with empty text). Round-tripping through ArrayBuffer
+  // guarantees the upstream call sees the exact bytes we received.
+  const audioBytes = new Uint8Array(await (audioPart as Blob).arrayBuffer());
+  const cleanBlob = new Blob([audioBytes], { type: mime });
+
+  // WebM/Matroska files start with the EBML magic bytes 1A 45 DF A3.
+  // Logging the first and fourth byte makes it trivial to spot whether
+  // we're forwarding actual WebM (or whatever the MediaRecorder emitted)
+  // vs. zeros / mangled bytes.
+  logger.debug(
+    {
+      userId,
+      bytes: audioBytes.length,
+      mime,
+      ext,
+      durationSec,
+      headByte0: audioBytes[0]?.toString(16),
+      headByte4: audioBytes[3]?.toString(16),
+    },
+    "transcribe forwarding to scribe",
+  );
+
   const startedAt = Date.now();
-  const transcript = await transcribeAudio(blob, filename, durationSec);
+  const transcript = await transcribeAudio(cleanBlob, filename, durationSec);
   const ms = Date.now() - startedAt;
 
   logger.info(
     {
       userId,
-      bytes: blob.size,
+      bytes: audioBytes.length,
+      bytesForwarded: cleanBlob.size,
       mime,
       durationSec,
       textLen: transcript.text.length,
       lang: transcript.languageCode,
+      langProb: transcript.languageProbability,
+      silent: transcript.silent,
       ms,
     },
     "transcribe ok",
   );
+
+  // Empty transcript is still a 200 — the frontend already toasts on
+  // empty text. We add an optional `hint` so the UI can distinguish
+  // "Scribe ran but heard nothing" from "Scribe ran and got actual words".
+  const isEmpty = transcript.text.trim() === "";
+  const hint = isEmpty && transcript.silent ? "silent_audio" : undefined;
 
   return c.json({
     text: transcript.text,
@@ -108,6 +148,7 @@ transcribeRoute.post("/", async (c) => {
     language_probability: transcript.languageProbability,
     usd: transcript.usd,
     ms,
+    ...(hint ? { hint } : {}),
   });
 });
 

@@ -133,11 +133,35 @@ You must output a single JSON object:
 }
 
 Rules:
-- Be SKEPTICAL of marking things as errors. False positives are worse than false negatives — if the student is right and you say they're wrong, the tutor gives a bad hint and loses trust.
-- "Different but valid approach" is NOT an error. If the student is solving via a different method that will work, mark step_status as "correct".
+- Calibration matters in BOTH directions. False positives lose trust; false negatives let real mistakes ride and waste the student's time. Don't err toward silence — err toward what's actually true.
+- BEFORE you classify, do the math yourself. Compute the canonical result of the student's latest line. If it disagrees with the canonical solution under mathematical equivalence, it is at minimum a major_error.
+- Calculus rule violations are major_error, severity ≥ 4. Examples: \`d/dx[4x^3] = 8x^2\` is wrong (3·4=12, not 8) → wrong_rule + computation, severity 4. \`d/dx[\\cos(3x^2+1)] = -\\sin(3x^2+1)\` (missing the chain-rule \`6x\` factor) → wrong_rule, severity 4. These are NOT "minor slips" — they propagate through the rest of the problem.
+- Sign drops, off-by-one in coefficients, and dropped chain-rule factors are major_error if they'll change the final answer. Only call them minor_error/severity ≤ 2 if the student is clearly mid-line and likely to fix it on their own next stroke.
+- "Different but valid approach" is NOT an error. If the student is solving via a different valid METHOD, mark step_status as "correct". This rule is ONLY about method choice — it never excuses a computational mistake. A wrong number is never a "different valid approach".
 - Mathematical equivalence matters more than syntactic equivalence. \`2(x+1)\` and \`2x+2\` are the same.
 - Stalls take priority over minor errors. If is_stalled is true, focus on what would unstick them.
-- Output JSON only.`;
+- Output JSON only.
+
+EVALUATION TARGET (READ THIS — many prior versions skipped errors because of this):
+
+- Your job is to flag the most recent un-flagged ERROR on the page. Usually that lives in student_current_step. But NOT ALWAYS.
+- If student_current_step is TRIVIAL — just a problem statement with no work yet (e.g., \`y = \`, \`y = 3x^2\`, \`f(x) = \`, an empty equation, a fresh variable being set up) — DO NOT evaluate it. There is nothing to be wrong about: nothing has been computed.
+- In that case, walk BACKWARD through student_completed_steps and find the most recent COMPUTATIONAL step (a step that produced a result: \`dy/dx = ...\`, \`= ...\`, an integral evaluation, an algebraic simplification, etc.). Evaluate THAT step against the line(s) immediately before it and what it should have been.
+  - If that recent computational step is wrong, flag it as major_error (or off_track) with full severity, exactly as if it were the current step. Set error_location so it points at THAT line: e.g., "line 4: dy/dx = 10x^2, should be 12x^2".
+- This is how a real human tutor reviews a worksheet. They do not shrug because the student "moved on" — they go back and circle the wrong line.
+
+DERIVATIVE PRACTICE WORKSHEETS (the common case):
+
+- Worksheet pages have repeating pairs: \`y = f(x)\` followed by \`dy/dx = g(x)\` (or \`f'(x) = ...\`). The student may write 2, 3, or more such pairs on the same page.
+- For EACH pair, verify that g(x) is actually d/dx [f(x)]. Compute it yourself.
+- If ANY pair is wrong, flag the most recent wrong pair as major_error severity at least 4. Do NOT stay silent because they "already moved on" — they moved on with the wrong answer.
+- These MUST be flagged:
+  - \`y = 3x^2\` then \`dy/dx = 4x\` is WRONG. Correct: 6x. -> major_error, wrong_rule, severity 4.
+  - \`y = 4x^3\` then \`dy/dx = 10x^2\` is WRONG. Correct: 12x^2. -> major_error, wrong_rule, severity 4.
+  - \`y = 5x^4\` then \`dy/dx = 25x^3\` is WRONG. Correct: 20x^3. -> major_error, wrong_rule, severity 4.
+  - \`y = cos(3x^2+1)\` then \`dy/dx = -sin(3x^2+1)\` (missing the chain-rule factor 6x) -> major_error, wrong_rule, severity 4.
+
+The canonical_solution may not match the student's specific problem when the page has multiple problems on it. Don't trust canonical_solution.final_answer blindly in that case — derive the correct answer for the pair you're auditing from first principles.`;
 
 export const STEP_MATCH_SYSTEM = `You are a strict mathematical-equivalence checker. Given two LaTeX expressions, decide whether they are mathematically equivalent up to commutativity, associativity, and trivial simplification (combining like terms, distributing, factoring, simple identity rewrites).
 

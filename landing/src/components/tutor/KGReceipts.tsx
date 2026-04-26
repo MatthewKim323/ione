@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { authedFetch, readApiError } from "../../lib/api";
+import { MarginCollapsible } from "./MarginCollapsible";
 
 /**
  * KGReceipts — proof that the agents are reading from a real, grounded
@@ -135,28 +136,27 @@ function ReceiptsBody({ data }: { data: StrugglePayload }) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* totals strip */}
-      <div className="grid grid-cols-2 gap-3 text-[10px] tracking-[0.18em] uppercase">
-        <CountTile label="claims" value={data.totals.claims} />
-        <CountTile label="sources" value={data.totals.sources} />
-      </div>
-
-      {/* compiled profile */}
-      {data.profile && (
-        <ProfileSummary profile={data.profile} />
-      )}
-
-      {/* receipts */}
-      {hasReceipts && (
-        <div className="flex flex-col gap-2.5">
-          <div className="meta-label">recent claims</div>
-          <AnimatePresence initial={false}>
-            {data.receipts.map((r, i) => (
-              <ReceiptRow key={r.id} receipt={r} delay={i * 0.04} />
-            ))}
-          </AnimatePresence>
+    <div className="flex flex-col gap-3">
+      <MarginCollapsible title="overview · profile" defaultOpen>
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-3 text-[10px] tracking-[0.18em] uppercase">
+            <CountTile label="claims" value={data.totals.claims} />
+            <CountTile label="sources" value={data.totals.sources} />
+          </div>
+          {data.profile && <ProfileSummary profile={data.profile} />}
         </div>
+      </MarginCollapsible>
+
+      {hasReceipts && (
+        <MarginCollapsible title="recent claims" defaultOpen>
+          <div className="flex flex-col gap-2.5">
+            <AnimatePresence initial={false}>
+              {data.receipts.map((r, i) => (
+                <ReceiptRow key={r.id} receipt={r} delay={i * 0.04} />
+              ))}
+            </AnimatePresence>
+          </div>
+        </MarginCollapsible>
       )}
     </div>
   );

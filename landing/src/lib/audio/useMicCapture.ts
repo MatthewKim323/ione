@@ -33,6 +33,12 @@ export type MicCaptureRecording = {
   blob: Blob;
   durationSec: number;
   mimeType: string;
+  /**
+   * Peak RMS observed while recording (0..1, raw — not the smoothed
+   * value used for the UI meter). Lets the caller short-circuit a
+   * network round-trip when the mic obviously never picked anything up.
+   */
+  peakLevel: number;
 };
 
 export type UseMicCaptureResult = {
@@ -65,6 +71,11 @@ export function useMicCapture(): UseMicCaptureResult {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const rafRef = useRef<number | null>(null);
+  // Peak RMS observed during the current recording. Reset on every
+  // start(), exposed on the resolved MicCaptureRecording so callers
+  // can detect "mic was muted / not picking up" without round-tripping
+  // through Scribe.
+  const peakLevelRef = useRef<number>(0);
 
   // Tear down on unmount. We keep the persistent mic stream alive
   // across PTT presses, but we *do* release it when the component
@@ -125,6 +136,7 @@ export function useMicCapture(): UseMicCaptureResult {
       sum += v * v;
     }
     const rms = Math.sqrt(sum / buf.length);
+    if (rms > peakLevelRef.current) peakLevelRef.current = rms;
     setLevel((prev) => prev * 0.6 + Math.min(1, rms * 2.4) * 0.4);
     rafRef.current = requestAnimationFrame(tickLevel);
   }, []);
@@ -150,12 +162,20 @@ export function useMicCapture(): UseMicCaptureResult {
     setState("starting");
     cancelledRef.current = false;
     chunksRef.current = [];
+    peakLevelRef.current = 0;
     try {
       const stream = await ensureStream();
 
       // MIME picker: prefer webm/opus for size + Scribe friendliness.
-      // Safari only supports audio/mp4 with AAC, so fall through.
+      // Safari only supports audio/mp4 with AAC, so fall through to
+      // the no-options ctor (browser picks its own default).
       const mime = pickRecorderMime();
+      if (!mime) {
+        console.warn(
+          "[useMicCapture] no preferred MIME supported by MediaRecorder; " +
+            "falling back to browser default (likely Safari → audio/mp4).",
+        );
+      }
       const recorder = mime
         ? new MediaRecorder(stream, { mimeType: mime })
         : new MediaRecorder(stream);
@@ -165,8 +185,10 @@ export function useMicCapture(): UseMicCaptureResult {
         if (ev.data && ev.data.size > 0) chunksRef.current.push(ev.data);
       });
 
-      // Start an analyser for the level meter. Recreated every press
-      // because closing the AudioContext between presses is overkill.
+      // Set up the level-meter analyser. We do this *before* starting
+      // the recorder so the `await ctx.resume()` ordering is obvious:
+      // by the time we reach `recorder.start()` the AudioContext has
+      // been resumed (or we've fallen through because there's no ctx).
       if (!audioCtxRef.current) {
         const Ctor =
           window.AudioContext ||
@@ -176,8 +198,12 @@ export function useMicCapture(): UseMicCaptureResult {
       }
       const ctx = audioCtxRef.current;
       if (ctx) {
+        if (ctx.state === "suspended") {
+          // Must complete before recorder.start() so the analyser can
+          // actually report levels from the first frame.
+          await ctx.resume();
+        }
         try {
-          if (ctx.state === "suspended") await ctx.resume();
           const src = ctx.createMediaStreamSource(stream);
           const an = ctx.createAnalyser();
           an.fftSize = 1024;
@@ -194,7 +220,13 @@ export function useMicCapture(): UseMicCaptureResult {
         }
       }
 
-      recorder.start(/* timeslice */ 100);
+      // No timeslice: requesting periodic chunks (e.g. start(100)) makes
+      // MediaRecorder emit each WebM cluster as a separate Blob, and
+      // re-stitching them into one Blob has been observed to produce
+      // files that ElevenLabs Scribe accepts with HTTP 200 but decodes
+      // as silent. PTT only needs the final audio, so let the recorder
+      // emit a single well-formed segment on stop().
+      recorder.start();
       startedAtRef.current = Date.now();
       setState("recording");
     } catch (e) {
@@ -217,6 +249,10 @@ export function useMicCapture(): UseMicCaptureResult {
       rec.addEventListener(
         "stop",
         () => {
+          // Snapshot the peak before teardownAnalyser() runs (it doesn't
+          // currently touch peakLevelRef, but capturing first keeps
+          // ordering robust against future refactors).
+          const peakLevel = peakLevelRef.current;
           teardownAnalyser();
           if (cancelledRef.current) {
             chunksRef.current = [];
@@ -233,7 +269,13 @@ export function useMicCapture(): UseMicCaptureResult {
             return;
           }
           const durationSec = Math.min(elapsedSec, MAX_DURATION_SEC);
-          resolve({ blob, durationSec, mimeType: mime });
+          // One-line diagnostic so when a user reports "didn't catch
+          // that" we can correlate against bytes / mime / mic input.
+          console.info(
+            `[useMicCapture] stop bytes=${blob.size} mime=${mime} ` +
+              `durationSec=${durationSec.toFixed(2)} peakLevel=${peakLevel.toFixed(4)}`,
+          );
+          resolve({ blob, durationSec, mimeType: mime, peakLevel });
         },
         { once: true },
       );

@@ -24,6 +24,14 @@ export type TranscribeResult = {
   usd: number;
   /** End-to-end ms (api wall clock). */
   ms: number;
+  /**
+   * Server-side hint when the transcript came back empty:
+   *   • "silent_audio" — Scribe ran but heard nothing identifiable (low
+   *     language_probability + empty text). Usually means muted mic or
+   *     speaking too quietly. Lets the UI show a more specific toast.
+   * Undefined when the transcript was non-empty or no hint was emitted.
+   */
+  hint?: "silent_audio";
 };
 
 export type TranscribeInput = {
@@ -84,6 +92,7 @@ export async function transcribeAudio(
     language_probability?: number | null;
     usd?: number;
     ms?: number;
+    hint?: string;
   };
 
   return {
@@ -96,6 +105,7 @@ export async function transcribeAudio(
         : null,
     usd: typeof json.usd === "number" ? json.usd : 0,
     ms: typeof json.ms === "number" ? json.ms : 0,
+    ...(json.hint === "silent_audio" ? { hint: "silent_audio" as const } : {}),
   };
 }
 
