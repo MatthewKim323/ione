@@ -211,6 +211,24 @@ export function Demo() {
     };
   }, [ready]);
 
+  // Long, smooth vertical feather. The asymmetry (slightly bigger entry
+  // band than exit band) is on purpose — the eye lingers on whatever's
+  // coming up from below, so the top fade gets more runway. ~18% on top
+  // / ~16% on bottom is enough that the eye reads the demo as
+  // dissolving into the page rather than slapped on as a hard rectangle.
+  const FEATHER_MASK =
+    "linear-gradient(to bottom," +
+    " rgba(0,0,0,0)    0%," +
+    " rgba(0,0,0,0.25) 4%," +
+    " rgba(0,0,0,0.65) 9%," +
+    " rgba(0,0,0,0.92) 14%," +
+    " #000             18%," +
+    " #000             84%," +
+    " rgba(0,0,0,0.92) 88%," +
+    " rgba(0,0,0,0.65) 93%," +
+    " rgba(0,0,0,0.25) 97%," +
+    " rgba(0,0,0,0)    100%)";
+
   return (
     <section
       ref={sectionRef}
@@ -228,7 +246,11 @@ export function Demo() {
           height: "100vh",
           width: "100%",
           overflow: "hidden",
-          backgroundColor: "#000",
+          // Mask the whole sticky container — bg + canvas + any future
+          // overlay layers — so they all dissolve together into the
+          // page bg instead of revealing a hard rectangular edge.
+          maskImage: FEATHER_MASK,
+          WebkitMaskImage: FEATHER_MASK,
         }}
       >
         <canvas
@@ -243,12 +265,6 @@ export function Demo() {
             opacity: ready ? 1 : 0,
             transition: "opacity 1s cubic-bezier(0.22, 1, 0.36, 1)",
             willChange: "opacity",
-            // Feather top/bottom so the full-bleed demo doesn’t hard-cut
-            // against the sections above/below.
-            maskImage:
-              "linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)",
-            WebkitMaskImage:
-              "linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)",
           }}
         />
       </div>
