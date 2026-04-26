@@ -108,10 +108,18 @@ export async function ingestSource(input: IngestInput): Promise<IngestResult> {
   }
 
   // ── 4. eager chunk for plain-text inputs ──────────────────────────────
-  // This keeps the "no chunk → no claim" invariant easy to satisfy for
-  // notes typed inline. Binary uploads stay chunkless until a server-side
-  // OCR worker takes them.
-  if (kind === "note" || file.type.startsWith("text/")) {
+  // We also fire on .md/.txt/.csv regardless of inferred kind: a file
+  // named "transcript-fall.md" routes to kind=transcript, but browsers
+  // disagree on whether its MIME is "text/markdown", "text/plain", or
+  // empty — so leaning on `file.type` alone silently dropped chunks for
+  // non-`note` text uploads, leaving extractors with nothing to read.
+  // Binary uploads (PDFs, images) still stay chunkless until a
+  // server-side OCR worker fills them in.
+  const looksTextLike =
+    kind === "note" ||
+    file.type.startsWith("text/") ||
+    /\.(txt|md|markdown|csv)$/i.test(file.name);
+  if (looksTextLike) {
     try {
       const text = await file.text();
       const trimmed = text.slice(0, 100_000); // guard against pathologically large notes

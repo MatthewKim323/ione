@@ -65,6 +65,11 @@
     scroll-behavior: smooth;
   }
 
+  /* Lenis owns scroll on `/` — native `scroll-behavior` fights the lerp. */
+  html.lenis {
+    scroll-behavior: auto !important;
+  }
+
   body {
     background-color: #f2f2f2;
     color: var(--color-paper);
@@ -367,6 +372,35 @@
       0 1px 0 rgba(74, 70, 63, 0.06),
       0 12px 32px -18px rgba(74, 70, 63, 0.28),
       0 28px 60px -36px rgba(74, 70, 63, 0.22);
+  }
+
+  /* Wisp viewport — black stage with a warm “bezel” that steps down from desk
+     line colors so the frame does not read as a flat UI box on the parchment. */
+  .wisp-port-shell {
+    position: relative;
+    border-radius: 0.375rem;
+    padding: 1px;
+    background: linear-gradient(
+      155deg,
+      var(--color-line-soft) 0%,
+      var(--color-desk-warm) 16%,
+      #8a8378 38%,
+      #3a3632 62%,
+      #0a0a0c 100%
+    );
+    box-shadow:
+      0 0 0 1px rgba(212, 200, 173, 0.32),
+      0 22px 52px -20px rgba(34, 29, 24, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .wisp-port-inner {
+    position: relative;
+    height: 100%;
+    min-height: 0;
+    border-radius: calc(0.375rem - 1px);
+    background: #000000;
+    overflow: hidden;
   }
   /* Red pencil margin rule — vertical, ~64px from the left edge,
      visible only on cards tagged with .with-margin-rule. */

@@ -6,6 +6,7 @@ import { Pipeline } from "../components/Pipeline";
 import { Demo } from "../components/Demo";
 import { Closer } from "../components/Closer";
 import { SKIP_FX } from "../lib/prerender";
+import { useLenisLanding } from "../lib/useLenisLanding";
 
 const PAGE_BG = "#f2f2f2";
 
@@ -341,6 +342,8 @@ function FlowerBackground() {
 }
 
 export default function Landing() {
+  useLenisLanding();
+
   useEffect(() => {
     document.body.style.backgroundColor = PAGE_BG;
     document.documentElement.style.backgroundColor = PAGE_BG;

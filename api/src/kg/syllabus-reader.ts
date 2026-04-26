@@ -46,7 +46,7 @@ class SyllabusReaderImpl implements Extractor {
       systemPrompt: SYSTEM,
       chunks: ctx.chunks,
       maxClaims: 12,
-      maxTokens: 1000,
+      maxTokens: 2048,
     });
     return {
       extractor: this.name,

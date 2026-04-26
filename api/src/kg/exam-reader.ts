@@ -45,7 +45,9 @@ Rules:
   rolling that up — but use a separate claim with confidence ≥ 0.7.
 - Don't speculate. If the chunk doesn't actually show a sign error, don't
   emit one.
-- If the document is plainly not an exam, return claims: [].`;
+- If the document is plainly not an exam, return claims: [].
+- Keep "reasoning" ≤ 60 characters. Just enough to identify why, not a
+  full re-derivation. Truncated JSON is worse than concise JSON.`;
 
 class ExamReaderImpl implements Extractor {
   readonly name = "ExamReader" as const;
@@ -60,7 +62,7 @@ class ExamReaderImpl implements Extractor {
       systemPrompt: SYSTEM,
       chunks: ctx.chunks,
       maxClaims: 30,
-      maxTokens: 2000,
+      maxTokens: 4096,
     });
     return {
       extractor: this.name,

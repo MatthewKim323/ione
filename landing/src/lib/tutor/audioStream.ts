@@ -4,15 +4,13 @@ import { supabase } from "../supabase";
 /**
  * Stream a hint's TTS audio from `/api/audio/:hintId`.
  *
- * Two paths:
- *   1. MediaSource SourceBuffer — append MP3 chunks as they arrive (ideal,
- *      gets first-byte playback in ~80ms).
- *   2. Fallback: download the full Blob, mount it on a regular <audio>.
- *      Used when MSE rejects the MIME type (Safari, some Chromium variants).
+ * ElevenLabs returns a **raw MP3** byte stream. Chromium/WebKit often report
+ * `MediaSource.isTypeSupported("audio/mpeg") === true`, but appending those
+ * chunks to a SourceBuffer does not yield reliable decode/play — the element
+ * can sit silent forever. We therefore **always** buffer `audio/mpeg` to a
+ * Blob and play via a regular object URL (fast enough for short hints).
  *
- * The function plays into the provided <audio> element so callers can
- * control transport (volume, playbackRate). It returns a controller with
- * .stop() so HintCard can yank audio mid-play if a new hint supersedes.
+ * MediaSource remains available for future non-MP3 transports (e.g. fMP4).
  */
 
 export type AudioController = {
@@ -41,18 +39,22 @@ export async function playHintAudio(opts: {
   if (!res.ok || !res.body) {
     throw new Error(`audio ${res.status}: ${await res.text().catch(() => "")}`);
   }
-  const mime = res.headers.get("content-type") ?? "audio/mpeg";
+  const mimeHeader = res.headers.get("content-type") ?? "audio/mpeg";
+  const mimeBase = mimeHeader.split(";")[0]!.trim().toLowerCase();
+  const isRawMpeg =
+    mimeBase === "audio/mpeg" ||
+    mimeBase === "audio/mp3" ||
+    mimeBase.endsWith("/mpeg");
 
-  // Branch 1 — MediaSource streaming.
   if (
+    !isRawMpeg &&
     typeof window !== "undefined" &&
     "MediaSource" in window &&
     MIME_CANDIDATES.some((m) => MediaSource.isTypeSupported(m))
   ) {
-    return await playViaMediaSource(opts.audioEl, res, mime, opts.signal);
+    return await playViaMediaSource(opts.audioEl, res, mimeHeader, opts.signal);
   }
 
-  // Branch 2 — download fully then play.
   return await playViaBlob(opts.audioEl, res);
 }
 

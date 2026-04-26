@@ -43,7 +43,8 @@ const EnvSchema = z.object({
 
   // ElevenLabs — optional (audio is a phase-2 stretch; intervention can run text-only)
   ELEVENLABS_API_KEY: z.string().optional(),
-  ELEVENLABS_VOICE_ID: z.string().default("21m00Tcm4TlvDq8ikWAM"),
+  // ione tutor voice. Override via ELEVENLABS_VOICE_ID in .env.local.
+  ELEVENLABS_VOICE_ID: z.string().default("jqcCZkN6Knx8BJ5TBdYR"),
   ELEVENLABS_MODEL_ID: z.string().default("eleven_flash_v2_5"),
 
   // Loop-contract guardrails

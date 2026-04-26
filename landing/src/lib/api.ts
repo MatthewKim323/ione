@@ -10,9 +10,39 @@ import { supabase } from "./supabase";
  * stream on cost_exceeded). Anything that fails to parse falls back to a
  * generic ApiError with code='unknown'.
  */
-const API_URL =
-  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ??
-  "http://localhost:8787";
+/**
+ * Resolve the API base URL.
+ *
+ * Priority:
+ *   1. VITE_API_URL when set — explicit override always wins.
+ *   2. If the page is being served from a non-localhost host (e.g. an iPad at
+ *      `http://192.168.x.x:5234`), the default `http://localhost:8787` is wrong
+ *      from that device's perspective — `localhost` would be the iPad itself.
+ *      Rewrite to the page's hostname on port 8787 so cross-device dev "just
+ *      works" without a custom env file. This is dev-only convenience; in
+ *      production VITE_API_URL is always set.
+ *   3. Same-origin localhost — the common case.
+ */
+function resolveApiUrl(): string {
+  const fromEnv = (import.meta.env.VITE_API_URL as string | undefined)?.replace(
+    /\/$/,
+    "",
+  );
+  if (fromEnv) return fromEnv;
+
+  const isLocalHostname = (h: string) =>
+    h === "localhost" || h === "127.0.0.1" || h === "[::1]" || h === "::1";
+
+  if (typeof window !== "undefined") {
+    const pageHost = window.location.hostname;
+    if (pageHost && !isLocalHostname(pageHost)) {
+      return `${window.location.protocol}//${pageHost}:8787`;
+    }
+  }
+  return "http://localhost:8787";
+}
+
+const API_URL = resolveApiUrl();
 
 export type ApiErrorCode =
   | "bad_request"
@@ -58,7 +88,25 @@ export async function authedFetch(
   const token = data.session?.access_token;
   const headers = new Headers(init.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  return fetch(`${API_URL}${path}`, { ...init, headers });
+  const url = `${API_URL}${path}`;
+  try {
+    return await fetch(url, { ...init, headers });
+  } catch (e) {
+    // `fetch` only throws TypeError on transport-level failures (DNS,
+    // connection refused, CORS preflight rejected, mixed content, navigated
+    // away). The default browser message is the unhelpful "Failed to fetch"
+    // — replace it with something that tells us exactly which URL the page
+    // tried to reach so demos don't hit a dead end in the toast description.
+    if (e instanceof TypeError) {
+      throw new ApiError(
+        "unknown",
+        `couldn't reach the api at ${url}. is the api server running and reachable from this device? (original: ${e.message})`,
+        0,
+        { url, cause: "network" },
+      );
+    }
+    throw e;
+  }
 }
 
 export async function authedJson<T = unknown>(

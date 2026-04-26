@@ -21,6 +21,7 @@ import { OcrDebugBanner } from "./OcrDebugBanner";
 import { RoiPicker } from "./RoiPicker";
 import { BrowserCompatBanner } from "./BrowserCompatBanner";
 import { WispOrb } from "./WispOrb";
+import { primeAudioGraph } from "../../lib/audio/audioBus";
 import {
   AgentTrace,
   applyCycleEvent,
@@ -374,7 +375,17 @@ export function TutorWorkspace() {
                     tone="ghost"
                     surface="desk"
                     size="sm"
-                    onClick={() => setAudioMuted((m) => !m)}
+                    onClick={() => {
+                      setAudioMuted((m) => {
+                        const next = !m;
+                        if (next === false) {
+                          void primeAudioGraph().catch((e) =>
+                            console.warn("[tutor] primeAudioGraph", e),
+                          );
+                        }
+                        return next;
+                      });
+                    }}
                   >
                     {audioMuted ? "audio off" : "audio on"}
                   </PencilButton>
@@ -392,7 +403,16 @@ export function TutorWorkspace() {
                     <PencilButton
                       surface="desk"
                       size="sm"
-                      onClick={capture.start}
+                      onClick={() => {
+                        void (async () => {
+                          try {
+                            await primeAudioGraph();
+                          } catch (e) {
+                            console.warn("[tutor] primeAudioGraph", e);
+                          }
+                          await capture.start();
+                        })();
+                      }}
                       disabled={!capture.isSupported}
                     >
                       start session
@@ -496,8 +516,10 @@ export function TutorWorkspace() {
                 cold start. */}
             <div className="flex flex-col items-center">
               <div className="section-label-light mb-3 self-start">voice</div>
-              <div className="rounded-sm border border-zinc-800 bg-black p-2 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]">
-                <WispOrb size={220} />
+              <div className="wisp-port-shell inline-flex max-w-full">
+                <div className="wisp-port-inner flex items-center justify-center p-2">
+                  <WispOrb size={220} />
+                </div>
               </div>
               <div
                 className={[

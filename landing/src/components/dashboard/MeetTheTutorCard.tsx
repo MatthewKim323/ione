@@ -6,15 +6,26 @@ import {
   primeAudioGraph,
 } from "../../lib/audio/audioBus";
 import { createVoicePreviewWavUrl } from "../../lib/audio/voicePreviewSample";
+import { authedFetch } from "../../lib/api";
 
 /**
  * Full-bleed desk hero: the wisp is the product moment — always drifting in
  * the shader (see public/wisp/main.js), faster when audio plays. CTAs sit in
  * the margin; session detail stays below on the dashboard.
+ *
+ * "hear the voice" button:
+ *   1. POST /api/audio/preview → real ElevenLabs MP3 (the tutor voice).
+ *   2. If that fails (TTS not configured, network), fall back to a local
+ *      synthesised hum so the orb still moves and the demo never goes silent.
  */
 export function MeetTheTutorCard() {
   const [playing, setPlaying] = useState(false);
+  const [status, setStatus] = useState<
+    "idle" | "loading" | "live" | "fallback" | "error"
+  >("idle");
   const previewUrlRef = useRef<string | null>(null);
+  const liveUrlRef = useRef<string | null>(null);
+  const inFlightRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     return () => {
@@ -22,33 +33,92 @@ export function MeetTheTutorCard() {
         URL.revokeObjectURL(previewUrlRef.current);
         previewUrlRef.current = null;
       }
+      if (liveUrlRef.current) {
+        URL.revokeObjectURL(liveUrlRef.current);
+        liveUrlRef.current = null;
+      }
+      inFlightRef.current?.abort();
     };
   }, []);
 
+  const playSynthFallback = useCallback(async () => {
+    const el = getSharedAudioElement();
+    if (!previewUrlRef.current) {
+      previewUrlRef.current = createVoicePreviewWavUrl();
+    }
+    el.pause();
+    el.src = previewUrlRef.current;
+    el.currentTime = 0;
+    await el.play();
+  }, []);
+
   const playPreview = useCallback(async () => {
+    inFlightRef.current?.abort();
+    const ac = new AbortController();
+    inFlightRef.current = ac;
+
     try {
       await primeAudioGraph();
-      const el = getSharedAudioElement();
-      if (!previewUrlRef.current) {
-        previewUrlRef.current = createVoicePreviewWavUrl();
-      }
-      el.pause();
-      el.src = previewUrlRef.current;
-      el.currentTime = 0;
-      setPlaying(true);
-      await el.play();
     } catch (e) {
-      console.warn("[MeetTheTutorCard] preview play failed", e);
-      setPlaying(false);
+      console.warn("[MeetTheTutorCard] audio graph prime failed", e);
     }
-  }, []);
+
+    setPlaying(true);
+    setStatus("loading");
+
+    // Try real ElevenLabs first. We pass an empty body so the API picks the
+    // canned line — keeps the surface honest about what ione will actually
+    // sound like during a session.
+    try {
+      const res = await authedFetch("/api/audio/preview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+        signal: ac.signal,
+      });
+      if (!res.ok) {
+        const detail = await res.text().catch(() => "");
+        throw new Error(`preview ${res.status}: ${detail.slice(0, 200)}`);
+      }
+      const blob = await res.blob();
+      if (ac.signal.aborted) return;
+      if (liveUrlRef.current) URL.revokeObjectURL(liveUrlRef.current);
+      liveUrlRef.current = URL.createObjectURL(blob);
+
+      const el = getSharedAudioElement();
+      el.pause();
+      el.src = liveUrlRef.current;
+      el.currentTime = 0;
+      await el.play();
+      setStatus("live");
+      return;
+    } catch (e) {
+      if (ac.signal.aborted) return;
+      console.warn(
+        "[MeetTheTutorCard] elevenlabs preview failed, falling back to synth",
+        e,
+      );
+    }
+
+    // Fallback — keeps the orb alive even when TTS is offline.
+    try {
+      await playSynthFallback();
+      setStatus("fallback");
+    } catch (e) {
+      console.warn("[MeetTheTutorCard] fallback play failed", e);
+      setPlaying(false);
+      setStatus("error");
+    }
+  }, [playSynthFallback]);
 
   useEffect(() => {
     const el = getSharedAudioElement();
     const onEnd = () => setPlaying(false);
     el.addEventListener("ended", onEnd);
+    el.addEventListener("pause", onEnd);
     return () => {
       el.removeEventListener("ended", onEnd);
+      el.removeEventListener("pause", onEnd);
     };
   }, []);
 
@@ -66,21 +136,23 @@ export function MeetTheTutorCard() {
           {/* Orb — dominant column */}
           <div className="lg:col-span-7 order-2 lg:order-1">
             <div
-              className="relative mx-auto w-full max-w-[min(92vw,720px)] lg:max-w-none aspect-[4/3] lg:aspect-[5/4] lg:min-h-[min(58vh,640px)] rounded-sm border border-zinc-800 bg-black overflow-hidden shadow-[inset_0_0_0_1px_rgba(255,255,255,0.04)]"
+              className="wisp-port-shell relative mx-auto w-full max-w-[min(92vw,720px)] lg:max-w-none aspect-[4/3] lg:aspect-[5/4] lg:min-h-[min(58vh,640px)]"
               style={{ contain: "layout paint" }}
             >
-              <div className="absolute inset-0 flex items-center justify-center p-2 sm:p-4 bg-black">
-                <div className="w-[min(94%,560px)] aspect-square max-h-full bg-black">
-                  <WispOrb
-                    fill
-                    minFill={220}
-                    ariaLabel="ione voice orb — always in motion; speeds up when it speaks"
-                  />
+              <div className="wisp-port-inner">
+                <div className="absolute inset-0 flex items-center justify-center p-2 sm:p-4">
+                  <div className="w-[min(94%,560px)] aspect-square max-h-full bg-black">
+                    <WispOrb
+                      fill
+                      minFill={220}
+                      ariaLabel="ione voice orb — always in motion; speeds up when it speaks"
+                    />
+                  </div>
                 </div>
+                <p className="absolute bottom-3 left-0 right-0 text-center font-sub text-[9px] tracking-[0.2em] uppercase text-paper-dim/80 pointer-events-none">
+                  idle drift · accelerates on voice
+                </p>
               </div>
-              <p className="absolute bottom-3 left-0 right-0 text-center font-sub text-[9px] tracking-[0.2em] uppercase text-zinc-500 pointer-events-none">
-                idle drift · accelerates on voice
-              </p>
             </div>
           </div>
 
@@ -105,7 +177,11 @@ export function MeetTheTutorCard() {
                 disabled={playing}
                 className="cta-light px-6 py-3 font-sub text-[11px] tracking-[0.18em] uppercase justify-center disabled:opacity-50"
               >
-                {playing ? "playing…" : "hear the voice"}
+                {status === "loading"
+                  ? "loading voice…"
+                  : playing
+                    ? "playing…"
+                    : "hear the voice"}
               </button>
               <Link
                 to="/tutor"
@@ -114,8 +190,20 @@ export function MeetTheTutorCard() {
                 open tutor · agents room →
               </Link>
             </div>
-            <p className="font-sub text-[10px] tracking-wide text-paper-mute mt-8 max-w-[42ch] mx-auto lg:mx-0 leading-relaxed">
-              screen capture and “start session” live on the next page — this
+            <p
+              className="font-sub text-[10px] tracking-wide text-paper-mute mt-4 h-4 max-w-[42ch] mx-auto lg:mx-0 leading-relaxed"
+              aria-live="polite"
+            >
+              {status === "live"
+                ? "live · streamed from elevenlabs (voice id jqcCZkN6…)"
+                : status === "fallback"
+                  ? "tts unreachable — playing local synth so the orb still moves"
+                  : status === "error"
+                    ? "audio failed to start — check console / try again"
+                    : ""}
+            </p>
+            <p className="font-sub text-[10px] tracking-wide text-paper-mute mt-4 max-w-[42ch] mx-auto lg:mx-0 leading-relaxed">
+              screen capture and "start session" live on the next page — this
               strip is the first thing you feel.
             </p>
           </div>

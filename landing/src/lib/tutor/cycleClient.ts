@@ -1,4 +1,4 @@
-import { API_BASE_URL, authedJson, readApiError } from "../api";
+import { ApiError, API_BASE_URL, authedJson, readApiError } from "../api";
 import { supabase } from "../supabase";
 
 /**
@@ -145,12 +145,26 @@ export async function sendCycle(input: SendCycleInput): Promise<SendCycleHandle>
     }),
   );
 
-  const res = await fetch(`${API_BASE_URL}/api/cycle`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: form,
-    signal: input.signal,
-  });
+  const url = `${API_BASE_URL}/api/cycle`;
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+      signal: input.signal,
+    });
+  } catch (e) {
+    if (e instanceof TypeError) {
+      throw new ApiError(
+        "unknown",
+        `couldn't reach the api at ${url}. is the api server running and reachable from this device? (original: ${e.message})`,
+        0,
+        { url, cause: "network" },
+      );
+    }
+    throw e;
+  }
   if (!res.ok || !res.body) {
     throw await readApiError(res);
   }

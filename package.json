@@ -9,6 +9,7 @@
     "test:predictive": "node scripts/test-predictive.mjs",
     "seed-demo": "node scripts/seed-demo.mjs",
     "seed-demo:reset": "node scripts/seed-demo-reset.mjs",
+    "verify:kg": "node scripts/verify-kg.mjs",
     "eval": "cd api && RUN_EVAL=1 ./node_modules/.bin/vitest run tests/orchestrator.test.ts tests/kg --reporter=verbose",
     "eval:report": "node scripts/eval-report.mjs"
   },

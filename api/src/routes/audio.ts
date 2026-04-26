@@ -8,9 +8,14 @@
  *      why we don't query Postgres here).
  *   3. POST to ElevenLabs and pipe the MP3 stream straight back.
  *
- * Streaming response: we DO NOT buffer. ElevenLabs flash_v2_5 produces the
- * first audio chunk in ~80ms — buffering would add seconds. The frontend's
- * audioStream.ts handles MSE chunked playback off this same response.
+ * Streaming response: we DO NOT buffer on the server. The landing app
+ * buffers the MP3 to a Blob for `<audio>` playback (raw MP3 is unreliable
+ * via MediaSource in common browsers).
+ *
+ * POST /api/audio/preview — short canned-line TTS for the dashboard "hear the
+ * voice" button. Same ElevenLabs path, capped at 240 chars, no cycleId/hint
+ * machinery. Used so a logged-in user can sample the tutor voice without
+ * starting a session.
  */
 
 import { Hono } from "hono";
@@ -25,6 +30,59 @@ import { AppError, isAppError } from "../lib/errors.js";
 import { logger } from "../lib/logger.js";
 
 export const audioRoute = new Hono<AppEnv>();
+
+// Hard cap on preview text. Long-form copy belongs in a real session.
+const PREVIEW_CHAR_LIMIT = 240;
+const PREVIEW_DEFAULT_LINE =
+  "hi — i'm ione. i'll keep an eye on your work and chime in when something looks off.";
+
+audioRoute.post("/preview", async (c) => {
+  const userId = await userIdFromAuthHeader(c.req.header("Authorization"));
+  if (!userId) {
+    throw new AppError("unauthorized", "missing or invalid bearer token");
+  }
+  c.set("userId", userId);
+
+  if (!elevenLabsConfigured()) {
+    throw new AppError(
+      "bad_request",
+      "tts is not configured — set ELEVENLABS_API_KEY",
+    );
+  }
+
+  // Body is optional — caller can POST {} for the default line.
+  let body: unknown = {};
+  try {
+    body = await c.req.json();
+  } catch {
+    body = {};
+  }
+
+  const requested =
+    typeof (body as { text?: unknown })?.text === "string"
+      ? ((body as { text: string }).text.trim() as string)
+      : "";
+  const text = (requested.length > 0 ? requested : PREVIEW_DEFAULT_LINE).slice(
+    0,
+    PREVIEW_CHAR_LIMIT,
+  );
+
+  let stream: ReadableStream<Uint8Array>;
+  try {
+    const handle = await streamSpeech(text);
+    stream = handle.stream;
+  } catch (e) {
+    if (isAppError(e)) throw e;
+    const msg = e instanceof Error ? e.message : String(e);
+    logger.error({ err: msg, userId }, "elevenlabs preview failed");
+    throw new AppError("upstream_error", `tts preview failed: ${msg}`);
+  }
+
+  c.header("Content-Type", "audio/mpeg");
+  c.header("Cache-Control", "no-store");
+  c.header("X-Audio-Source", "preview");
+  return c.body(stream);
+});
 
 audioRoute.get("/:hintId", async (c) => {
   const userId = await userIdFromAuthHeader(c.req.header("Authorization"));

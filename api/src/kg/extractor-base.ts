@@ -197,7 +197,7 @@ export async function runLlmExtraction(
     result = await sonnetJson<RawExtractorOutput>({
       system: systemPrompt,
       user: userPrompt,
-      maxTokens: opts.maxTokens ?? 1500,
+      maxTokens: opts.maxTokens ?? 3000,
       cacheSystem: true,
     });
   } catch (e) {
