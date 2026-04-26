@@ -15,6 +15,8 @@
   --color-paper-dim: #c7bda6;
   --color-paper-mute: #7a7164;
   --color-paper-faint: #4a463f;
+  /* Dark brown-grey — type on full-bleed video strips */
+  --color-bark: #3f3833;
 
   --color-red-pencil: #c4302b;
   --color-red-pencil-deep: #8d2422;
@@ -55,8 +57,8 @@
   }
 
   ::selection {
-    background-color: var(--color-red-pencil);
-    color: var(--color-paper);
+    background-color: #d4ff2c; /* light chartreuse / neon highlight */
+    color: var(--color-ink);
   }
 
   /* nicer scrollbar on webkit */
@@ -209,14 +211,16 @@
     border-color: var(--color-paper);
   }
 
-  /* Hero: “open the tutor” — a shade darker than the circular #pipeline CTA
-     (circle uses blue-600 rgba; this uses blue-700 for the same glassy feel). */
+  /* Hero + onboarding: “open the tutor” — blue glass fill, bold, rounded. */
   .hero-primary-cta.cta {
+    font-weight: 700;
+    border-radius: 0.5rem;
     color: var(--color-paper);
     background-color: rgba(29, 78, 216, 0.34);
     border-color: rgba(29, 78, 216, 0.52);
   }
   .hero-primary-cta.cta::before {
+    border-radius: 0.375rem;
     border-color: rgba(255, 255, 255, 0.08);
   }
   .hero-primary-cta.cta:hover {

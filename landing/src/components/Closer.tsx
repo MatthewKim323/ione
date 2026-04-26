@@ -45,7 +45,7 @@ export function Closer() {
               whileInView={{ opacity: 1 }}
               viewport={{ once: true, margin: "-10%" }}
               transition={{ duration: 0.7 }}
-              className="meta-label mb-4 flex items-center gap-3"
+              className="meta-label mb-4 flex items-center gap-3 text-ink/55"
             >
               <span className="text-red-pencil">▌</span>
               <span>a hint · t = 92s</span>
@@ -56,7 +56,7 @@ export function Closer() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-10%" }}
               transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-              className="h-display text-[clamp(3rem,8vw,8.4rem)]"
+              className="h-display text-[clamp(3rem,8vw,8.4rem)] text-ink"
             >
               <span className="block">check the sign</span>
               <span className="block">
@@ -71,7 +71,7 @@ export function Closer() {
               whileInView={{ opacity: 1 }}
               viewport={{ once: true, margin: "-10%" }}
               transition={{ duration: 0.7, delay: 0.2 }}
-              className="mt-10 max-w-[42ch] text-paper-dim text-[15px] leading-[1.7] font-sub"
+              className="mt-10 max-w-[42ch] text-ink/80 text-[15px] leading-[1.7] font-sub"
             >
               ten words of voice. one specific question. delivered in 1.2
               seconds, only when ted needed it. the rest of the hour, ione

@@ -58,8 +58,8 @@ function HandwrittenWordmark() {
         }}
         style={{
           position: "absolute",
-          top: "-0.10em",
-          left: "0.18em",
+          top: "-0.09em",
+          left: "0.09em",
           width: "0.13em",
           height: "0.13em",
           borderRadius: "9999px",

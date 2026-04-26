@@ -10,22 +10,20 @@ import { SKIP_FX } from "../lib/prerender";
 const PAGE_BG = "#f2f2f2";
 
 // How many viewport-heights of scroll equal one full pass through the video.
-// 1.6 = the video's entire duration plays out over ~1.6 screens of scrolling.
-const SCRUB_RANGE_VH = 1.6;
+// Higher = the clip advances more slowly as you scroll and “owns” more of the page.
+const SCRUB_RANGE_VH = 2.75;
 
 // Where (within the scrub range) the video starts fading out.
-// Lower = earlier, gentler handoff to the page bg (less “hard cut”).
-const FADE_START_T = 0.68;
+// Lower = fade begins sooner and runs longer (less abrupt handoff to page bg).
+const FADE_START_T = 0.48;
 
 // How many frames to pre-decode from /bg.mp4. Higher = smoother scrub,
 // at the cost of memory + a longer initial preload. 240 looks buttery on
 // a typical short clip; bump to 360 if you still see steps on a fast wheel.
-const FRAME_COUNT = 240;
+const FRAME_COUNT = 280;
 
-// rAF lerp toward target frame. Lower = more inertia / smoother glide.
-// 0.32 keeps the bloom locked tight to the scroll position; lower if
-// you want the flowers to lag a beat behind for a softer feel.
-const FRAME_LERP = 0.32;
+// rAF lerp toward target frame. Higher = follows scroll position more closely.
+const FRAME_LERP = 0.78;
 
 // ─────────────────────────────────────────────────────────────────────
 // Pre-decode N frames from /bg.mp4 → ImageBitmap[].
@@ -153,18 +151,18 @@ function FlowerBackground() {
     let rafId = 0;
     let running = true;
 
-    // Native-video scrub smoothing (0.18 ≈ 6 frames @60fps to catch up).
-    const SEEK_LERP_VIDEO = 0.18;
+    // Native-video scrub — keep closer to scroll than heavy smoothing.
+    const SEEK_LERP_VIDEO = 0.45;
 
     const getProgress = () => {
       const t = window.scrollY / (cachedVh * SCRUB_RANGE_VH);
       return t < 0 ? 0 : t > 1 ? 1 : t;
     };
 
-    /** 0→1 smoothstep — eases both ends so the fade doesn’t feel linear / abrupt. */
-    const smooth01 = (x: number) => {
+    /** 0→1 Perlin smootherstep — softer in/out than smoothstep for long fades. */
+    const smoother01 = (x: number) => {
       const u = x < 0 ? 0 : x > 1 ? 1 : x;
-      return u * u * (3 - 2 * u);
+      return u * u * u * (u * (u * 6 - 15) + 10);
     };
 
     const updateOpacity = (t: number) => {
@@ -173,7 +171,7 @@ function FlowerBackground() {
           ? 0
           : (t - FADE_START_T) / Math.max(0.001, 1 - FADE_START_T);
       const u = fadeT > 1 ? 1 : fadeT;
-      const opacity = 1 - smooth01(u);
+      const opacity = 1 - smoother01(u);
       if (Math.abs(opacity - lastOpacity) > 0.005) {
         wrapper.style.opacity = String(opacity);
         lastOpacity = opacity;
@@ -189,7 +187,9 @@ function FlowerBackground() {
       const bmp = frames[i];
       if (!bmp) return;
       const { vw, vh: vhPx } = dimsRef.current;
-      const scale = Math.max(cssWidth / vw, cssHeight / vhPx);
+      // Slightly past “cover” so the bloom fills the viewport more boldly.
+      const coverBoost = 1.07;
+      const scale = Math.max(cssWidth / vw, cssHeight / vhPx) * coverBoost;
       const w = vw * scale;
       const h = vhPx * scale;
       const x = (cssWidth - w) / 2;
@@ -298,6 +298,8 @@ function FlowerBackground() {
           width: "100%",
           height: "100%",
           objectFit: "cover",
+          transform: "scale(1.07)",
+          transformOrigin: "50% 50%",
           opacity: framesReady ? 0 : 1,
           transition: "opacity 0.85s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
@@ -313,18 +315,6 @@ function FlowerBackground() {
           height: "100%",
           opacity: framesReady ? 1 : 0,
           transition: "opacity 0.85s cubic-bezier(0.4, 0, 0.2, 1)",
-        }}
-      />
-      {/* Dim overlay — sits on top of both renderers so it fades out
-          together with them on scroll, leaving the rest of the page
-          un-darkened once they're gone. */}
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          inset: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.18)",
-          pointerEvents: "none",
         }}
       />
     </div>
@@ -350,15 +340,15 @@ export default function Landing() {
           pointerEvents: "none",
           background:
             "linear-gradient(to right," +
-            " rgba(0,0,0,0.15) 0%," +
-            " rgba(0,0,0,0.10) 8%," +
-            " rgba(0,0,0,0.06) 16%," +
-            " rgba(0,0,0,0.02) 28%," +
+            " rgba(0,0,0,0.12) 0%," +
+            " rgba(0,0,0,0.08) 12%," +
+            " rgba(0,0,0,0.05) 22%," +
+            " rgba(0,0,0,0.025) 38%," +
             " rgba(0,0,0,0)    50%," +
-            " rgba(0,0,0,0.02) 72%," +
-            " rgba(0,0,0,0.06) 84%," +
-            " rgba(0,0,0,0.10) 92%," +
-            " rgba(0,0,0,0.15) 100%)",
+            " rgba(0,0,0,0.025) 62%," +
+            " rgba(0,0,0,0.05) 78%," +
+            " rgba(0,0,0,0.08) 88%," +
+            " rgba(0,0,0,0.12) 100%)",
           mixBlendMode: "multiply",
         }}
       />

@@ -28,9 +28,9 @@ export function Hero() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.6 }}
-            className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute mb-12 flex items-center gap-3"
+            className="font-sub text-[10px] tracking-[0.22em] uppercase text-ink/55 mb-12 flex items-center gap-3"
           >
-            <span className="inline-block h-px w-8 bg-paper-faint" />
+            <span className="inline-block h-px w-8 bg-ink/25" />
             <span>an AI math tutor · est. 2026</span>
           </motion.div>
 
@@ -39,12 +39,18 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
             className="h-display text-[clamp(3.2rem,8.4vw,8.6rem)]"
-            style={{ color: "#1a7a3c" }}
+            style={{
+              color: "#FFFFFF",
+              textShadow:
+                "0 1px 0 rgba(0,0,0,0.22)," +
+                " 0 6px 18px rgba(0,0,0,0.28)," +
+                " 0 18px 48px rgba(0,0,0,0.22)",
+            }}
           >
             <span className="block">the tutor in</span>
             <span className="block">
               the{" "}
-              <span style={{ fontStyle: "italic", color: "#1a7a3c" }}>
+              <span className="text-white/95" style={{ fontStyle: "italic" }}>
                 margin
               </span>
             </span>
@@ -57,7 +63,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.55, duration: 0.7 }}
-            className="mt-10 max-w-[42ch] text-paper-dim text-[15px] leading-[1.7] font-sub"
+            className="mt-10 max-w-[42ch] text-ink/80 text-[15px] leading-[1.7] font-sub"
           >
             ione watches you do math on your iPad and intervenes only
             when intervention will help. it is mostly silent. when it speaks,
@@ -112,11 +118,11 @@ export function Hero() {
               ["longitudinal memory", "remembers your stalls"],
             ].map(([title, sub], i) => (
               <div key={title} className="flex flex-col gap-1">
-                <span className="meta-label text-paper">
+                <span className="meta-label text-ink">
                   <span className="text-red-pencil mr-2">{`0${i + 1}`}</span>
                   {title}
                 </span>
-                <span className="text-[11px] font-sub text-paper-mute">
+                <span className="text-[11px] font-sub text-ink/55">
                   {sub}
                 </span>
               </div>
@@ -134,14 +140,14 @@ export function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.4, duration: 0.6 }}
-          className="hidden md:flex absolute bottom-[-6rem] left-0 right-0 items-center justify-between px-2 font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute"
+          className="hidden md:flex absolute bottom-[-6rem] left-0 right-0 items-center justify-between px-2 font-sub text-[10px] tracking-[0.22em] uppercase text-ink/50"
         >
           <span className="flex items-center gap-3">
             <span>scroll</span>
-            <span className="inline-block h-px w-8 bg-paper-faint" />
+            <span className="inline-block h-px w-8 bg-ink/25" />
           </span>
-          <span className="tabular-nums text-paper-dim">
-            01 <span className="text-paper-faint">/ 04</span>
+          <span className="tabular-nums text-ink/60">
+            01 <span className="text-ink/35">/ 04</span>
           </span>
         </motion.div>
       </div>

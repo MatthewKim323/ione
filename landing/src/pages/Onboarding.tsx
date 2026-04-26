@@ -423,7 +423,7 @@ export default function Onboarding() {
                 <button
                   type="button"
                   onClick={finish}
-                  className="cta"
+                  className="cta hero-primary-cta"
                 >
                   open the tutor
                   <span aria-hidden>→</span>
