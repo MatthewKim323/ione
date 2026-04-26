@@ -1,4 +1,4 @@
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 
 // ─── Handwriting choreography for the wordmark ────────────────────────
 const STROKE_START = 0.3;
@@ -13,12 +13,15 @@ function strokeAt(index: number) {
 const HAND_EASE = [0.65, 0, 0.35, 1] as const;
 
 function HandwrittenWordmark() {
+  const reduceMotion = useReducedMotion() ?? false;
   const integral = strokeAt(0);
   const o = strokeAt(1);
   const n = strokeAt(2);
   const e = strokeAt(3);
   const period = strokeAt(4);
   const tittleAt = integral.end + 0.06;
+  /** One up–down–up cycle; `repeat: 1` in transition ⇒ two bounces total. */
+  const PERIOD_BOUNCE_DUR = 0.4;
 
   const letterMotionProps = (start: number) => ({
     initial: { opacity: 0, y: "0.06em" },
@@ -40,7 +43,7 @@ function HandwrittenWordmark() {
             display: "inline-block",
             fontSize: "0.88em",
             marginRight: "-0.1em",
-            transform: "translateY(0.08em)",
+            transform: "translate(-0.035em, 0.08em)",
           }}
         >
           ∫
@@ -87,7 +90,34 @@ function HandwrittenWordmark() {
           fontStyle: "normal",
         }}
       >
-        .
+        <motion.span
+          aria-hidden
+          style={{
+            display: "inline-block",
+            color: "inherit",
+            fontStyle: "normal",
+            willChange: reduceMotion ? undefined : "transform",
+          }}
+          initial={reduceMotion ? false : { y: 0 }}
+          animate={
+            reduceMotion
+              ? { y: 0 }
+              : { y: ["0em", "-0.07em", "0em"] }
+          }
+          transition={
+            reduceMotion
+              ? { duration: 0 }
+              : {
+                  // Same delay as the period stroke so bounce starts as it appears.
+                  delay: period.start,
+                  duration: PERIOD_BOUNCE_DUR,
+                  repeat: 1,
+                  ease: [0.4, 0, 0.2, 1],
+                }
+          }
+        >
+          .
+        </motion.span>
       </motion.span>
     </span>
   );
@@ -95,12 +125,8 @@ function HandwrittenWordmark() {
 
 export function TitlePage() {
   return (
-    <section
-      className="relative min-h-screen"
-      style={{ minHeight: "100vh" }}
-    >
-      {/* Wordmark only — vertical padding so huge type + shadows + tittle aren’t flush to the viewport edge. */}
-      <div className="flex min-h-screen flex-col justify-center items-start px-6 py-8 sm:px-10 sm:py-10 md:px-14 md:py-12 lg:pl-20 text-left">
+    <section className="relative min-h-screen" style={{ minHeight: "100vh" }}>
+      <div className="relative flex min-h-screen flex-col justify-center items-start px-6 py-8 sm:px-10 sm:py-10 md:px-14 md:py-12 lg:pl-20 text-left">
         <h1
           className="h-display"
           style={{
