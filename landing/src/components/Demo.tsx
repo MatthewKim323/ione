@@ -227,8 +227,10 @@ export function Demo() {
       aria-label="demo"
       className="relative"
       style={{
+        // No explicit background — let the surrounding page bg (and any
+        // residual flowers fading from the section above) show through,
+        // so this section feels continuous with Hero / Pedagogy.
         height: `${SECTION_VH * 100}vh`,
-        backgroundColor: PAGE_BG,
       }}
     >
       <div
@@ -237,8 +239,6 @@ export function Demo() {
           top: 0,
           height: "100vh",
           width: "100%",
-          overflow: "hidden",
-          backgroundColor: PAGE_BG,
           // Center the framed plate within the viewport.
           display: "flex",
           alignItems: "center",
