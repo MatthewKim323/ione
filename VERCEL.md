@@ -6,6 +6,8 @@ This repo’s **production web app** is the Vite + React client in **`landing/`*
 
 ## 1. Vercel project
 
+**Node.js:** The monorepo **root** `package.json` does not set `engines.node`, so **Project → Settings → Node.js Version** (e.g. 24.x) is what Vercel uses for the static build. If you add `engines` at the repo root again, it overrides that setting and Vercel logs a notice. The Hono API still pins Node in **`api/package.json`** for Fly/Docker-style hosts.
+
 **Two supported setups** (pick one):
 
 ### A — Root Directory empty (repo root) — default after fix
