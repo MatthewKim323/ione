@@ -11,13 +11,15 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.104.1",
     "@types/katex": "^0.16.8",
+    "@types/three": "^0.184.0",
     "katex": "^0.16.45",
     "lenis": "^1.3.23",
     "motion": "^11.18.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.14.2",
-    "recharts": "^3.8.1"
+    "recharts": "^3.8.1",
+    "three": "^0.184.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
