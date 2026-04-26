@@ -191,8 +191,13 @@ export function TitlePage() {
 
       {/* All the section contents stack ABOVE the GhostCursor canvas
           (which sits at zIndex 5) so they remain readable.  The cursor
-          still blends underneath via mix-blend-mode. */}
-      <div className="relative" style={{ zIndex: 6 }}>
+          still blends underneath via mix-blend-mode.  This wrapper
+          re-establishes the column flex layout the section had before
+          the GhostCursor canvas was nested inside. */}
+      <div
+        className="relative flex flex-col items-center w-full"
+        style={{ zIndex: 6 }}
+      >
 
       {/* tiny meta line — same eyebrow style as the hero */}
       <motion.div
