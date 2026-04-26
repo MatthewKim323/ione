@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import { AnimatedNeonUnderlink } from "./AnimatedNeonUnderlink";
 import { MarginNote } from "./MarginNote";
 import { EnterCTA } from "./EnterCTA";
 
@@ -39,9 +40,13 @@ export function Hero() {
             <span className="block">the tutor in</span>
             <span className="block">
               the{" "}
-              <span className="text-white/95" style={{ fontStyle: "italic" }}>
+              <AnimatedNeonUnderlink
+                className="text-white/95 [font-style:italic]"
+                viewDelay={0.08}
+                gap={4}
+              >
                 margin
-              </span>
+              </AnimatedNeonUnderlink>
             </span>
             <span className="block">
               of your page<span className="text-neon">.</span>

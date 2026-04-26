@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
+import { AnimatedNeonUnderlink } from "./AnimatedNeonUnderlink";
 import { SectionLabel } from "./SectionLabel";
 // @ts-expect-error — LiquidChrome is a JSX file w/o type defs.
 import LiquidChrome from "./LiquidChrome";
@@ -201,10 +202,20 @@ export function Signal() {
               transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
               className="h-display text-[clamp(2.4rem,5vw,4.6rem)] text-ink"
             >
-              <span className="block">ione runs</span>
+              <span className="block">
+                <AnimatedNeonUnderlink className="inline" viewDelay={0.04} gap={4}>
+                  ione runs
+                </AnimatedNeonUnderlink>
+              </span>
               <span className="block">
                 in the{" "}
-                <span style={{ fontStyle: "italic" }}>terminal</span>
+                <AnimatedNeonUnderlink
+                  className="inline [font-style:italic]"
+                  viewDelay={0.1}
+                  gap={4}
+                >
+                  terminal
+                </AnimatedNeonUnderlink>
                 <span className="text-neon">.</span>
               </span>
             </motion.h2>

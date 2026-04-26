@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import { AnimatedNeonUnderlink } from "./AnimatedNeonUnderlink";
 import { SectionLabel } from "./SectionLabel";
 import { InteractiveGradient } from "./InteractiveGradient";
 import { PedagogyPillarCard } from "./PedagogyPillarCard";
@@ -78,12 +79,13 @@ export function Pedagogy() {
               <span className="block">
                 stay silent<span className="text-neon">.</span>
               </span>
-              <span
-                className="block text-ink/75"
-                style={{ fontStyle: "italic" }}
+              <AnimatedNeonUnderlink
+                className="block text-ink/75 [font-style:italic]"
+                viewDelay={0.05}
+                gap={4}
               >
                 intervene only
-              </span>
+              </AnimatedNeonUnderlink>
               <span className="block">
                 when it helps<span className="text-neon">.</span>
               </span>

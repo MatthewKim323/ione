@@ -17,13 +17,13 @@ const SCRUB_RANGE_VH = 2.75;
 // Lower = fade begins sooner and runs longer (less abrupt handoff to page bg).
 const FADE_START_T = 0.48;
 
-// How many frames to pre-decode from /bg.mp4. Higher = smoother scrub,
-// at the cost of memory + a longer initial preload. 240 looks buttery on
-// a typical short clip; bump to 360 if you still see steps on a fast wheel.
-const FRAME_COUNT = 280;
+// How many frames to pre-decode from /bg.mp4. Higher = smoother scrub
+// (smaller steps through the clip) at the cost of memory + longer preload.
+const FRAME_COUNT = 400;
 
-// rAF lerp toward target frame. Higher = follows scroll position more closely.
-const FRAME_LERP = 0.78;
+// rAF lerp toward target frame. Higher = the head catches scroll faster; paired
+// with dual-frame blend below so motion stays smooth without visible stepping.
+const FRAME_LERP = 0.9;
 
 // ─────────────────────────────────────────────────────────────────────
 // Pre-decode N frames from /bg.mp4 → ImageBitmap[].
@@ -146,13 +146,12 @@ function FlowerBackground() {
     let renderedTime = 0;
     let lastSeekTime = -1;
     let displayIdx = 0;
-    let lastDrawnIdx = -1;
     let lastOpacity = -1;
     let rafId = 0;
     let running = true;
 
     // Native-video scrub — keep closer to scroll than heavy smoothing.
-    const SEEK_LERP_VIDEO = 0.45;
+    const SEEK_LERP_VIDEO = 0.55;
 
     const getProgress = () => {
       const t = window.scrollY / (cachedVh * SCRUB_RANGE_VH);
@@ -178,23 +177,48 @@ function FlowerBackground() {
       }
     };
 
-    const drawFrame = (idx: number) => {
+    const coverRect = () => {
+      const { vw, vh: vhPx } = dimsRef.current;
+      const coverBoost = 1.07;
+      const scale = Math.max(cssWidth / vw, cssHeight / vhPx) * coverBoost;
+      return {
+        w: vw * scale,
+        h: vhPx * scale,
+        x: (cssWidth - vw * scale) / 2,
+        y: (cssHeight - vhPx * scale) / 2,
+      };
+    };
+
+    /** Blend two neighbour bitmaps from fractional index — removes “stair step” choppiness. */
+    const drawFrameBlend = (f: number) => {
       if (!ctx) return;
       const frames = framesRef.current;
       const total = frames.length;
       if (!total) return;
-      const i = Math.max(0, Math.min(total - 1, idx | 0));
-      const bmp = frames[i];
-      if (!bmp) return;
-      const { vw, vh: vhPx } = dimsRef.current;
-      // Slightly past “cover” so the bloom fills the viewport more boldly.
-      const coverBoost = 1.07;
-      const scale = Math.max(cssWidth / vw, cssHeight / vhPx) * coverBoost;
-      const w = vw * scale;
-      const h = vhPx * scale;
-      const x = (cssWidth - w) / 2;
-      const y = (cssHeight - h) / 2;
-      ctx.drawImage(bmp, x, y, w, h);
+      const clamped = Math.max(0, Math.min(f, total - 1 - 1e-6));
+      const i0 = Math.floor(clamped);
+      const i1 = Math.min(i0 + 1, total - 1);
+      const a = clamped - i0;
+      const { x, y, w, h } = coverRect();
+      const b0 = frames[i0];
+      const b1 = frames[i1];
+      if (!b0) return;
+      ctx.clearRect(0, 0, cssWidth, cssHeight);
+      if (a < 0.001 || i0 === i1) {
+        ctx.globalAlpha = 1;
+        ctx.drawImage(b0, x, y, w, h);
+        return;
+      }
+      if (!b1) {
+        ctx.globalAlpha = 1;
+        ctx.drawImage(b0, x, y, w, h);
+        return;
+      }
+      ctx.globalAlpha = 1;
+      ctx.drawImage(b0, x, y, w, h);
+      ctx.globalAlpha = a;
+      ctx.drawImage(b1, x, y, w, h);
+      ctx.globalAlpha = 1;
     };
 
     const tick = () => {
@@ -212,11 +236,7 @@ function FlowerBackground() {
         } else {
           displayIdx = targetIdx;
         }
-        const rounded = Math.round(displayIdx);
-        if (rounded !== lastDrawnIdx) {
-          drawFrame(rounded);
-          lastDrawnIdx = rounded;
-        }
+        drawFrameBlend(displayIdx);
       } else if (videoDuration > 0) {
         // ── Phase A: native-video scrub ───────────────────────────────
         const target = t * videoDuration;
@@ -250,7 +270,6 @@ function FlowerBackground() {
     const onResize = () => {
       cachedVh = window.innerHeight || 1;
       syncCanvas();
-      lastDrawnIdx = -1;
     };
 
     if (video.readyState >= 1) onMeta();
