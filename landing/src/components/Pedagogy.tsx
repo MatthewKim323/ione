@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { SectionLabel } from "./SectionLabel";
+import { InteractiveGradient } from "./InteractiveGradient";
 
 const PILLARS = [
   {
@@ -35,9 +36,30 @@ export function Pedagogy() {
   return (
     <section
       id="pedagogy"
-      className="relative px-6 sm:px-10 py-32 sm:py-44 border-t border-ink-line"
+      className="relative px-6 sm:px-10 py-32 sm:py-44 border-t border-ink-line overflow-hidden"
     >
-      <div className="max-w-[1380px] mx-auto">
+      {/* Interactive animated gradient — placed asymmetrically off the
+          right edge of the section (and clipped by overflow-hidden) so
+          the layout physically embodies the asymmetry the copy describes.
+          Hidden on mobile since it would just be visual noise there. */}
+      <InteractiveGradient
+        className="hidden md:block pointer-events-auto"
+        style={{
+          position: "absolute",
+          top: "8%",
+          right: "-12%",
+          width: "62%",
+          height: "62%",
+          opacity: 0.55,
+          // Clip to a hexagon-ish blob so it doesn't read as a rectangle.
+          clipPath:
+            "polygon(8% 0%, 100% 4%, 100% 80%, 92% 100%, 14% 96%, 0% 60%, 4% 18%)",
+          mixBlendMode: "multiply",
+          zIndex: 0,
+        }}
+      />
+
+      <div className="relative z-10 max-w-[1380px] mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -78,9 +100,10 @@ export function Pedagogy() {
               className="text-paper-dim text-[15px] leading-[1.7] font-mono max-w-[52ch]"
             >
               The best math tutors are mostly silent. They sit beside the
-              student, watch the work unfold, and intervene exactly twice in
-              an hour — once to redirect, once to confirm. The rest is the
-              student doing the thinking.
+              student, watch the work{" "}
+              <strong className="text-paper font-bold">unfold</strong>, and
+              intervene exactly twice in an hour — once to redirect, once to
+              confirm. The rest is the student doing the thinking.
             </motion.p>
             <motion.p
               initial={{ opacity: 0 }}
@@ -89,10 +112,11 @@ export function Pedagogy() {
               transition={{ duration: 0.7, delay: 0.2 }}
               className="text-paper-dim text-[15px] leading-[1.7] font-mono max-w-[52ch]"
             >
-              ione is built on this asymmetry. Speech is expensive; silence
-              is the default. Every hint must earn its existence by passing
-              through three stages of skepticism before reaching the
-              student&apos;s ear.
+              ione is built on this{" "}
+              <strong className="text-paper font-bold">asymmetry</strong>.
+              Speech is expensive; silence is the default. Every hint must
+              earn its existence by passing through three stages of
+              skepticism before reaching the student&apos;s ear.
             </motion.p>
 
             {/* hand-written aside */}
