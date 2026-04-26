@@ -1,5 +1,5 @@
 import { flushSync } from "react-dom";
-import { useRef, useState } from "react";
+import { Fragment, useRef, useState } from "react";
 import {
   useReducedMotion,
   useScroll,
@@ -11,6 +11,7 @@ import { AnimatedNeonUnderlink } from "./AnimatedNeonUnderlink";
 import { FlowerCtaShape } from "./FlowerCtaShape";
 import { MarginNote } from "./MarginNote";
 import { EnterCTA } from "./EnterCTA";
+import { TextClipPathReveal, TextClipPathRevealLines } from "./TextClipPathReveal";
 
 /**
  * Flat neon L→R wipe (same as Closer) when the span scrolls into view; dark text on `bg-neon`.
@@ -77,10 +78,7 @@ export function Hero() {
       <div className="relative w-full max-w-[1380px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-x-12 gap-y-16 items-center">
         {/* ── Left: headline + CTAs ─────────────────────────────────── */}
         <div className="lg:col-span-7 relative">
-          <motion.h1
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+          <h1
             className="h-display text-[clamp(3.2rem,8.4vw,8.6rem)]"
             style={{
               color: "#FFFFFF",
@@ -90,26 +88,28 @@ export function Hero() {
                 " 0 18px 48px rgba(0,0,0,0.22)",
             }}
           >
-            <span className="block">the tutor in</span>
-            <span className="block">
-              the{" "}
-              <AnimatedNeonUnderlink
-                className="text-white/95 [font-style:italic]"
-                viewDelay={0.08}
-                gap={4}
-              >
-                margin
-              </AnimatedNeonUnderlink>
-            </span>
-            <span className="block">
-              of your page<span className="text-neon">.</span>
-            </span>
-          </motion.h1>
+            <TextClipPathRevealLines
+              lineClassName="block"
+              lines={[
+                "the tutor in",
+                <Fragment key="margin-line">
+                  the{" "}
+                  <AnimatedNeonUnderlink
+                    className="text-white/95 [font-style:italic]"
+                    viewDelay={0.08}
+                    gap={4}
+                  >
+                    margin
+                  </AnimatedNeonUnderlink>
+                </Fragment>,
+                <Fragment key="end-line">
+                  of your page<span className="text-neon">.</span>
+                </Fragment>,
+              ]}
+            />
+          </h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45, duration: 0.7 }}
+          <div
             className="mt-10 max-w-[48ch] text-[15px] leading-[1.7] font-sub text-white"
             style={{
               textShadow:
@@ -118,16 +118,27 @@ export function Hero() {
                 " 0 10px 32px rgba(0,0,0,0.22)",
             }}
           >
-            The one{" "}
-            <HeroNeonWipe reduced={reduced} delay={0.5}>
-              watches you do math on your iPad
-            </HeroNeonWipe>{" "}
-            and <span className="font-bold">intervenes</span> only when
-            intervention will help. it is mostly silent. when it speaks, it
-            asks the question that gets you <span className="font-bold">unstuck</span>{" "}
-            — <HeroNeonWipe reduced={reduced} delay={0.9}>never the answer</HeroNeonWipe>
-            .
-          </motion.p>
+            <TextClipPathRevealLines
+              lineClassName="block"
+              lines={[
+                <>
+                  The one{" "}
+                  <HeroNeonWipe reduced={reduced} delay={0.5}>
+                    watches you do math on your iPad
+                  </HeroNeonWipe>{" "}
+                  and <span className="font-bold">intervenes</span> only when
+                  intervention will help. it is mostly silent. when it speaks, it
+                </>,
+                <>
+                  asks the question that gets you <span className="font-bold">unstuck</span>{" "}
+                  — <HeroNeonWipe reduced={reduced} delay={0.9}>
+                    never the answer
+                  </HeroNeonWipe>
+                  .
+                </>,
+              ]}
+            />
+          </div>
 
           <motion.div
             initial={{ opacity: 0 }}
@@ -144,7 +155,7 @@ export function Hero() {
                   setSeeHowSpin((k) => k + 1);
                 });
               }}
-              className="group relative flex h-[8.25rem] w-[8.25rem] shrink-0 items-center justify-center no-underline rounded-full transition-shadow duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon/80 hover:shadow-[0_0_0_2px_rgba(212,255,44,0.65),0_0_28px_rgba(212,255,44,0.4)]"
+              className="group relative flex h-[8.25rem] w-[8.25rem] shrink-0 items-center justify-center no-underline rounded-full transition-shadow duration-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon/80 hover:shadow-[0_0_0_2px_rgba(191,227,42,0.65),0_0_28px_rgba(191,227,42,0.4)]"
             >
               <div
                 key={seeHowSpin}
@@ -161,17 +172,13 @@ export function Hero() {
                   className="h-full w-full"
                 />
               </div>
-              <span
+              <TextClipPathReveal
+                text="see how\nit works"
                 className="relative z-10 w-[92%] text-center text-[0.68rem] sm:text-[0.72rem] font-bold uppercase leading-[1.2] text-ink transition-colors duration-300 group-hover:text-ink/90"
-                style={{
-                  fontFamily: "var(--font-sub)",
-                  letterSpacing: "0.12em",
-                }}
-              >
-                see how
-                <br />
-                it works
-              </span>
+                style={{ fontFamily: "var(--font-sub)", letterSpacing: "0.12em" }}
+                lineClassName="block"
+                amount={0.15}
+              />
             </a>
           </motion.div>
 
@@ -188,12 +195,20 @@ export function Hero() {
               ["longitudinal memory", "remembers your stalls"],
             ].map(([title, sub], i) => (
               <div key={title} className="flex min-w-0 flex-col gap-2">
-                <div className="font-sub text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-ink font-bold">
-                  <span className="text-red-pencil font-bold tabular-nums">
-                    {`0${i + 1}`}
-                  </span>
-                  <span className="ml-2">{title}</span>
-                </div>
+                <TextClipPathRevealLines
+                  lineClassName="block"
+                  lines={[
+                    <div
+                      key="t"
+                      className="font-sub text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-ink font-bold"
+                    >
+                      <span className="text-red-pencil font-bold tabular-nums">
+                        {`0${i + 1}`}
+                      </span>
+                      <span className="ml-2">{title}</span>
+                    </div>,
+                  ]}
+                />
                 <div
                   className="h-[2px] w-full overflow-hidden rounded-full"
                   style={{ backgroundColor: "rgba(0,0,0,0.1)" }}
@@ -211,9 +226,11 @@ export function Hero() {
                     }}
                   />
                 </div>
-                <span className="text-[11px] font-sub text-ink/55 leading-snug">
-                  {sub}
-                </span>
+                <TextClipPathReveal
+                  text={sub}
+                  className="text-[11px] font-sub text-ink/55 leading-snug"
+                  lineClassName="block"
+                />
               </div>
             ))}
           </motion.div>

@@ -23,8 +23,8 @@
   --color-rust: #9a5a2c;
   --color-brass: #c8a44d;
   --color-moss: #6b7e4a;
-  /* Chartreuse / neon — matches ::selection, headline periods */
-  --color-neon: #d4ff2c;
+  /* Chartreuse / neon — matches ::selection, headline periods (slightly deeper than v1) */
+  --color-neon: #bfe32a;
 
   /* ── Light "desk" theme ──────────────────────────────────────── */
   /* Used by /onboarding, /login, /signup, /dashboard. Carries the */
@@ -75,7 +75,7 @@
   }
 
   ::selection {
-    background-color: #d4ff2c; /* light chartreuse / neon highlight */
+    background-color: var(--color-neon);
     color: var(--color-ink);
   }
 
@@ -246,7 +246,7 @@
     font-weight: 700;
     border-radius: 9999px;
     color: var(--color-paper);
-    border-color: rgba(212, 255, 44, 0.42);
+    border-color: rgba(191, 227, 42, 0.42);
     background-image:
       linear-gradient(
         180deg,
@@ -263,11 +263,11 @@
     -webkit-backdrop-filter: blur(10px);
     box-shadow:
       0 1px 2px rgba(0, 0, 0, 0.2),
-      0 0 0 1px rgba(212, 255, 44, 0.12) inset;
+      0 0 0 1px rgba(191, 227, 42, 0.12) inset;
   }
   .hero-primary-cta.cta::before {
     border-radius: 9999px;
-    border-color: rgba(212, 255, 44, 0.22);
+    border-color: rgba(191, 227, 42, 0.22);
   }
   /* Label + arrow motion is driven by motion/react (Shift-style back-and-forth). */
   .hero-primary-cta__motion {

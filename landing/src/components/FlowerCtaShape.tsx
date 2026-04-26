@@ -18,7 +18,7 @@ export function FlowerCtaShape({
 }: Props) {
   const fill =
     variant === "heroGreen"
-      ? "rgba(212, 255, 44, 0.88)"
+      ? "rgba(191, 227, 42, 0.88)"
       : variant === "heroBlack"
         ? "rgba(10, 10, 10, 0.96)"
         : variant === "nav"

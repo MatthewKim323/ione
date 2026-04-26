@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useRef, useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 
 export type PipelineStep = {
   n: string;
@@ -21,9 +21,20 @@ const FILE = {
 } as const;
 
 const tabDot = (active: boolean) =>
-  active ? "bg-ink opacity-100" : "bg-ink/38 opacity-90";
+  active
+    ? "bg-neon ring-1 ring-ink/15 shadow-[0_0_0_1px_rgba(0,0,0,0.06)]"
+    : "bg-neon/40 hover:bg-neon/65";
 
 const PENCIL = [0.16, 1, 0.3, 1] as const;
+
+/** Pipeline step h3 — slightly darker than brand neon + black outline (all stages). */
+const pipelineStepTitleStyle: CSSProperties = {
+  color: "#9fb12a",
+  WebkitTextStroke: "1.5px var(--color-bark)",
+  paintOrder: "stroke fill",
+  textShadow:
+    "0 1px 0 rgba(0,0,0,0.15), 0 2px 6px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.12)",
+};
 
 const stepListVariants = {
   hidden: { opacity: 0 },
@@ -184,8 +195,11 @@ function StepContent({
     <div className="flex h-full flex-col text-ink">
       <div className="mb-1 flex items-baseline justify-between gap-3">
         <h3
-          className="text-[2.1rem] leading-[0.95] sm:text-[2.5rem] md:text-[2.6rem]"
-          style={{ fontFamily: "var(--font-display)" }}
+          className="text-[2.35rem] leading-[0.95] sm:text-[2.7rem] md:text-[2.9rem]"
+          style={{
+            fontFamily: "var(--font-display)",
+            ...pipelineStepTitleStyle,
+          }}
         >
           {step.name}
         </h3>
@@ -214,8 +228,8 @@ function StepContent({
       <div className="mb-1 flex items-baseline justify-between gap-3">
         <motion.h3
           variants={stepItemVariants}
-          className="text-[2.1rem] leading-[0.95] sm:text-[2.5rem] md:text-[2.6rem]"
-          style={{ fontFamily: "var(--font-display)" }}
+          className="text-[2.35rem] leading-[0.95] sm:text-[2.7rem] md:text-[2.9rem]"
+          style={{ fontFamily: "var(--font-display)", ...pipelineStepTitleStyle }}
         >
           {step.name}
         </motion.h3>
@@ -284,7 +298,7 @@ function Controls({
         <button
           type="button"
           onClick={onPrev}
-          className="font-sub text-[11px] tracking-[0.16em] uppercase text-ink/55 border border-ink/15 bg-[#e4ded2] px-4 py-2.5 transition-colors hover:border-ink/30 hover:text-ink"
+          className="font-sub text-[11px] tracking-[0.16em] uppercase text-ink/55 border border-ink/15 bg-[#e4ded2] px-4 py-2.5 transition-colors hover:border-ink hover:bg-ink hover:text-white"
           aria-label="Previous stage"
         >
           ← prev
@@ -317,7 +331,7 @@ function Controls({
         <button
           type="button"
           onClick={onNext}
-          className="font-sub text-[11px] tracking-[0.16em] uppercase text-ink/55 border border-ink/15 bg-[#e4ded2] px-4 py-2.5 transition-colors hover:border-ink/30 hover:text-ink"
+          className="font-sub text-[11px] tracking-[0.16em] uppercase text-ink/55 border border-ink/15 bg-[#e4ded2] px-4 py-2.5 transition-colors hover:border-ink hover:bg-ink hover:text-white"
           aria-label="Next stage"
         >
           next →

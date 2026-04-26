@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { AnimatedNeonUnderlink } from "./AnimatedNeonUnderlink";
+import { TextClipPathRevealLines } from "./TextClipPathReveal";
 import { PipelineStepCarousel, type PipelineStep } from "./PipelineStepCarousel";
 import { SKIP_FX } from "../lib/prerender";
 
@@ -138,41 +139,44 @@ export function Pipeline() {
         <div className="relative z-10 mx-auto flex min-h-[max(100svh,56.25vw)] max-w-[1380px] flex-col justify-between px-6 sm:px-10">
           <div className="grid flex-1 grid-cols-1 content-center gap-x-12 gap-y-10 pb-12 pt-24 sm:pb-16 sm:pt-28 lg:grid-cols-12 lg:pt-32">
             <div className="lg:col-span-7">
-              <motion.h2
-                initial={{ opacity: 0, y: 14 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-10%" }}
-                transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-                className="h-display text-[clamp(2.4rem,5vw,4.6rem)] text-bark drop-shadow-[0_1px_2px_rgba(255,255,255,0.35)]"
-              >
-                <span className="block">from pixels</span>
-                <span className="block">
-                  to{" "}
-                  <AnimatedNeonUnderlink
-                    className="text-bark [font-style:italic]"
-                    viewDelay={0.06}
-                    gap={5}
-                    durationSec={1.35}
-                  >
-                    insight
-                  </AnimatedNeonUnderlink>
-                  <span className="text-neon">.</span>
-                </span>
-              </motion.h2>
+              <h2 className="h-display text-[clamp(2.4rem,5vw,4.6rem)] text-bark drop-shadow-[0_1px_2px_rgba(255,255,255,0.35)]">
+                <TextClipPathRevealLines
+                  lineClassName="block"
+                  lines={[
+                    "from pixels",
+                    <>
+                      to{" "}
+                      <AnimatedNeonUnderlink
+                        className="text-bark [font-style:italic]"
+                        viewDelay={0.06}
+                        gap={5}
+                        durationSec={1.35}
+                      >
+                        insight
+                      </AnimatedNeonUnderlink>
+                      <span className="text-neon">.</span>
+                    </>,
+                  ]}
+                />
+              </h2>
             </div>
             <div className="lg:col-span-5 lg:pt-2">
-              <motion.p
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true, margin: "-10%" }}
-                transition={{ duration: 0.7, delay: 0.1 }}
-                className="text-bark/95 text-sm sm:text-base font-sub font-bold leading-[1.75] tracking-[0.1em] drop-shadow-[0_1px_1px_rgba(255,255,255,0.4)]"
-              >
-                Every eight seconds your screen becomes a{" "}
-                <span className="font-extrabold text-bark">JSON</span> document.
-                Three specialised agents read it in series — each one cheaper,
-                faster, and more skeptical than the last.
-              </motion.p>
+              <div className="text-bark/95 text-sm sm:text-base font-sub font-bold leading-[1.75] tracking-[0.1em] drop-shadow-[0_1px_1px_rgba(255,255,255,0.4)]">
+                <TextClipPathRevealLines
+                  lineClassName="block"
+                  lines={[
+                    <>
+                      Every eight seconds your screen becomes a{" "}
+                      <span className="font-extrabold text-bark">JSON</span>{" "}
+                      document.
+                    </>,
+                    <>
+                      Three specialised agents read it in series — each one cheaper,
+                    </>,
+                    <>faster, and more skeptical than the last.</>,
+                  ]}
+                />
+              </div>
             </div>
           </div>
 
@@ -204,8 +208,14 @@ export function Pipeline() {
               className="mt-3 text-ink text-[1.6rem]"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              two cents per cycle, mostly skipped
-              <span className="text-neon">.</span>
+              <TextClipPathRevealLines
+                lines={[
+                  <>
+                    two cents per cycle, mostly skipped
+                    <span className="text-neon">.</span>
+                  </>,
+                ]}
+              />
             </h4>
           </div>
           <div className="md:col-span-8 grid grid-cols-1 gap-6 sm:grid-cols-3">

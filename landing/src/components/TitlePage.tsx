@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import { TextClipPathRevealLines } from "./TextClipPathReveal";
 
 // ─── Handwriting choreography for the wordmark ────────────────────────
 const STROKE_START = 0.3;
@@ -101,10 +102,7 @@ export function TitlePage() {
     >
       {/* Wordmark only — vertically centered, left-aligned. */}
       <div className="flex min-h-screen flex-col justify-center items-start px-6 sm:px-10 md:px-14 lg:pl-20 text-left">
-        <motion.h1
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1, duration: 0.25 }}
+        <h1
           className="h-display"
           style={{
             fontSize: "clamp(7rem, 22vw, 22rem)",
@@ -121,7 +119,13 @@ export function TitlePage() {
             overflow: "visible",
           }}
         >
-          <HandwrittenWordmark />
+          <TextClipPathRevealLines
+            className="inline-block w-full"
+            lineClassName="block"
+            lines={[<HandwrittenWordmark key="wordmark" />]}
+            amount={0.25}
+            margin="0px 0px -5% 0px"
+          />
 
           <span
             style={{
@@ -136,7 +140,7 @@ export function TitlePage() {
           >
             ione.
           </span>
-        </motion.h1>
+        </h1>
       </div>
     </section>
   );
