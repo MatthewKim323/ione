@@ -1,48 +1,27 @@
 import { motion } from "motion/react";
-import { TextCarousel } from "./TextCarousel";
-
-const CAROUSEL_ITEMS = [
-  "the tutor in the margin.",
-  "the silent observer.",
-  "the patient companion.",
-  "the watcher of stalls.",
-  "the page-respecter.",
-];
+import { Link } from "react-router-dom";
 
 // ─── Handwriting choreography for the wordmark ────────────────────────
-// Each letter reveals via a clip-path inset.  Numbers below are tuned
-// so the cadence feels like a hand writing — quick downstrokes, brief
-// settle between letters, and the i-tittle popping in after the
-// integral stroke (the way a hand lifts to dot the i).
-const STROKE_START = 0.3; // seconds before the first stroke begins
-const STROKE_DUR = 0.42; // duration of a single letter stroke
-const STROKE_GAP = 0.12; // brief pause between letters (pen lifts)
+const STROKE_START = 0.3;
+const STROKE_DUR = 0.42;
+const STROKE_GAP = 0.12;
 
-// Convenience: when does each letter start / end?
 function strokeAt(index: number) {
   const start = STROKE_START + index * (STROKE_DUR + STROKE_GAP);
   return { start, end: start + STROKE_DUR };
 }
 
-// Hand-like ease — a touch of acceleration at the start, settles at end.
 const HAND_EASE = [0.65, 0, 0.35, 1] as const;
 
 function HandwrittenWordmark() {
-  // Stroke order: ∫ stem, then o, n, e, then the period.
   const integral = strokeAt(0);
   const o = strokeAt(1);
   const n = strokeAt(2);
   const e = strokeAt(3);
   const period = strokeAt(4);
-  // The i-tittle pops in just after the integral stroke completes.
   const tittleAt = integral.end + 0.06;
-  // The whole writing window — used to time the moving pen tip.
   const lastStrokeEnd = period.end;
 
-  // Each letter reveals with opacity + a tiny lift — no clip-path,
-  // since clipping italic glyphs slices off their side bearings and
-  // tops/bottoms.  Cadence still feels like a hand writing because the
-  // letters arrive in sequence, paced by STROKE_DUR / STROKE_GAP.
   const letterMotionProps = (start: number) => ({
     initial: { opacity: 0, y: "0.06em" },
     animate: { opacity: 1, y: "0em" },
@@ -55,7 +34,6 @@ function HandwrittenWordmark() {
 
   return (
     <span style={{ position: "relative", display: "inline-block" }}>
-      {/* "i" — integral as the stem, with a tittle that pops in after. */}
       <motion.span {...letterMotionProps(integral.start)}>
         <span
           aria-hidden
@@ -71,8 +49,6 @@ function HandwrittenWordmark() {
         </span>
       </motion.span>
 
-      {/* i-tittle — pops in (scale + opacity) after the integral stroke,
-          like a hand lifting to dot the i. */}
       <motion.span
         aria-hidden
         initial={{ scale: 0, opacity: 0 }}
@@ -80,15 +56,10 @@ function HandwrittenWordmark() {
         transition={{
           delay: tittleAt,
           duration: 0.22,
-          // Slight overshoot for a written-by-hand bounce.
           ease: [0.34, 1.56, 0.64, 1],
         }}
         style={{
           position: "absolute",
-          // Match the i-tittle position from the static layout.  The
-          // 0.88em fontSize on the integral wrapper means these em
-          // values resolve in the title's outer font-size since this
-          // span lives outside that inner wrapper — adjust if needed.
           top: "-0.10em",
           left: "0.18em",
           width: "0.13em",
@@ -99,22 +70,18 @@ function HandwrittenWordmark() {
         }}
       />
 
-      {/* o */}
       <motion.span {...letterMotionProps(o.start)}>
         <span aria-hidden>o</span>
       </motion.span>
 
-      {/* n */}
       <motion.span {...letterMotionProps(n.start)}>
         <span aria-hidden>n</span>
       </motion.span>
 
-      {/* e */}
       <motion.span {...letterMotionProps(e.start)}>
         <span aria-hidden>e</span>
       </motion.span>
 
-      {/* . — accent red, drawn last */}
       <motion.span
         {...letterMotionProps(period.start)}
         style={{
@@ -126,10 +93,6 @@ function HandwrittenWordmark() {
         .
       </motion.span>
 
-      {/* Yellow "pen-tip" glow — moves left → right across the writing
-          window, fades in at the start and out as the last stroke
-          finishes.  Reads as the highlighter actually drawing the
-          letters. */}
       <motion.span
         aria-hidden
         style={{
@@ -164,139 +127,64 @@ function HandwrittenWordmark() {
 export function TitlePage() {
   return (
     <section
-      className="relative min-h-screen flex flex-col items-center justify-center px-6 sm:px-10 text-center"
+      className="relative min-h-screen"
       style={{ minHeight: "100vh" }}
     >
-      {/* tiny meta line — same eyebrow style as the hero */}
+      {/* Top control — replaces the eyebrow line; no long copy. */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.1, duration: 0.6 }}
-        className="text-[10px] tracking-[0.32em] uppercase mb-10 flex items-center gap-3 justify-center"
-        style={{
-          color: "#FFFFFF",
-          fontFamily: "'Poppins', system-ui, sans-serif",
-          fontWeight: 500,
-        }}
+        transition={{ delay: 0.1, duration: 0.5 }}
+        className="absolute top-8 left-6 z-10 sm:top-10 sm:left-10 md:left-14"
       >
-        <span
-          className="inline-block h-px w-10"
-          style={{ background: "rgba(255,255,255,0.7)" }}
-        />
-        <span>an AI math tutor · est. 2026</span>
-        <span
-          className="inline-block h-px w-10"
-          style={{ background: "rgba(255,255,255,0.7)" }}
-        />
+        <Link
+          to="/login"
+          className="inline-flex items-center justify-center rounded-full border border-white/45 bg-white/12 px-5 py-2.5 text-[11px] font-medium uppercase tracking-[0.22em] text-white backdrop-blur-sm transition-colors hover:bg-white/22 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/80"
+          style={{ fontFamily: "'Poppins', system-ui, sans-serif" }}
+        >
+          Sign in
+        </Link>
       </motion.div>
 
-      {/* THE TITLE — IONE
-          Per-letter handwriting reveal: each glyph is its own clip-path
-          inset that animates in sequence with a hand-like ease, so it
-          reads as the title being *written* rather than swept onto the
-          page.  The i-tittle pops in AFTER the integral's stroke
-          finishes — the way a hand lifts to dot the i. */}
-      <motion.h1
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.1, duration: 0.25 }}
-        className="h-display"
-        style={{
-          fontSize: "clamp(7rem, 22vw, 22rem)",
-          letterSpacing: "-0.04em",
-          lineHeight: 0.9,
-          color: "#FFFFFF",
-          fontStyle: "italic",
-          textShadow:
-            "0 1px 0 rgba(0,0,0,0.22)," +
-            " 0 6px 18px rgba(0,0,0,0.28)," +
-            " 0 18px 48px rgba(0,0,0,0.22)",
-          position: "relative",
-          display: "inline-block",
-          overflow: "visible",
-        }}
-      >
-        <HandwrittenWordmark />
-
-        {/* Accessible text for screen readers / SEO. */}
-        <span
+      {/* Wordmark only — vertically centered, left-aligned. */}
+      <div className="flex min-h-screen flex-col justify-center items-start px-6 sm:px-10 md:px-14 lg:pl-20 text-left">
+        <motion.h1
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1, duration: 0.25 }}
+          className="h-display"
           style={{
-            position: "absolute",
-            width: "1px",
-            height: "1px",
-            overflow: "hidden",
-            clip: "rect(0 0 0 0)",
-            clipPath: "inset(50%)",
-            whiteSpace: "nowrap",
+            fontSize: "clamp(7rem, 22vw, 22rem)",
+            letterSpacing: "-0.04em",
+            lineHeight: 0.9,
+            color: "#FFFFFF",
+            fontStyle: "italic",
+            textShadow:
+              "0 1px 0 rgba(0,0,0,0.22)," +
+              " 0 6px 18px rgba(0,0,0,0.28)," +
+              " 0 18px 48px rgba(0,0,0,0.22)",
+            position: "relative",
+            display: "inline-block",
+            overflow: "visible",
           }}
         >
-          ione.
-        </span>
-      </motion.h1>
+          <HandwrittenWordmark />
 
-      {/* SEMI-HEADER TAGLINE — cycling carousel in electric lime. */}
-      <motion.h2
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.55, duration: 0.9 }}
-        className="h-editorial mt-6 sm:mt-8"
-        style={{
-          fontSize: "clamp(1.4rem, 3.4vw, 2.6rem)",
-          fontStyle: "italic",
-          letterSpacing: "-0.01em",
-          maxWidth: "26ch",
-        }}
-      >
-        <TextCarousel
-          items={CAROUSEL_ITEMS}
-          interval={2600}
-          style={{
-            color: "#FFFFFF",
-          }}
-        />
-      </motion.h2>
-
-      {/* the actual tagline */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.85, duration: 0.7 }}
-        className="mt-10 sm:mt-12 mx-auto"
-        style={{
-          fontSize: "13px",
-          letterSpacing: "0.02em",
-          lineHeight: 1.7,
-          color: "#FFFFFF",
-          maxWidth: "52ch",
-          fontFamily: "'Poppins', system-ui, sans-serif",
-          fontWeight: 700,
-        }}
-      >
-        watches you do math, intervenes only when intervention helps, and
-        remembers what you specifically struggle with — across every session.
-      </motion.p>
-
-      {/* scroll cue */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.4, duration: 0.6 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 text-[10px] tracking-[0.28em] uppercase flex flex-col items-center gap-2"
-        style={{
-          color: "#FFFFFF",
-          fontFamily: "'Poppins', system-ui, sans-serif",
-          fontWeight: 500,
-        }}
-      >
-        <span>scroll</span>
-        <span
-          className="inline-block w-px h-8"
-          style={{
-            background:
-              "linear-gradient(to bottom, rgba(255,255,255,0.7), rgba(255,255,255,0))",
-          }}
-        />
-      </motion.div>
+          <span
+            style={{
+              position: "absolute",
+              width: "1px",
+              height: "1px",
+              overflow: "hidden",
+              clip: "rect(0 0 0 0)",
+              clipPath: "inset(50%)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            ione.
+          </span>
+        </motion.h1>
+      </div>
     </section>
   );
 }
