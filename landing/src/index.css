@@ -240,49 +240,60 @@
     border-color: var(--color-paper);
   }
 
-  /* Hero + onboarding: “open the tutor” — blue glass, top sheen, white glow (Framer-style). */
+  /* Hero + onboarding: Shift-style CTA, neon (Framer Shift Button–inspired). */
   .hero-primary-cta.cta {
+    gap: 0;
     font-weight: 700;
-    border-radius: 0.5rem;
+    border-radius: 9999px;
     color: var(--color-paper);
-    border-color: rgba(255, 255, 255, 0.28);
+    border-color: rgba(212, 255, 44, 0.42);
     background-image:
       linear-gradient(
         180deg,
-        rgba(255, 255, 255, 0.22) 0%,
-        rgba(255, 255, 255, 0) 42%,
-        rgba(255, 255, 255, 0) 58%,
-        rgba(29, 78, 216, 0.15) 100%
+        rgba(255, 255, 255, 0.16) 0%,
+        rgba(255, 255, 255, 0) 50%
       ),
       linear-gradient(
         135deg,
-        rgba(29, 78, 216, 0.55) 0%,
-        rgba(29, 78, 216, 0.28) 100%
+        rgba(10, 12, 8, 0.82) 0%,
+        rgba(20, 22, 16, 0.55) 100%
       );
-    background-color: transparent;
+    background-color: rgba(8, 10, 6, 0.4);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.12),
-      0 0 0 1px rgba(255, 255, 255, 0.12) inset,
-      0 8px 28px -6px rgba(37, 99, 235, 0.55),
-      0 20px 50px 4px rgba(255, 255, 255, 0.1);
+      0 1px 2px rgba(0, 0, 0, 0.2),
+      0 0 0 1px rgba(212, 255, 44, 0.12) inset;
   }
   .hero-primary-cta.cta::before {
-    border-radius: 0.375rem;
-    border-color: rgba(255, 255, 255, 0.18);
+    border-radius: 9999px;
+    border-color: rgba(212, 255, 44, 0.22);
+  }
+  /* Label + arrow motion is driven by motion/react (Shift-style back-and-forth). */
+  .hero-primary-cta__motion {
+    gap: 0;
   }
   .hero-primary-cta.cta:hover {
-    color: var(--color-paper);
-    border-color: rgba(255, 255, 255, 0.32);
-    background-image: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.12) 0%,
-      var(--color-red-pencil) 100%
-    );
+    color: var(--color-ink);
+    border-color: var(--color-neon);
+    background-image: none;
+    background-color: var(--color-neon);
     box-shadow:
-      0 2px 8px rgba(0, 0, 0, 0.18),
-      0 0 0 1px rgba(255, 255, 255, 0.2) inset,
-      0 0 36px 2px rgba(255, 255, 255, 0.28),
-      0 10px 40px -8px rgba(196, 48, 43, 0.65);
+      0 1px 3px rgba(0, 0, 0, 0.18),
+      0 0 0 1px rgba(0, 0, 0, 0.08) inset;
+  }
+  .hero-primary-cta.cta:hover::before {
+    border-color: rgba(0, 0, 0, 0.12);
+  }
+
+  /* “see how it works” flower — one quick 360° on pointer enter (linear = instant start). */
+  .see-how-flower-spin {
+    animation: see-how-spin-once 0.36s linear 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .see-how-flower-spin {
+      animation: none;
+    }
   }
 
   .cta-ghost {
@@ -714,6 +725,15 @@
 }
 
 /* ── Keyframes ──────────────────────────────────────────────── */
+@keyframes see-how-spin-once {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @keyframes pencil-blink {
   0%,
   50% {

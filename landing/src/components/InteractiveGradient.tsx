@@ -28,16 +28,16 @@ export function InteractiveGradient({ children, className = "", style, fullBleed
   }, []);
 
   const gradient = fullBleed
-    ? `radial-gradient(ellipse 135% 110% at ${g.x}% ${g.y}%, rgba(124, 58, 237, 0.22) 0%, rgba(99, 102, 241, 0.11) 42%, rgba(196, 181, 253, 0.05) 62%, rgba(250, 245, 255, 0) 88%)`
+    ? `radial-gradient(ellipse 60% 50% at ${g.x}% ${g.y}%, rgba(124, 58, 237, 0.3) 0%, rgba(99, 102, 241, 0.15) 32%, rgba(196, 181, 253, 0.05) 52%, transparent 72%)`
     : `radial-gradient(ellipse 85% 70% at ${g.x}% ${g.y}%, rgba(124, 58, 237, 0.26) 0%, rgba(99, 102, 241, 0.12) 38%, rgba(196, 181, 253, 0.04) 55%, transparent 72%)`;
 
-  /** Feather top/bottom so the wash blends into the page color (#f2f2f2) from sections above & below. */
+  /** Feather top/bottom into #f2f2f2; inner #fff band is wide so the wash reaches higher/lower (larger span). */
   const fullBleedEdgeMask = {
     WebkitMaskImage:
-      "linear-gradient(180deg, transparent 0%, #fff 12%, #fff 88%, transparent 100%)",
+      "linear-gradient(180deg, transparent 0%, #fff 5%, #fff 95%, transparent 100%)",
     WebkitMaskSize: "100% 100%",
     WebkitMaskRepeat: "no-repeat",
-    maskImage: "linear-gradient(180deg, transparent 0%, #fff 12%, #fff 88%, transparent 100%)",
+    maskImage: "linear-gradient(180deg, transparent 0%, #fff 5%, #fff 95%, transparent 100%)",
     maskSize: "100% 100%",
     maskRepeat: "no-repeat" as const,
   };

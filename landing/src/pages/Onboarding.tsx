@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { supabase } from "../lib/supabase";
+import {
+  getHeroCtaArrowVariants,
+  getHeroCtaLabelVariants,
+  HERO_CTA_WRAPPER,
+} from "../lib/heroNeonCtaMotion";
 import { useAuth } from "../lib/auth";
 import { AuthLayout } from "../components/AuthLayout";
 import { Field } from "../components/Field";
@@ -89,6 +94,7 @@ type StepKey = 0 | 1 | 2 | 3;
 export default function Onboarding() {
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
+  const heroCtaReduced = useReducedMotion() ?? false;
 
   const [step, setStep] = useState<StepKey>(0);
   const [submitting, setSubmitting] = useState(false);
@@ -422,14 +428,29 @@ export default function Onboarding() {
                 >
                   skip for now
                 </button>
-                <GlowButton
+                <motion.button
                   type="button"
                   onClick={finish}
-                  className="glow-btn--on-light"
+                  initial="rest"
+                  whileHover="hover"
+                  whileTap={{ scale: 0.985 }}
+                  variants={HERO_CTA_WRAPPER}
+                  className="cta hero-primary-cta__motion overflow-hidden hero-primary-cta glow-btn--on-light"
                 >
-                  open the tutor
-                  <span aria-hidden>→</span>
-                </GlowButton>
+                  <motion.span
+                    className="hero-primary-cta__label inline-block will-change-transform"
+                    variants={getHeroCtaLabelVariants(heroCtaReduced)}
+                  >
+                    open the tutor
+                  </motion.span>
+                  <motion.span
+                    className="hero-primary-cta__arrow inline-block overflow-hidden will-change-transform"
+                    aria-hidden
+                    variants={getHeroCtaArrowVariants(heroCtaReduced)}
+                  >
+                    →
+                  </motion.span>
+                </motion.button>
               </div>
             </div>
           </motion.div>

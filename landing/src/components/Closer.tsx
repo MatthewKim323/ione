@@ -1,9 +1,11 @@
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import { InteractiveGradient } from "./InteractiveGradient";
 import { EnterCTA } from "./EnterCTA";
 import { GlowButton } from "./design/GlowButton";
 
 export function Closer() {
+  const reduceMotion = useReducedMotion();
+
   return (
     <section
       id="start"
@@ -52,9 +54,27 @@ export function Closer() {
                 transition={{ duration: 0.7, delay: 0.2 }}
                 className="mt-10 max-w-[42ch] text-ink/80 text-[15px] leading-[1.7] font-sub"
               >
-                ten words of voice. one specific question. delivered in 1.2
-                seconds, only when ted needed it. the rest of the hour, ione
-                was silent.
+                ten words of voice.{" "}
+                <span className="relative inline-block text-ink/80">
+                  <motion.span
+                    aria-hidden
+                    className="absolute -left-1 -right-1 bottom-[0.04em] h-[1.05em] w-[calc(100%+0.5rem)] origin-left"
+                    initial={{ scaleX: reduceMotion ? 1 : 0 }}
+                    whileInView={{ scaleX: 1 }}
+                    transition={{
+                      duration: reduceMotion ? 0 : 0.75,
+                      delay: reduceMotion ? 0 : 0.45,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
+                    viewport={{ once: true, margin: "-10% 0px -5% 0px" }}
+                    style={{ transformOrigin: "0% 50%" }}
+                  >
+                    <span className="block h-full w-full -skew-x-[0.7deg] rounded-[2px] bg-gradient-to-b from-[#d4ff2c]/92 via-[#b8d420]/88 to-[#8aa612]/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(0,0,0,0.1)]" />
+                  </motion.span>
+                  <span className="relative z-10">one specific question</span>
+                </span>
+                . delivered in 1.2 seconds, only when ted needed it. the
+                rest of the hour, ione was silent.
               </motion.p>
 
               <motion.div
