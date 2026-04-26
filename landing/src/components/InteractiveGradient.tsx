@@ -3,7 +3,7 @@ import { useEffect, useRef } from "react";
 interface InteractiveGradientProps {
   /** Tailwind className for sizing / positioning. */
   className?: string;
-  /** Inline overrides — useful for absolute positioning in an asymmetric layout. */
+  /** Inline overrides — useful for absolute positioning. */
   style?: React.CSSProperties;
   /** Drift speed (lower = slower). Default: 0.00018 */
   drift?: number;
@@ -17,9 +17,9 @@ interface InteractiveGradientProps {
  * loop, and each orb leans toward the cursor by a different weight so the
  * field reshapes as the user moves through it.
  *
- * No external runtime — drops into any React tree.  Inspired by the Framer
- * "Interactive animated gradient" module the user linked, but written
- * locally because Framer's hosted ESM modules require Framer's runtime.
+ * Cursor tracking is done on `window` rather than the element itself, so it
+ * keeps responding even when other content is layered on top with a higher
+ * z-index (which is the common case when this is used as a section bg).
  */
 export function InteractiveGradient({
   className = "",
@@ -49,16 +49,17 @@ export function InteractiveGradient({
     let tx = 0.5;
     let ty = 0.5;
 
-    const onMove = (e: MouseEvent) => {
-      const rect = el.getBoundingClientRect();
-      tx = (e.clientX - rect.left) / rect.width;
-      ty = (e.clientY - rect.top) / rect.height;
-    };
-    const onLeave = () => {
-      // Glide back to center when the cursor leaves.
-      tx = 0.5;
-      ty = 0.5;
-    };
+    // Listen on the window so the gradient stays interactive even when
+    // content is stacked on top of it (z-index, pointer-events: none, etc).
+    function onMove(e: MouseEvent) {
+      const rect = el!.getBoundingClientRect();
+      // Clamp so leaving the element to one side doesn't yank orbs to a
+      // wild value far outside [0, 1].
+      const x = (e.clientX - rect.left) / Math.max(1, rect.width);
+      const y = (e.clientY - rect.top) / Math.max(1, rect.height);
+      tx = x < -0.5 ? -0.5 : x > 1.5 ? 1.5 : x;
+      ty = y < -0.5 ? -0.5 : y > 1.5 ? 1.5 : y;
+    }
 
     let raf = 0;
     let running = true;
@@ -85,14 +86,12 @@ export function InteractiveGradient({
     }
     raf = requestAnimationFrame(tick);
 
-    el.addEventListener("mousemove", onMove);
-    el.addEventListener("mouseleave", onLeave);
+    window.addEventListener("mousemove", onMove, { passive: true });
 
     return () => {
       running = false;
       cancelAnimationFrame(raf);
-      el.removeEventListener("mousemove", onMove);
-      el.removeEventListener("mouseleave", onLeave);
+      window.removeEventListener("mousemove", onMove);
     };
   }, [drift, lerp]);
 
@@ -104,22 +103,20 @@ export function InteractiveGradient({
       style={{
         position: "relative",
         overflow: "hidden",
-        // Three colored orbs over a warm paper base. Colors picked from
-        // the page's red-pencil / brass / moss palette so the gradient
-        // doesn't fight the rest of the design.
+        // Cool purple palette: deep violet, periwinkle, electric lavender,
+        // over a soft cream-to-lavender base.
         background: [
-          "radial-gradient(50% 55% at var(--g0x, 28%) var(--g0y, 32%)," +
-            " rgba(196, 64, 64, 0.55)," +
-            " rgba(196, 64, 64, 0.0) 70%)",
-          "radial-gradient(55% 50% at var(--g1x, 78%) var(--g1y, 42%)," +
-            " rgba(196, 168, 94, 0.55)," +
-            " rgba(196, 168, 94, 0.0) 70%)",
-          "radial-gradient(50% 55% at var(--g2x, 50%) var(--g2y, 78%)," +
-            " rgba(120, 138, 90, 0.50)," +
-            " rgba(120, 138, 90, 0.0) 70%)",
-          "linear-gradient(135deg, #f2f2f2 0%, #ece7df 100%)",
+          "radial-gradient(55% 55% at var(--g0x, 28%) var(--g0y, 32%)," +
+            " rgba(124, 58, 237, 0.65)," +  // violet-600
+            " rgba(124, 58, 237, 0.0) 70%)",
+          "radial-gradient(55% 55% at var(--g1x, 78%) var(--g1y, 42%)," +
+            " rgba(99, 102, 241, 0.60)," + // indigo-500
+            " rgba(99, 102, 241, 0.0) 70%)",
+          "radial-gradient(60% 60% at var(--g2x, 50%) var(--g2y, 78%)," +
+            " rgba(167, 139, 250, 0.55)," + // violet-400 / lavender
+            " rgba(167, 139, 250, 0.0) 70%)",
+          "linear-gradient(135deg, #ece7f5 0%, #e2dcf0 100%)",
         ].join(", "),
-        // Slight overall blur softens the edges of the orbs.
         filter: "saturate(1.05)",
         ...style,
       }}

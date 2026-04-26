@@ -38,24 +38,20 @@ export function Pedagogy() {
       id="pedagogy"
       className="relative px-6 sm:px-10 py-32 sm:py-44 border-t border-ink-line overflow-hidden"
     >
-      {/* Interactive animated gradient — placed asymmetrically off the
-          right edge of the section (and clipped by overflow-hidden) so
-          the layout physically embodies the asymmetry the copy describes.
-          Hidden on mobile since it would just be visual noise there. */}
+      {/* Interactive animated gradient — full-section background. Tracks
+          the cursor at the window level so it stays responsive even with
+          content layered on top.  Low-opacity multiply blend keeps it
+          readable underneath the body copy. */}
       <InteractiveGradient
-        className="hidden md:block pointer-events-auto"
         style={{
           position: "absolute",
-          top: "8%",
-          right: "-12%",
-          width: "62%",
-          height: "62%",
-          opacity: 0.55,
-          // Clip to a hexagon-ish blob so it doesn't read as a rectangle.
-          clipPath:
-            "polygon(8% 0%, 100% 4%, 100% 80%, 92% 100%, 14% 96%, 0% 60%, 4% 18%)",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          opacity: 0.7,
           mixBlendMode: "multiply",
           zIndex: 0,
+          pointerEvents: "none",
         }}
       />
 
