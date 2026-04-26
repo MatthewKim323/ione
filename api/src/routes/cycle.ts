@@ -81,17 +81,31 @@ const PayloadSchema = z.object({
   client_ts: z.string().optional(),
   trajectory: z.array(TrajectoryFrameSchema).max(10).default([]),
   /**
-   * "explain" — student pressed "I need help". The orchestrator skips
-   * the policy gate, cooldown, and dedup, and runs the intervention
-   * agent in EXPLAIN mode (walks the next step, names the rule,
-   * finishes the problem if applicable). null = autonomous capture.
+   * "explain" — student pressed "I need help".
+   * "voice"   — student held push-to-talk and asked a verbal question;
+   *             student_question carries the transcript.
+   * In both cases the orchestrator skips the policy gate, cooldown, and
+   * dedup, and runs the intervention agent in walkthrough mode. null =
+   * autonomous capture.
    *
-   * z.preprocess to accept either null or omitted from the JSON body
-   * (the frontend always sends `null` to make the field type-stable).
+   * The frontend always sends an explicit value (null when autonomous)
+   * to make the field type-stable across requests.
    */
   assistance_mode: z
-    .union([z.literal("explain"), z.null()])
+    .union([z.literal("explain"), z.literal("voice"), z.null()])
     .optional()
+    .default(null),
+  /**
+   * Verbatim transcript of the student's spoken question, set only when
+   * assistance_mode === "voice". Threaded into the intervention agent's
+   * user payload so the answer addresses what was asked, and surfaced
+   * via the voice_question + hint SSE events for the AgentTrace UI.
+   */
+  student_question: z
+    .string()
+    .max(2000)
+    .optional()
+    .nullable()
     .default(null),
 });
 
@@ -230,6 +244,10 @@ cycleRoute.post("/", async (c) => {
         recentHints,
         struggleProfile,
         assistanceMode: payload.assistance_mode ?? undefined,
+        studentQuestion:
+          payload.assistance_mode === "voice" && payload.student_question
+            ? payload.student_question
+            : undefined,
       });
     } catch (e) {
       logger.error({ err: errMsg(e), cycleId }, "orchestrator threw");

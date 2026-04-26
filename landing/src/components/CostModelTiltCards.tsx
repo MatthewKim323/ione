@@ -4,11 +4,12 @@ import { motion, useReducedMotion, useSpring } from "motion/react";
 const PERSPECTIVE = 1000;
 const TILT_DEG = 6;
 
+/* Parchment tiles — aligned with PipelineStepCarousel / pipeline shell, not a separate “card deck”. */
 const CARD_SURFACE = [
-  "relative h-full w-full rounded-2xl border p-5 sm:p-6",
-  "border-ink/15 bg-[#e4ded2]",
-  "shadow-[0_4px_14px_rgba(0,0,0,0.08),0_0_0_1px_rgba(255,255,255,0.2)_inset]",
-  "[background-image:repeating-linear-gradient(0deg,transparent,transparent_1px,rgba(0,0,0,0.02)_1px,rgba(0,0,0,0.02)_2px),repeating-linear-gradient(90deg,transparent,transparent_1px,rgba(0,0,0,0.018)_1px,rgba(0,0,0,0.018)_2px)]",
+  "relative h-full w-full rounded-xl border p-5 sm:p-6",
+  "border-ink/12 bg-[#ebe4d6]/85",
+  "shadow-[0_3px_12px_rgba(22,19,16,0.06),0_0_0_1px_rgba(255,255,255,0.22)_inset]",
+  "[background-image:repeating-linear-gradient(0deg,transparent,transparent_1px,rgba(61,54,53,0.025)_1px,rgba(61,54,53,0.025)_2px),repeating-linear-gradient(90deg,transparent,transparent_1px,rgba(61,54,53,0.02)_1px,rgba(61,54,53,0.02)_2px)]",
   "min-h-[9.5rem] will-change-transform",
 ].join(" ");
 
@@ -59,13 +60,16 @@ function StatTiltCard({ n, top, bot }: Stat) {
         }}
       >
         <div
-          className="text-ink text-[1.75rem] leading-none tabular-nums sm:text-[1.9rem]"
-          style={{ fontFamily: "var(--font-display)" }}
+          className="text-bark text-[1.75rem] leading-none tabular-nums sm:text-[1.9rem]"
+          style={{
+            fontFamily: "var(--font-display)",
+            textShadow: "0 1px 0 rgba(255,255,255,0.18)",
+          }}
         >
           {n}
         </div>
-        <div className="meta-label mt-3 !text-ink/75">{top}</div>
-        <div className="mt-1.5 font-sub text-[11px] leading-snug text-ink/55">
+        <div className="meta-label mt-3 !text-bark/70">{top}</div>
+        <div className="mt-1.5 font-sub text-[11px] leading-snug text-bark/58">
           {bot}
         </div>
       </motion.div>
@@ -77,7 +81,7 @@ const REVEAL = { duration: 0.5, ease: [0.16, 1, 0.3, 1] as const };
 
 export function CostModelTiltCards() {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 sm:gap-4 md:gap-5">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-3 md:gap-4">
       {STATS.map((s, i) => (
         <motion.div
           key={s.n}

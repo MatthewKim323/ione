@@ -10,6 +10,7 @@ import { cycleRoute } from "./routes/cycle.js";
 import { profileRoute } from "./routes/profile.js";
 import { sessionsRoute } from "./routes/sessions.js";
 import { sourcesRoute } from "./routes/sources.js";
+import { transcribeRoute } from "./routes/transcribe.js";
 
 export type AppEnv = {
   Variables: {
@@ -90,6 +91,11 @@ export function createApp(): Hono<AppEnv> {
   app.route("/api/sessions", sessionsRoute);
   // Phase 2 / E7 — ElevenLabs TTS passthrough for hint audio.
   app.route("/api/audio", audioRoute);
+  // Push-to-talk speech-to-text via ElevenLabs Scribe. Frontend records
+  // audio, posts it here, takes the transcript, then forwards to /api/cycle
+  // as a student_question. Keeps the existing multi-agent pipeline as the
+  // single source of truth for tutoring decisions.
+  app.route("/api/transcribe", transcribeRoute);
   // Phase 2 / E8 — KG receipts surfaced into the tutor sidebar.
   app.route("/api/me", profileRoute);
   // Phase 3 / F4

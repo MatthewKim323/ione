@@ -16,6 +16,7 @@ import { sonnetJson } from "../integrations/anthropic.js";
 import {
   INTERVENTION_AGENT_SYSTEM,
   INTERVENTION_AGENT_EXPLAIN_SYSTEM,
+  INTERVENTION_AGENT_VOICE_SYSTEM,
 } from "./prompts.js";
 import type {
   InterventionOutput,
@@ -35,12 +36,20 @@ export type InterventionAgentInput = {
   struggleProfile: StruggleProfile | null;
   cost?: CycleCost;
   /**
-   * When set to "explain", we swap the autonomous Socratic prompt for
-   * the EXPLAIN-mode prompt. The student pressed "I need help" — we
-   * stop hinting and start teaching. Cooldown / dedup all bypassed by
-   * the orchestrator before this is called.
+   * Switches the agent out of the autonomous Socratic loop into a
+   * walkthrough mode. Both modes bypass cooldown/dedup at the
+   * orchestrator level.
+   *   - "explain" — the student pressed "I need help".
+   *   - "voice"   — the student held push-to-talk and asked a question
+   *                 (passed via `studentQuestion`); answer it directly.
    */
-  assistanceMode?: "explain";
+  assistanceMode?: "explain" | "voice";
+  /**
+   * Verbatim transcript of the student's spoken question — only used
+   * when assistanceMode === "voice". The walkthrough should answer
+   * this directly while staying grounded in the current frame.
+   */
+  studentQuestion?: string;
 };
 
 export type InterventionAgentResult = {
@@ -66,15 +75,24 @@ export async function runInterventionAgent(
     : "(no longitudinal profile available)";
 
   const isExplain = input.assistanceMode === "explain";
+  const isVoice = input.assistanceMode === "voice";
+  const isAssisted = isExplain || isVoice;
+  const studentQuestion =
+    isVoice && typeof input.studentQuestion === "string"
+      ? input.studentQuestion.trim()
+      : "";
 
-  // Explain-mode user payload skips the "cooldown active / is stalled"
-  // signals — they're irrelevant when the student explicitly asked for
-  // help — and instead frames the request directly. Less context for
-  // Sonnet to second-guess itself with.
-  const userPayload = isExplain
+  // Assisted-mode payloads (explain + voice) skip the
+  // "cooldown active / is stalled" signals — they're irrelevant when
+  // the student explicitly asked for help. Voice mode additionally
+  // includes the verbatim transcribed question so the answer addresses
+  // exactly what was asked.
+  const userPayload = isVoice
     ? [
-        "## Student request",
-        "The student pressed the \"I need help\" button. Walk them through the next step (or finish the problem if they're nearly done). Do not hold back — they already had hints.",
+        "## Student question (verbatim, transcribed from speech)",
+        `"${studentQuestion}"`,
+        "",
+        "Answer this question directly. Stay grounded in what the OCR shows on the page right now — don't invent context. If the question is fuzzy, infer the math intent from the current step. Speak as a tutor sitting next to them.",
         "",
         "## Reasoning (current frame)",
         JSON.stringify(input.reasoning, null, 2),
@@ -87,34 +105,52 @@ export async function runInterventionAgent(
         "## Struggle profile",
         profileBlock,
       ].join("\n")
-    : [
-        "## Reasoning",
-        JSON.stringify(input.reasoning, null, 2),
-        "",
-        "## Recent hints",
-        input.recentHints.length
-          ? JSON.stringify(input.recentHints, null, 2)
-          : "[]",
-        "",
-        "## Cooldown active",
-        String(input.cooldownActive),
-        "",
-        "## Is stalled",
-        String(input.isStalled),
-        "",
-        "## Struggle profile",
-        profileBlock,
-      ].join("\n");
+    : isExplain
+      ? [
+          "## Student request",
+          "The student pressed the \"I need help\" button. Walk them through the next step (or finish the problem if they're nearly done). Do not hold back — they already had hints.",
+          "",
+          "## Reasoning (current frame)",
+          JSON.stringify(input.reasoning, null, 2),
+          "",
+          "## Recent hints (do not repeat verbatim, but you may build on them)",
+          input.recentHints.length
+            ? JSON.stringify(input.recentHints, null, 2)
+            : "[]",
+          "",
+          "## Struggle profile",
+          profileBlock,
+        ].join("\n")
+      : [
+          "## Reasoning",
+          JSON.stringify(input.reasoning, null, 2),
+          "",
+          "## Recent hints",
+          input.recentHints.length
+            ? JSON.stringify(input.recentHints, null, 2)
+            : "[]",
+          "",
+          "## Cooldown active",
+          String(input.cooldownActive),
+          "",
+          "## Is stalled",
+          String(input.isStalled),
+          "",
+          "## Struggle profile",
+          profileBlock,
+        ].join("\n");
 
   const sonnet = await sonnetJson<InterventionOutput>({
-    system: isExplain
-      ? INTERVENTION_AGENT_EXPLAIN_SYSTEM
-      : INTERVENTION_AGENT_SYSTEM,
+    system: isVoice
+      ? INTERVENTION_AGENT_VOICE_SYSTEM
+      : isExplain
+        ? INTERVENTION_AGENT_EXPLAIN_SYSTEM
+        : INTERVENTION_AGENT_SYSTEM,
     user: userPayload,
-    // Explain-mode walkthroughs run longer — 2 to 6 sentences plus
-    // multi-line LaTeX. Bump tokens so the JSON doesn't truncate
-    // mid-sentence (causing parse errors and angry users).
-    maxTokens: isExplain ? 900 : 400,
+    // Walkthroughs run longer — 2 to 6 sentences plus multi-line
+    // LaTeX. Bump tokens so the JSON doesn't truncate mid-sentence
+    // (causing parse errors and angry users).
+    maxTokens: isAssisted ? 900 : 400,
     cacheSystem: true,
   });
   input.cost?.add("intervention", sonnet.usd);
@@ -131,7 +167,7 @@ export async function runInterventionAgent(
     );
   }
 
-  const out = normalize(sonnet.parsed.value, { isExplain });
+  const out = normalize(sonnet.parsed.value, { isAssisted });
   return { output: out, raw: sonnet.raw, usd: sonnet.usd, ms: sonnet.ms };
 }
 
@@ -146,18 +182,20 @@ function formatProfile(p: StruggleProfile): string {
 
 function normalize(
   raw: Partial<InterventionOutput>,
-  opts: { isExplain: boolean },
+  opts: { isAssisted: boolean },
 ): InterventionOutput {
-  // In explain-mode, should_speak is forced true regardless of what the
-  // model returns — the user pressed the button. Same for hint_type.
-  const should = opts.isExplain ? true : Boolean(raw.should_speak ?? false);
+  // In assisted modes (explain + voice), should_speak is forced true
+  // regardless of what the model returns — the user explicitly asked.
+  // Hint type collapses to "explanation" for the same reason: the UI
+  // renders both as a walkthrough card.
+  const should = opts.isAssisted ? true : Boolean(raw.should_speak ?? false);
   let hintType: HintType | null =
     raw.hint_type === null || raw.hint_type === undefined
       ? null
       : HINT_TYPES.includes(raw.hint_type as HintType)
         ? (raw.hint_type as HintType)
         : null;
-  if (opts.isExplain) hintType = "explanation";
+  if (opts.isAssisted) hintType = "explanation";
 
   return {
     should_speak: should,

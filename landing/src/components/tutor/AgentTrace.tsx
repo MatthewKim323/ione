@@ -46,6 +46,20 @@ export type CycleLog = {
   startedAt: number;
   finishedAt: number | null;
   /**
+   * Push-to-talk transcript that triggered this cycle. Null unless the
+   * student held the mic (or spacebar) and asked a question out loud.
+   * The orchestrator emits this BEFORE kg_lookup/ocr so the trace can
+   * lead with "you asked: '…'" — that's the receipt that proves the
+   * audio actually got transcribed and threaded into the agents.
+   */
+  voiceQuestion:
+    | {
+        text: string;
+        languageCode: string | null;
+        durationSec: number | null;
+      }
+    | null;
+  /**
    * Knowledge-graph snapshot consulted at the start of the cycle. Null until
    * the `kg_lookup` event lands. Populated even on cold-start (had_profile=
    * false, references empty) so we can show the difference between "we
@@ -98,21 +112,29 @@ export type CycleLog = {
           | "encouragement"
           | "redirect"
           /**
-           * Only present when the student pressed "I need help" — the
-           * intervention agent ran in EXPLAIN mode (full walkthrough,
-           * names the rule, may give the answer). The trace renders this
-           * with a "you asked" tag so it's visibly distinct from autonomous
-           * hints.
+           * Present when the student pressed "I need help" OR held PTT to
+           * ask a question. The intervention agent ran in EXPLAIN/VOICE
+           * mode (full walkthrough, names the rule, may give the answer).
+           * The trace renders this with a "you asked" tag so it's visibly
+           * distinct from autonomous hints.
            */
           | "explanation";
         predicted: boolean;
         severity?: 1 | 2 | 3 | 4 | 5;
         /**
-         * Mirrors `assistance` from the SSE hint event. When "explain", we
-         * know this hint was a direct user request, not an autonomous
-         * intervention — used to badge the intervention chip + receipt.
+         * Mirrors `assistance` from the SSE hint event. When "explain" or
+         * "voice", we know this hint was a direct user request, not an
+         * autonomous intervention — used to badge the intervention chip +
+         * receipt. "voice" specifically means it was triggered by spoken
+         * input via push-to-talk.
          */
-        assistance?: "explain";
+        assistance?: "explain" | "voice";
+        /**
+         * The transcribed student question for "voice" hints. We surface
+         * this above the hint text so the audience can read what was
+         * heard — the audio receipt for the cycle.
+         */
+        studentQuestion?: string;
       }
     | null;
   costUsd: number | null;
@@ -126,6 +148,15 @@ export type CycleLog = {
  */
 export function applyCycleEvent(prev: CycleLog, evt: CycleEvent): CycleLog {
   switch (evt.type) {
+    case "voice_question":
+      return {
+        ...prev,
+        voiceQuestion: {
+          text: evt.text,
+          languageCode: evt.language_code,
+          durationSec: evt.duration_sec,
+        },
+      };
     case "kg_lookup":
       return {
         ...prev,
@@ -165,6 +196,7 @@ export function applyCycleEvent(prev: CycleLog, evt: CycleEvent): CycleLog {
           predicted: evt.predicted,
           severity: evt.severity,
           assistance: evt.assistance,
+          studentQuestion: evt.student_question,
         },
       };
     case "done":
@@ -188,6 +220,7 @@ export function newCycleLog(index: number): CycleLog {
     id: `pending-${index}`,
     startedAt: Date.now(),
     finishedAt: null,
+    voiceQuestion: null,
     kg: null,
     ocr: null,
     confidence: null,
@@ -313,7 +346,7 @@ function deriveStages(log: CycleLog, isLive: boolean): Stage[] {
       monogram: "I",
       status: interventionStatus,
       detail: log.hint
-        ? `${HINT_LABEL[log.hint.type]}${
+        ? `${interventionLabel(log.hint)}${
             log.hint.severity ? ` · sev ${log.hint.severity}` : ""
           }`
         : policyDone && cycleFinished
@@ -330,6 +363,17 @@ const HINT_LABEL: Record<NonNullable<CycleLog["hint"]>["type"], string> = {
   redirect: "redirect",
   explanation: "explain (user asked)",
 };
+
+/**
+ * Pick the intervention chip label. We special-case voice + explain so the
+ * trace tells the audience HOW the student requested help, not just that
+ * the agent fell back to "explanation" mode.
+ */
+function interventionLabel(hint: NonNullable<CycleLog["hint"]>): string {
+  if (hint.assistance === "voice") return "answered (voice)";
+  if (hint.assistance === "explain") return "explain (user asked)";
+  return HINT_LABEL[hint.type];
+}
 
 function prettyPageState(s: NonNullable<CycleLog["ocr"]>["pageState"]): string {
   switch (s) {
@@ -636,8 +680,47 @@ function CycleRow({
           citations: every memory receipt points at the source file the
           claim was extracted from, every agent receipt points at the
           agent that produced it. */}
-      {(cycle.kg || cycle.ocr || cycle.confidence || cycle.hint) && (
+      {(cycle.voiceQuestion ||
+        cycle.kg ||
+        cycle.ocr ||
+        cycle.confidence ||
+        cycle.hint) && (
         <div className="mt-3 space-y-1.5 pl-1">
+          {/* Voice question receipt — leads the receipts when this cycle
+              was triggered by push-to-talk. Renders the verbatim Scribe
+              transcription so the audience sees ione actually heard the
+              student. Duration is shown in seconds for "felt-time"
+              clarity (so a half-second tap reads as "0.5s"). */}
+          {cycle.voiceQuestion && (
+            <Receipt
+              from="voice · scribe"
+              tone="brass"
+              body={
+                <span className="text-paper-faint">
+                  you asked{" "}
+                  <span
+                    className="text-ink-deep italic"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    "{cycle.voiceQuestion.text}"
+                  </span>
+                  {cycle.voiceQuestion.durationSec ? (
+                    <span className="text-paper-faint">
+                      {" · "}
+                      {cycle.voiceQuestion.durationSec.toFixed(1)}s
+                    </span>
+                  ) : null}
+                  {cycle.voiceQuestion.languageCode &&
+                  cycle.voiceQuestion.languageCode !== "en" ? (
+                    <span className="text-paper-faint">
+                      {" · "}
+                      {cycle.voiceQuestion.languageCode}
+                    </span>
+                  ) : null}
+                </span>
+              }
+            />
+          )}
           {cycle.kg && cycle.kg.hadProfile && cycle.kg.patternSummary && (
             <Receipt
               from="memory"
@@ -683,15 +766,29 @@ function CycleRow({
           {cycle.hint && (
             <Receipt
               from={
-                cycle.hint.assistance === "explain"
-                  ? "intervention · explain"
-                  : "intervention"
+                cycle.hint.assistance === "voice"
+                  ? "intervention · voice"
+                  : cycle.hint.assistance === "explain"
+                    ? "intervention · explain"
+                    : "intervention"
               }
               tone={cycle.hint.type === "error_callout" ? "red-pencil" : "brass"}
               body={
                 <span className="text-ink-deep">
                   {cycle.hint.predicted && (
                     <span className="text-brass">[predicted] </span>
+                  )}
+                  {cycle.hint.assistance === "voice" && (
+                    <span
+                      className="text-brass mr-1"
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "10px",
+                        letterSpacing: "0.06em",
+                      }}
+                    >
+                      [answer to spoken question]
+                    </span>
                   )}
                   {cycle.hint.assistance === "explain" && (
                     <span
@@ -710,7 +807,8 @@ function CycleRow({
                       fontFamily: "var(--font-display)",
                       fontStyle: "italic",
                       whiteSpace:
-                        cycle.hint.assistance === "explain"
+                        cycle.hint.assistance === "explain" ||
+                        cycle.hint.assistance === "voice"
                           ? "pre-wrap"
                           : "normal",
                     }}

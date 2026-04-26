@@ -22,6 +22,8 @@ import { RoiPicker } from "./RoiPicker";
 import { BrowserCompatBanner } from "./BrowserCompatBanner";
 import { WispOrb } from "./WispOrb";
 import { primeAudioGraph } from "../../lib/audio/audioBus";
+import { useMicCapture } from "../../lib/audio/useMicCapture";
+import { transcribeAudio } from "../../lib/audio/transcribe";
 import {
   AgentTrace,
   applyCycleEvent,
@@ -104,6 +106,18 @@ export function TutorWorkspace() {
    */
   const [helpInFlight, setHelpInFlight] = useState(false);
 
+  // Push-to-talk state machine for the voice "ask out loud" path.
+  //   recording   → mic is open, audio is being captured
+  //   transcribing→ recorder stopped, blob is being sent to /api/transcribe
+  //   answering   → transcript landed, cycle is running through agents
+  //   idle        → nothing in flight
+  // Kept as state (not a ref) so we can render distinct UI affordances
+  // and disable the button while busy.
+  const [voiceState, setVoiceState] = useState<
+    "idle" | "recording" | "transcribing" | "answering"
+  >("idle");
+  const mic = useMicCapture();
+
   // Drive a session. We lazy-create on first encoded frame so the user
   // can decline screen share without orphaning a tutor_sessions row.
   const ensureSession = useCallback(async (): Promise<string | null> => {
@@ -148,7 +162,13 @@ export function TutorWorkspace() {
   });
 
   const postCycle = useCallback(
-    async (blob: Blob, opts?: { assistanceMode?: "explain" }) => {
+    async (
+      blob: Blob,
+      opts?: {
+        assistanceMode?: "explain" | "voice";
+        studentQuestion?: string;
+      },
+    ) => {
       if (inFlightRef.current) return; // serialize for now; Phase 2 / E4 swaps for queue
       const sid = await ensureSession();
       if (!sid) return;
@@ -175,6 +195,7 @@ export function TutorWorkspace() {
           secondsSinceLastChange: stall.secondsSinceLastChange,
           trajectory: trajectoryRef.current.slice(-5),
           assistanceMode: opts?.assistanceMode,
+          studentQuestion: opts?.studentQuestion,
         });
 
         let surfacedHint = false;
@@ -306,6 +327,159 @@ export function TutorWorkspace() {
       setHelpInFlight(false);
     }
   }, [capture, helpInFlight, postCycle]);
+
+  /**
+   * Push-to-talk: begin capturing audio. Called on button mousedown
+   * AND on spacebar keydown (when capture is running and we're idle).
+   * Bails early if the screen share isn't running, an autonomous cycle
+   * is mid-flight, or another PTT press is already in flight.
+   *
+   * The mic stream is kept warm across presses (see useMicCapture) so
+   * subsequent presses don't re-prompt for permission.
+   */
+  const startVoice = useCallback(async () => {
+    if (!capture.isRunning) {
+      toast.warn("share your screen first.", {
+        id: "voice_no_capture",
+        description: "ione needs to see what you're working on to answer.",
+        ttlMs: 4000,
+      });
+      return;
+    }
+    if (voiceState !== "idle") return;
+    if (helpInFlight || inFlightRef.current) {
+      toast.info("ione is mid-thought — try again in a sec.", {
+        id: "voice_busy",
+        ttlMs: 3500,
+      });
+      return;
+    }
+    setVoiceState("recording");
+    try {
+      await mic.start();
+    } catch (e) {
+      console.error("[tutor] mic.start failed", e);
+      const msg = e instanceof Error ? e.message : String(e);
+      const denied = /denied|notallowed|permission/i.test(msg);
+      toast.warn(denied ? "microphone access blocked." : "couldn't start the mic.", {
+        id: "voice_mic_failed",
+        description: denied
+          ? "allow microphone access in your browser to ask ione out loud."
+          : msg,
+        ttlMs: 5500,
+      });
+      setVoiceState("idle");
+    }
+  }, [capture.isRunning, helpInFlight, mic, voiceState]);
+
+  /**
+   * Push-to-talk: stop capturing, transcribe, and feed the transcript +
+   * a fresh frame into /api/cycle as assistanceMode='voice'. Mirrors the
+   * "I need help" path but adds the STT roundtrip in the middle.
+   */
+  const stopVoiceAndSend = useCallback(async () => {
+    if (voiceState !== "recording") return;
+    setVoiceState("transcribing");
+    let recording: Awaited<ReturnType<typeof mic.stop>> = null;
+    try {
+      recording = await mic.stop();
+    } catch (e) {
+      console.error("[tutor] mic.stop failed", e);
+    }
+    if (!recording) {
+      // too short or cancelled — quietly reset
+      setVoiceState("idle");
+      return;
+    }
+    try {
+      const transcript = await transcribeAudio({
+        audio: recording.blob,
+        durationSec: recording.durationSec,
+      });
+      const text = transcript.text.trim();
+      if (!text) {
+        toast.info("didn't catch that — try again.", {
+          id: "voice_empty_transcript",
+          ttlMs: 3500,
+        });
+        setVoiceState("idle");
+        return;
+      }
+      setVoiceState("answering");
+      const blob = await capture.captureNow();
+      if (!blob) {
+        toast.warn("couldn't grab a frame — is the share still active?", {
+          id: "voice_no_frame",
+          ttlMs: 4000,
+        });
+        return;
+      }
+      await postCycle(blob, { assistanceMode: "voice", studentQuestion: text });
+    } catch (e) {
+      console.error("[tutor] voice flow failed", e);
+      toast.warn("ione couldn't answer that one.", {
+        id: "voice_error",
+        description: e instanceof Error ? e.message : String(e),
+        ttlMs: 4500,
+      });
+    } finally {
+      setVoiceState("idle");
+    }
+  }, [capture, mic, postCycle, voiceState]);
+
+  /**
+   * Cancel an in-flight recording (e.g. user released spacebar before
+   * the minimum duration, or hit Escape mid-record). Throws away the
+   * audio without making any network calls.
+   */
+  const cancelVoice = useCallback(() => {
+    if (voiceState !== "recording") return;
+    mic.cancel();
+    setVoiceState("idle");
+  }, [mic, voiceState]);
+
+  // Spacebar push-to-talk. Holding space starts recording, releasing
+  // it sends. Repeat-rate keydowns are filtered (so holding the key
+  // doesn't keep re-arming). We bail when focus is in a text input
+  // so spacebars while typing in a future textarea don't trigger.
+  useEffect(() => {
+    const isTextTarget = (t: EventTarget | null) => {
+      if (!(t instanceof HTMLElement)) return false;
+      const tag = t.tagName;
+      return (
+        t.isContentEditable ||
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT"
+      );
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.code !== "Space" || e.repeat) return;
+      if (isTextTarget(e.target)) return;
+      if (!capture.isRunning) return;
+      if (voiceState !== "idle") return;
+      e.preventDefault();
+      void startVoice();
+    };
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Escape" && voiceState === "recording") {
+        e.preventDefault();
+        cancelVoice();
+        return;
+      }
+      if (e.code !== "Space") return;
+      if (isTextTarget(e.target)) return;
+      if (voiceState !== "recording") return;
+      e.preventDefault();
+      void stopVoiceAndSend();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+    };
+  }, [capture.isRunning, cancelVoice, startVoice, stopVoiceAndSend, voiceState]);
 
   // Drain an SSE event into local state; call hooks supplied by the caller.
   const handleEvent = useCallback(
@@ -444,6 +618,56 @@ export function TutorWorkspace() {
                   </h1>
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* "Hold to ask" — push-to-talk. Hold the button (or
+                      hold the spacebar) to record a question; release
+                      to transcribe + send. Lives leftmost in the header
+                      because spoken questions are the highest-bandwidth
+                      thing a student can do. */}
+                  {capture.isRunning && (
+                    <PencilButton
+                      surface="desk"
+                      size="sm"
+                      // Use pointer events so it works for both mouse and
+                      // touch. We also wire onPointerLeave/onPointerCancel
+                      // so dragging off the button still finalizes the
+                      // recording (otherwise the user gets stuck in
+                      // "recording" with no way out).
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        void startVoice();
+                      }}
+                      onPointerUp={(e) => {
+                        e.preventDefault();
+                        void stopVoiceAndSend();
+                      }}
+                      onPointerLeave={() => {
+                        if (voiceState === "recording") {
+                          void stopVoiceAndSend();
+                        }
+                      }}
+                      onPointerCancel={() => cancelVoice()}
+                      // Suppress the default "click" since we drive
+                      // everything off pointerdown/up. Clicking without
+                      // holding is treated as a too-short tap and is
+                      // discarded by useMicCapture.
+                      onClick={(e) => e.preventDefault()}
+                      disabled={
+                        endingSession ||
+                        helpInFlight ||
+                        voiceState === "transcribing" ||
+                        voiceState === "answering"
+                      }
+                      title="hold to ask ione a question (or hold spacebar)"
+                    >
+                      {voiceState === "recording"
+                        ? "listening…"
+                        : voiceState === "transcribing"
+                          ? "transcribing…"
+                          : voiceState === "answering"
+                            ? "ione is thinking…"
+                            : "hold to ask · ⎵"}
+                    </PencilButton>
+                  )}
                   {/* "I need help" — only shown while a session is live.
                       Sits to the LEFT of audio/stop because it's the
                       primary student-facing action: the autonomous loop
@@ -458,7 +682,7 @@ export function TutorWorkspace() {
                       onClick={() => {
                         void requestHelp();
                       }}
-                      disabled={helpInFlight || endingSession}
+                      disabled={helpInFlight || endingSession || voiceState !== "idle"}
                       title="ask ione to walk you through the next step"
                     >
                       {helpInFlight ? "ione is thinking…" : "i need help"}

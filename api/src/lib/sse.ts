@@ -51,12 +51,36 @@ export type CycleEvent =
       severity?: 1 | 2 | 3 | 4 | 5;
       /**
        * Marks the hint as a *user-requested* explanation rather than an
-       * autonomous nudge. Set when the student pressed the "I need help"
-       * button on /tutor — bypasses the policy gate and the cooldown,
-       * and the AgentTrace renders it with a distinct "user asked"
-       * marker so the demo audience can see this wasn't ione barging in.
+       * autonomous nudge.
+       *   • "explain" — pressed the "I need help" button (text trigger).
+       *   • "voice"   — held push-to-talk and asked a verbal question
+       *                 transcribed by ElevenLabs Scribe.
+       *
+       * Both bypass the policy gate + cooldown and run the intervention
+       * agent in walkthrough mode. The voice path additionally carries
+       * `student_question` so the AgentTrace + HintCard can show the
+       * student what they asked above the answer.
        */
-      assistance?: "explain";
+      assistance?: "explain" | "voice";
+      /**
+       * Verbatim transcribed question — only set when `assistance === "voice"`.
+       * Rendered above the answer so the student (and demo audience) can
+       * see exactly what was heard before the agent responds.
+       */
+      student_question?: string;
+    }
+  | {
+      /**
+       * Emitted at the start of a voice-triggered cycle, BEFORE the agents
+       * run. Carries the transcribed text + raw audio metadata so the
+       * AgentTrace can show "voice asked: '...'" as its own stage chip
+       * before the rest of the pipeline lights up. Always present when the
+       * cycle was initiated by push-to-talk; never present otherwise.
+       */
+      type: "voice_question";
+      text: string;
+      language_code: string | null;
+      duration_sec: number | null;
     }
   | {
       type: "ocr";

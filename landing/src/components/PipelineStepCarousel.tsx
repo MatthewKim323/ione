@@ -23,7 +23,9 @@ const FILE = {
 const PENCIL = [0.16, 1, 0.3, 1] as const;
 
 /** 72° between petals, first petal at top (–90° offset) */
-const PETAL_ANGLES_5 = [0, 72, 144, 216, 288].map((d) => d - 90) as const;
+const PETAL_ANGLES_5: readonly number[] = [0, 72, 144, 216, 288].map(
+  (d) => d - 90,
+);
 
 /** Main stage word (capture, ocr, …) — dark brown fill, light cream highlight */
 const pipelineStepTitleStyle: CSSProperties = {

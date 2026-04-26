@@ -82,19 +82,32 @@ export type OrchestratorInput = {
   /** Phase 3 will load a real profile; Phase 1 passes null. */
   struggleProfile: StruggleProfile | null;
   /**
-   * When set to "explain", the cycle was triggered by the student
-   * pressing the "I need help" button — NOT by the autonomous capture
-   * loop. The orchestrator then:
-   *   - bypasses the policy gate (always speaks)
-   *   - bypasses the cooldown (the user asked, this isn't us nagging)
-   *   - bypasses the duplicate-hint check (the user already heard the
-   *     hint and still doesn't get it; saying it again is fine)
-   *   - swaps the intervention agent into EXPLAIN mode (drops the
+   * Marks the cycle as student-initiated rather than from the autonomous
+   * capture loop. Both modes:
+   *   - bypass the policy gate (always speak)
+   *   - bypass the cooldown (the user asked, this isn't ione nagging)
+   *   - bypass the duplicate-hint check (a fuller walkthrough is the
+   *     entire point of asking again)
+   *   - swap the intervention agent into walkthrough mode (drops the
    *     Socratic rule, walks through the actual method)
-   * Tagged on the emitted hint event as `assistance: "explain"` so the
-   * UI can render it distinctly.
+   *
+   *   - "explain" — pressed the "I need help" button on /tutor.
+   *   - "voice"   — held push-to-talk and asked a verbal question; the
+   *                 transcribed text is also passed via `studentQuestion`.
+   *
+   * Tagged on the emitted hint event as `assistance: "explain" | "voice"`
+   * so the UI can render it distinctly (badges, the student's question
+   * shown above the answer, etc).
    */
-  assistanceMode?: "explain";
+  assistanceMode?: "explain" | "voice";
+  /**
+   * Verbatim transcript of the student's spoken question — only set when
+   * `assistanceMode === "voice"`. Threaded into the intervention agent's
+   * user payload so the answer actually addresses what was asked, and
+   * surfaced on the SSE hint event so the AgentTrace + HintCard can show
+   * "you asked: '...'" above the answer.
+   */
+  studentQuestion?: string;
 };
 
 export type OrchestratorPersist = {
@@ -161,6 +174,23 @@ export async function runCycle(
   const t0 = performance.now();
   const cost = new CycleCost();
   const events: CycleEvent[] = [];
+
+  // ── Step 0: voice transcript (push-to-talk) ───────────────────────────
+  // Surface the student's question BEFORE any agent runs so the trace shows
+  // "voice asked: '...'" as the first thing the audience sees, before OCR
+  // starts. Only emitted when the cycle was triggered by push-to-talk.
+  const isVoiceMode =
+    input.assistanceMode === "voice" &&
+    typeof input.studentQuestion === "string" &&
+    input.studentQuestion.trim().length > 0;
+  if (isVoiceMode) {
+    events.push({
+      type: "voice_question",
+      text: input.studentQuestion!.trim(),
+      language_code: null,
+      duration_sec: null,
+    });
+  }
 
   // ── Step 1: OCR ────────────────────────────────────────────────────────
   const ocrResult = await runOcrAgent({
@@ -321,6 +351,12 @@ export async function runCycle(
   // recordings: 0 via POLICY_COOLDOWN_MS=0 in .env.local. See env.ts.
   const cooldownWindowMs = env.POLICY_COOLDOWN_MS;
   const isExplainMode = input.assistanceMode === "explain";
+  // Voice questions and explicit "I need help" share the same bypass path
+  // (always speak, ignore cooldown/dedup, walkthrough mode). The only
+  // diffs are (a) we feed the spoken question into the intervention
+  // prompt so the answer actually addresses it, and (b) the surfaced
+  // hint event is tagged "voice" instead of "explain".
+  const isAssistedMode = isExplainMode || isVoiceMode;
   const verdict = decidePolicy({
     reasoning,
     predictive,
@@ -332,25 +368,28 @@ export async function runCycle(
   });
 
   // Always emit a confidence event derived from the policy verdict.
-  // Explain-mode still surfaces the same ribbon — the user pressed help,
-  // and the trace should still show what the agents collectively thought.
+  // Assisted modes still surface a ribbon — the user pressed help / asked
+  // a question, and the trace should still show what the agents
+  // collectively thought before the walkthrough.
   events.push({
     type: "confidence",
     level: ribbonForVerdict(verdict, reasoning, predictive),
-    reason: isExplainMode
-      ? "user requested help — explaining the next step"
-      : verdict.reason,
+    reason: isVoiceMode
+      ? "answering the student's question"
+      : isExplainMode
+        ? "user requested help — explaining the next step"
+        : verdict.reason,
   });
 
   // ── Step 5: Intervention ────────────────────────────────────────────────
   // Two paths:
   //   1. Autonomous loop: only run if policy says speak, dedup, and
   //      respect the cooldown.
-  //   2. Explain mode: ALWAYS run, ignore policy/cooldown/dedup. The
-  //      student pressed the help button — we owe them a teach.
+  //   2. Assisted (explain | voice): ALWAYS run, ignore policy/cooldown/
+  //      dedup. The student asked — we owe them a teach.
   let intervention: InterventionOutput | null = null;
   let interventionRaw = "";
-  let suppressionReason: string | null = isExplainMode
+  let suppressionReason: string | null = isAssistedMode
     ? null
     : verdict.kind === "silent"
       ? verdict.reason
@@ -359,7 +398,7 @@ export async function runCycle(
   let surfacedHint: OrchestratorPersist["hint"] = null;
 
   const shouldRunIntervention =
-    reasoning && (isExplainMode || verdict.kind !== "silent");
+    reasoning && (isAssistedMode || verdict.kind !== "silent");
 
   if (shouldRunIntervention) {
     try {
@@ -367,22 +406,34 @@ export async function runCycle(
         reasoning: reasoning!,
         recentHints: input.recentHints.map((h) => h.text),
         cooldownActive:
-          !isExplainMode && cooldownMs >= 0 && cooldownMs < cooldownWindowMs,
+          !isAssistedMode && cooldownMs >= 0 && cooldownMs < cooldownWindowMs,
         isStalled: input.isStalled,
         struggleProfile: input.struggleProfile,
         cost,
-        assistanceMode: isExplainMode ? "explain" : undefined,
+        assistanceMode: isAssistedMode
+          ? isVoiceMode
+            ? "voice"
+            : "explain"
+          : undefined,
+        studentQuestion: isVoiceMode ? input.studentQuestion : undefined,
       });
       intervention = r.output;
       interventionRaw = r.raw;
     } catch (e) {
       logger.warn(
-        { err: errMsg(e), cycle: input.cycleId, explain: isExplainMode },
+        {
+          err: errMsg(e),
+          cycle: input.cycleId,
+          explain: isExplainMode,
+          voice: isVoiceMode,
+        },
         "intervention agent failed — staying silent",
       );
-      suppressionReason = isExplainMode
-        ? "explain_error"
-        : "intervention_error";
+      suppressionReason = isVoiceMode
+        ? "voice_error"
+        : isExplainMode
+          ? "explain_error"
+          : "intervention_error";
     }
 
     if (
@@ -391,17 +442,17 @@ export async function runCycle(
       intervention.hint_text &&
       intervention.hint_type
     ) {
-      // Dedup applies only to autonomous hints. In explain mode, the
+      // Dedup applies only to autonomous hints. In assisted modes, the
       // student already heard the dedup'd hint and still couldn't move
       // — repeating with a fuller walkthrough is the entire point.
       const dup =
-        !isExplainMode &&
+        !isAssistedMode &&
         isDuplicateHint(intervention.hint_text, input.recentHints);
       if (dup) {
         suppressionReason = "duplicate";
       } else {
         spoke = true;
-        const predicted = !isExplainMode && verdict.kind === "speak_predictive";
+        const predicted = !isAssistedMode && verdict.kind === "speak_predictive";
         const severity = reasoning!.severity ?? null;
         // Phase 2 / E7 — only advertise audio if the TTS provider is wired
         // up. The frontend's audioStream.ts treats a truthy `audio_url` as
@@ -429,7 +480,14 @@ export async function runCycle(
           audio_url: audioUrl,
           predicted,
           severity: severity as 1 | 2 | 3 | 4 | 5 | undefined,
-          ...(isExplainMode ? { assistance: "explain" as const } : {}),
+          ...(isVoiceMode
+            ? {
+                assistance: "voice" as const,
+                student_question: input.studentQuestion!.trim(),
+              }
+            : isExplainMode
+              ? { assistance: "explain" as const }
+              : {}),
         });
         surfacedHint = {
           hint_type: intervention.hint_type,

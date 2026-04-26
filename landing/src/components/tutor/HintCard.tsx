@@ -112,7 +112,11 @@ export function HintCard({
 
   const tone = TONE_BY_TYPE[hint.hint_type];
   const prefix = hint.predicted ? "before — " : PREFIX_BY_TYPE[hint.hint_type];
-  const isExplanation = hint.hint_type === "explanation" || hint.assistance === "explain";
+  const isVoice = hint.assistance === "voice";
+  const isExplanation =
+    hint.hint_type === "explanation" ||
+    hint.assistance === "explain" ||
+    isVoice;
   // Explanations sit straighter (less rotation) — they're meant to read
   // like a tutor's clean walkthrough, not a quick scribble. Autonomous
   // hints keep their slight per-hint variance for that "real handwriting"
@@ -143,6 +147,37 @@ export function HintCard({
       {hint.predicted && (
         <span className="absolute -left-2 top-3 block w-1 h-1 rounded-full bg-brass" />
       )}
+      {/* Voice flow: render the verbatim transcribed question above the
+          tutor's answer so the audience can read what was heard before
+          ione's reply. Stays small + monospace + brass to read like a
+          tutor jotting "Q:" in the margin before the worked example.
+          Only shown when this hint was triggered by push-to-talk; the
+          plain "I need help" button doesn't carry a question string. */}
+      {isVoice && hint.student_question && (
+        <div
+          className="mb-2 ml-1 max-w-[260px] italic"
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "13px",
+            color: "var(--color-paper-faint)",
+            lineHeight: 1.3,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "10px",
+              letterSpacing: "0.06em",
+              color: "var(--color-brass)",
+              opacity: 0.85,
+              fontStyle: "normal",
+            }}
+          >
+            you asked —{" "}
+          </span>
+          "{hint.student_question}"
+        </div>
+      )}
       <Marginalia rotation={rotation} tone={tone}>
         <span
           className="block leading-[1.18] tracking-[0.005em]"
@@ -163,7 +198,9 @@ export function HintCard({
       {/* Footer tag for user-requested explanations — proves to the demo
           audience that this hint wasn't ione barging in; the student
           asked. Tiny, italic, brass — sits below the underline like a
-          tutor's signature on a worked example. */}
+          tutor's signature on a worked example. Voice gets a different
+          footer: the question is already shown above the answer, so
+          we just signal that the answer is spoken. */}
       {isExplanation && (
         <div
           className="mt-1 ml-1 italic opacity-70"
@@ -174,7 +211,9 @@ export function HintCard({
             letterSpacing: "0.02em",
           }}
         >
-          you asked — full walkthrough
+          {isVoice
+            ? "spoken answer · push-to-talk"
+            : "you asked — full walkthrough"}
         </div>
       )}
 

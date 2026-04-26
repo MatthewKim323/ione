@@ -195,34 +195,45 @@ export function Pipeline() {
         </div>
       </PipelineLoopBackground>
 
-      <div className="mx-auto max-w-[1380px] px-6 sm:px-10">
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: "-10%" }}
-          transition={{ duration: 0.7 }}
-          className="mt-20 grid grid-cols-1 gap-8 border-t border-ink-line bg-[#f2f2f2] py-20 pt-16 sm:mt-24 sm:pt-20 md:grid-cols-12"
-        >
-          <div className="md:col-span-4">
-            <span className="meta-label">cost model</span>
-            <h4
-              className="mt-3 text-bark text-[1.6rem] leading-[1.1]"
-              style={{ fontFamily: "var(--font-display)" }}
+      {/* Cost model — same desk DNA as body + pipeline carousel; soft blend up into video strip */}
+      <div className="relative left-1/2 w-screen max-w-none -translate-x-1/2">
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 z-[1] h-28 bg-gradient-to-b from-transparent via-[#ebe7df]/70 to-transparent sm:h-36"
+          aria-hidden
+        />
+        <div className="desk-page relative border-t border-line/45">
+          <div className="mx-auto max-w-[1380px] px-6 sm:px-10">
+            <motion.div
+              initial={{ opacity: 0, y: 12 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-10%" }}
+              transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+              className="relative z-[2] grid grid-cols-1 gap-10 py-16 sm:gap-12 sm:py-20 md:grid-cols-12 md:gap-x-10 lg:gap-x-12"
             >
-              <TextClipPathRevealLines
-                lines={[
-                  <>
-                    two cents per cycle, mostly skipped
-                    <span className="text-neon">.</span>
-                  </>,
-                ]}
-              />
-            </h4>
+              <div className="md:col-span-4 lg:col-span-4">
+                <span className="section-label-light">cost model</span>
+                <h4
+                  className="mt-3 text-bark text-[clamp(1.45rem,2.6vw,1.65rem)] leading-[1.12] drop-shadow-[0_1px_0_rgba(255,255,255,0.35)]"
+                  style={{ fontFamily: "var(--font-display)" }}
+                >
+                  <TextClipPathRevealLines
+                    lines={[
+                      <>
+                        two cents per cycle, mostly skipped
+                        <span className="text-neon">.</span>
+                      </>,
+                    ]}
+                  />
+                </h4>
+              </div>
+              <div className="md:col-span-8 lg:col-span-8">
+                <div className="rounded-2xl border border-ink/12 bg-[#e4ded2]/40 p-4 shadow-[0_10px_36px_-18px_rgba(22,19,16,0.1),0_0_0_1px_rgba(255,255,255,0.2)_inset] backdrop-blur-[3px] sm:p-5">
+                  <CostModelTiltCards />
+                </div>
+              </div>
+            </motion.div>
           </div>
-          <div className="md:col-span-8">
-            <CostModelTiltCards />
-          </div>
-        </motion.div>
+        </div>
       </div>
     </section>
   );

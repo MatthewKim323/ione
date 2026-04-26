@@ -152,3 +152,122 @@ export async function bufferSpeech(text: string): Promise<{
   }
   return { buffer: Buffer.concat(chunks), usd };
 }
+
+// ── Speech-to-Text (Scribe) ───────────────────────────────────────────────
+
+export type ElevenTranscript = {
+  /** Full transcribed text. */
+  text: string;
+  /** ISO 639-1 code Scribe detected. */
+  languageCode: string | null;
+  /** 0..1 confidence in the language detection. */
+  languageProbability: number | null;
+  /** Best-effort cost estimate in USD (Scribe-v1 ≈ $0.40 per audio-hour). */
+  usd: number;
+};
+
+/** Scribe pricing approximation — used for budget tracking, not billing. */
+function priceScribe(durationSec: number): number {
+  // ElevenLabs Scribe v1 list price as of Apr 2026: $0.40 per audio-hour,
+  // i.e. $0.40 / 3600 ≈ $0.000111 per second.
+  return Math.max(0, durationSec) * (0.4 / 3600);
+}
+
+/**
+ * Transcribe an audio blob (push-to-talk recording) via ElevenLabs Scribe.
+ *
+ * The student holds the mic button, releases it, and the resulting WebM/OGG
+ * blob comes here. Scribe v1 is multilingual and handles math vocabulary
+ * better than the cheaper turbo models, so we always use it.
+ *
+ * Threading the resulting text into /api/cycle is the caller's job — see
+ * routes/transcribe.ts which forwards to TutorWorkspace, which then calls
+ * sendCycle({ assistanceMode: "explain", studentQuestion: text }).
+ */
+export async function transcribeAudio(
+  blob: Blob,
+  filename: string,
+  approxDurationSec?: number,
+): Promise<ElevenTranscript> {
+  if (!elevenLabsConfigured()) {
+    throw new AppError(
+      "bad_request",
+      "ELEVENLABS_API_KEY not set — speech-to-text disabled",
+    );
+  }
+
+  const url = `${ELEVEN_BASE}/v1/speech-to-text`;
+  const form = new FormData();
+  form.append("file", blob, filename);
+  form.append("model_id", "scribe_v1");
+  // Tag the language hint to English — most students will speak English on
+  // the demo, and Scribe still handles code-switching gracefully when this
+  // is wrong. Skip if you ever localize.
+  form.append("language_code", "eng");
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: {
+        // NOTE: do NOT set Content-Type — fetch must auto-set the
+        // multipart boundary, otherwise ElevenLabs rejects with 422.
+        "xi-api-key": env.ELEVENLABS_API_KEY!,
+      },
+      body: form,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    logger.error({ err: msg }, "elevenlabs scribe fetch failed");
+    throw new AppError("upstream_error", `elevenlabs scribe: ${msg}`, {
+      cause: e,
+    });
+  }
+
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    logger.warn(
+      { status: res.status, body: body.slice(0, 240) },
+      "elevenlabs scribe non-2xx",
+    );
+    throw new AppError(
+      "upstream_error",
+      `elevenlabs scribe ${res.status}: ${body.slice(0, 200)}`,
+    );
+  }
+
+  let payload: unknown;
+  try {
+    payload = await res.json();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new AppError("upstream_error", `elevenlabs scribe parse: ${msg}`);
+  }
+
+  const obj = (payload ?? {}) as Record<string, unknown>;
+  const text = typeof obj.text === "string" ? obj.text.trim() : "";
+  const languageCode =
+    typeof obj.language_code === "string" ? (obj.language_code as string) : null;
+  const languageProbability =
+    typeof obj.language_probability === "number"
+      ? (obj.language_probability as number)
+      : null;
+
+  // Best-effort duration: Scribe doesn't always return one — we only get
+  // back text + words[] (each with start/end). Sum the last word's end if
+  // present; otherwise rely on the caller-supplied approximation.
+  let durationSec = approxDurationSec ?? 0;
+  if (Array.isArray(obj.words) && obj.words.length > 0) {
+    const last = obj.words[obj.words.length - 1] as { end?: number };
+    if (typeof last.end === "number" && last.end > durationSec) {
+      durationSec = last.end;
+    }
+  }
+
+  return {
+    text,
+    languageCode,
+    languageProbability,
+    usd: priceScribe(durationSec),
+  };
+}

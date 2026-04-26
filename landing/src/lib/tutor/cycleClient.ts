@@ -40,22 +40,40 @@ export type CycleEvent =
         | "encouragement"
         | "redirect"
         /**
-         * Only emitted when the student explicitly pressed the
-         * "I need help" button. Different from the four autonomous
-         * hint types — this one drops Socratic questioning and walks
-         * the student through the actual method.
+         * Only emitted when the student explicitly asked for help —
+         * either pressing the "I need help" button (assistance="explain")
+         * or holding push-to-talk and asking out loud (assistance="voice").
+         * Different from the four autonomous hint types — this one drops
+         * Socratic questioning and walks the student through the method.
          */
         | "explanation";
       audio_url: string | null;
       predicted: boolean;
       severity?: 1 | 2 | 3 | 4 | 5;
       /**
-       * Set to "explain" when the cycle was triggered by the help
-       * button. Lets AgentTrace and HintCard render a distinct marker
-       * ("user asked for help") so the trace clearly shows this hint
-       * wasn't autonomous.
+       * Set when the cycle was triggered by the student rather than the
+       * autonomous capture loop:
+       *   • "explain" — pressed the "I need help" button.
+       *   • "voice"   — held push-to-talk and asked verbally; the
+       *                 transcribed question is in `student_question`.
+       * Lets AgentTrace + HintCard render distinct markers so the trace
+       * shows this hint wasn't autonomous.
        */
-      assistance?: "explain";
+      assistance?: "explain" | "voice";
+      /** Verbatim transcript — only set when assistance === "voice". */
+      student_question?: string;
+    }
+  | {
+      /**
+       * Emitted at the start of a voice-triggered cycle, BEFORE OCR runs,
+       * carrying the transcribed text so AgentTrace can render
+       * "voice asked: '...'" as its own stage chip before the rest of
+       * the pipeline lights up.
+       */
+      type: "voice_question";
+      text: string;
+      language_code: string | null;
+      duration_sec: number | null;
     }
   | {
       type: "ocr";
@@ -172,11 +190,19 @@ export type SendCycleInput = {
   signal?: AbortSignal;
   /**
    * When set, tells the orchestrator to bypass its silence-bias policy
-   * and force the intervention agent into "explain mode" — a
-   * step-by-step walkthrough including the actual method. Only set when
-   * the student presses the "I need help" button.
+   * and force the intervention agent into walkthrough mode.
+   *   • "explain" — student pressed the "I need help" button.
+   *   • "voice"   — student held push-to-talk and asked a verbal
+   *                 question; pair with `studentQuestion` (the
+   *                 transcribed text from /api/transcribe).
    */
-  assistanceMode?: "explain";
+  assistanceMode?: "explain" | "voice";
+  /**
+   * Verbatim transcript of the student's spoken question — only set
+   * when `assistanceMode === "voice"`. Threaded into the intervention
+   * agent's prompt so the answer addresses what was asked.
+   */
+  studentQuestion?: string;
 };
 
 export type SendCycleHandle = {
@@ -208,6 +234,10 @@ export async function sendCycle(input: SendCycleInput): Promise<SendCycleHandle>
       client_ts: input.clientTs ?? new Date().toISOString(),
       trajectory: input.trajectory.slice(-5),
       assistance_mode: input.assistanceMode ?? null,
+      student_question:
+        input.assistanceMode === "voice" && input.studentQuestion
+          ? input.studentQuestion
+          : null,
     }),
   );
 
