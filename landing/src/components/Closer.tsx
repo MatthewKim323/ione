@@ -164,26 +164,33 @@ export function Closer() {
 
 function SessionCard() {
   return (
-    <div className="border border-ink-line bg-ink-deep p-7 relative">
+    <div
+      className={[
+        "relative border border-ink/15 bg-[#e4ded2] p-7",
+        "shadow-[0_4px_14px_rgba(0,0,0,0.08)]",
+        /* faint grid — same as pipeline file body */
+        "[background-image:repeating-linear-gradient(0deg,transparent,transparent_1px,rgba(0,0,0,0.02)_1px,rgba(0,0,0,0.02)_2px),repeating-linear-gradient(90deg,transparent,transparent_1px,rgba(0,0,0,0.018)_1px,rgba(0,0,0,0.018)_2px)]",
+      ].join(" ")}
+    >
       {/* corner marks */}
       <Corner pos="tl" />
       <Corner pos="tr" />
       <Corner pos="bl" />
       <Corner pos="br" />
 
-      <div className="flex items-center justify-between meta-label mb-6">
+      <div className="mb-6 flex items-center justify-between meta-label !text-ink/60">
         <span>session · 5.3 / problem 4</span>
-        <span className="text-paper-dim">28 min</span>
+        <span className="text-ink/50">28 min</span>
       </div>
 
       <div
-        className="text-paper text-[2.4rem] leading-none mb-4"
+        className="mb-4 text-[2.4rem] leading-none text-ink"
         style={{ fontFamily: "var(--font-display)" }}
       >
         ted, <span style={{ fontStyle: "italic" }}>15</span>
       </div>
 
-      <div className="font-sub text-[12px] text-paper-dim leading-[1.8]">
+      <div className="font-sub text-[12px] leading-[1.8] text-ink/85">
         <Row k="frames captured" v="208" />
         <Row k="frames processed" v="11" muted />
         <Row k="agent invocations" v="11 → 11 → 11" />
@@ -192,8 +199,8 @@ function SessionCard() {
         <Row k="compute" v="$0.41" />
       </div>
 
-      <div className="mt-7 pt-5 border-t border-ink-line">
-        <div className="meta-label mb-2">struggle profile</div>
+      <div className="mt-7 border-t border-ink/15 pt-5">
+        <div className="meta-label mb-2 !text-ink/60">struggle profile</div>
         <div className="flex flex-wrap gap-2">
           {[
             ["sign errors", true],
@@ -206,7 +213,7 @@ function SessionCard() {
               className={`px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] font-sub border ${
                 hot
                   ? "border-red-pencil/60 text-red-pencil"
-                  : "border-ink-line text-paper-mute"
+                  : "border-ink/15 text-ink/50"
               }`}
             >
               {label}
@@ -237,8 +244,8 @@ function Row({
   muted?: boolean;
 }) {
   return (
-    <div className="flex items-baseline justify-between border-b border-dashed border-ink-line py-1.5">
-      <span className="text-paper-mute uppercase text-[10px] tracking-[0.18em]">
+    <div className="flex items-baseline justify-between border-b border-dashed border-ink/15 py-1.5">
+      <span className="text-[10px] uppercase tracking-[0.18em] text-ink/55">
         {k}
       </span>
       <span
@@ -246,8 +253,8 @@ function Row({
           red
             ? "text-red-pencil"
             : muted
-              ? "text-paper-mute"
-              : "text-paper"
+              ? "text-ink/45"
+              : "text-ink"
         }`}
       >
         {v}
@@ -266,7 +273,7 @@ function Corner({ pos }: { pos: "tl" | "tr" | "bl" | "br" }) {
   return (
     <span
       aria-hidden
-      className={`absolute w-3 h-3 border-red-pencil ${map[pos]} -m-px`}
+      className={`absolute -m-px h-3 w-3 border-ink/30 ${map[pos]}`}
     />
   );
 }
