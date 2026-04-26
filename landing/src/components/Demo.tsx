@@ -1,6 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { motion } from "motion/react";
-import { SectionLabel } from "./SectionLabel";
 
 // ── Tunables ───────────────────────────────────────────────────────────
 // How tall the demo section is, in viewport heights. The video scrubs
@@ -9,11 +7,8 @@ import { SectionLabel } from "./SectionLabel";
 // Bump higher = slower scrub (more scroll per frame).
 const SECTION_VH = 2.2;
 
-// How many bitmaps to pre-decode. We deliberately use fewer than the
-// flowers (240) because:
-//   1. We don't want to compete with the flower preload on first paint.
-//   2. Screen-recording content has less per-frame motion than the
-//      flowers, so 180 already feels glass-smooth.
+// How many bitmaps to pre-decode. Fewer than the flowers (240) so we
+// don't compete with their preload, but enough to feel glass-smooth.
 const FRAME_COUNT = 180;
 
 // rAF lerp toward target frame. Lower = more inertia / smoother glide.
@@ -22,6 +17,14 @@ const FRAME_LERP = 0.22;
 // Start pre-decoding when the section is within this many viewports of
 // being on screen. Keeps the flower preload uncontested at page load.
 const PRELOAD_ROOT_MARGIN = "150% 0px";
+
+// Match the surrounding page background so the video edges can dissolve
+// into the page rather than landing as a hard rectangle.
+const PAGE_BG = "#f2f2f2";
+
+// Height (in viewport heights) of the top/bottom feather that blends
+// the video into the surrounding page background.
+const EDGE_FADE_VH = 0.18;
 
 async function preloadFrames(
   src: string,
@@ -151,8 +154,8 @@ export function Demo() {
       const bmp = frames[i];
       if (!bmp) return;
       const { vw, vh: vhPx } = dimsRef.current;
-      // contain-fit so nothing is cropped — screen recordings are
-      // information-dense and cropping looks broken.
+      // contain-fit so nothing is cropped — screen-recording content
+      // is information-dense and cropping looks broken.
       const scale = Math.min(cssWidth / vw, cssHeight / vhPx);
       const w = vw * scale;
       const h = vhPx * scale;
@@ -213,13 +216,30 @@ export function Demo() {
     };
   }, [ready]);
 
+  // Top/bottom feather gradients: fade the video edges into the page bg.
+  // Solid PAGE_BG at the very top/bottom, transparent inside.
+  const topFade =
+    "linear-gradient(to bottom," +
+    ` ${PAGE_BG} 0%,` +
+    ` rgba(242,242,242,0.9) 40%,` +
+    ` rgba(242,242,242,0.0) 100%)`;
+
+  const bottomFade =
+    "linear-gradient(to top," +
+    ` ${PAGE_BG} 0%,` +
+    ` rgba(242,242,242,0.9) 40%,` +
+    ` rgba(242,242,242,0.0) 100%)`;
+
   return (
     <section
       ref={sectionRef}
       id="demo"
       aria-label="demo"
-      className="relative border-t border-ink-line"
-      style={{ height: `${SECTION_VH * 100}vh` }}
+      className="relative"
+      style={{
+        height: `${SECTION_VH * 100}vh`,
+        backgroundColor: PAGE_BG,
+      }}
     >
       <div
         style={{
@@ -228,6 +248,7 @@ export function Demo() {
           height: "100vh",
           width: "100%",
           overflow: "hidden",
+          backgroundColor: PAGE_BG,
         }}
       >
         {/* Canvas underlay — fills the viewport, fades in when frames are ready. */}
@@ -246,42 +267,33 @@ export function Demo() {
           }}
         />
 
-        {/* Subtle vignette so the chrome label reads cleanly over any frame. */}
+        {/* Top feather → fades into the section above. */}
         <div
           aria-hidden
           style={{
             position: "absolute",
-            inset: 0,
+            top: 0,
+            left: 0,
+            right: 0,
+            height: `${EDGE_FADE_VH * 100}vh`,
+            background: topFade,
             pointerEvents: "none",
-            background:
-              "linear-gradient(to bottom," +
-              " rgba(0,0,0,0.35) 0%," +
-              " rgba(0,0,0,0)    18%," +
-              " rgba(0,0,0,0)    72%," +
-              " rgba(0,0,0,0.45) 100%)",
           }}
         />
 
-        {/* Section chrome — same language as the rest of the page. */}
-        <div className="absolute inset-x-0 top-0 px-6 sm:px-10 pt-10">
-          <div className="max-w-[1380px] mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-15%" }}
-              transition={{ duration: 0.6 }}
-            >
-              <SectionLabel number="004" name="demo" />
-            </motion.div>
-          </div>
-        </div>
-
-        <div className="absolute inset-x-0 bottom-0 px-6 sm:px-10 pb-10">
-          <div className="max-w-[1380px] mx-auto flex items-end justify-between gap-6 font-mono text-[10px] uppercase tracking-[0.22em] text-paper">
-            <span>scroll · scrubs · capture</span>
-            <span>excerpt · 2026.04.25</span>
-          </div>
-        </div>
+        {/* Bottom feather → fades into the section below. */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: `${EDGE_FADE_VH * 100}vh`,
+            background: bottomFade,
+            pointerEvents: "none",
+          }}
+        />
       </div>
     </section>
   );

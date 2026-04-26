@@ -280,9 +280,9 @@ export default function Landing() {
         <main>
           <TitlePage />
           <Hero />
+          <Demo />
           <Pedagogy />
           <Pipeline />
-          <Demo />
           <Signal />
           <Closer />
         </main>
