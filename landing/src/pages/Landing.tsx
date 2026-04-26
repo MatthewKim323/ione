@@ -16,9 +16,8 @@ const PAGE_BG = "#f2f2f2";
 const SCRUB_RANGE_VH = 1.6;
 
 // Where (within the scrub range) the video starts fading out.
-// 0.78 = video stays fully opaque until you've scrolled ~78% of the range,
-// then fades out over the last ~22%.
-const FADE_START_T = 0.78;
+// Lower = earlier, gentler handoff to the page bg (less “hard cut”).
+const FADE_START_T = 0.68;
 
 // How many frames to pre-decode from /bg.mp4. Higher = smoother scrub,
 // at the cost of memory + a longer initial preload. 240 looks buttery on
@@ -164,12 +163,19 @@ function FlowerBackground() {
       return t < 0 ? 0 : t > 1 ? 1 : t;
     };
 
+    /** 0→1 smoothstep — eases both ends so the fade doesn’t feel linear / abrupt. */
+    const smooth01 = (x: number) => {
+      const u = x < 0 ? 0 : x > 1 ? 1 : x;
+      return u * u * (3 - 2 * u);
+    };
+
     const updateOpacity = (t: number) => {
       const fadeT =
         t < FADE_START_T
           ? 0
           : (t - FADE_START_T) / Math.max(0.001, 1 - FADE_START_T);
-      const opacity = 1 - (fadeT > 1 ? 1 : fadeT);
+      const u = fadeT > 1 ? 1 : fadeT;
+      const opacity = 1 - smooth01(u);
       if (Math.abs(opacity - lastOpacity) > 0.005) {
         wrapper.style.opacity = String(opacity);
         lastOpacity = opacity;
@@ -295,7 +301,7 @@ function FlowerBackground() {
           height: "100%",
           objectFit: "cover",
           opacity: framesReady ? 0 : 1,
-          transition: "opacity 0.45s ease",
+          transition: "opacity 0.85s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       />
       {/* Phase B renderer — drawn into once frames are decoded. */}
@@ -308,7 +314,7 @@ function FlowerBackground() {
           width: "100%",
           height: "100%",
           opacity: framesReady ? 1 : 0,
-          transition: "opacity 0.45s ease",
+          transition: "opacity 0.85s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       />
       {/* Dim overlay — sits on top of both renderers so it fades out

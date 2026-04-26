@@ -7,14 +7,44 @@ const PIPELINE_BG_VIDEO = "/pipeline-capture-bg.mp4";
 /** Match Landing flower dim: readable type over footage. */
 const VIDEO_DIM = "rgba(0, 0, 0, 0.18)";
 
-function VideoDimBackdrop({ className = "" }: { className?: string }) {
+/** Feather video edges into the page so the strip doesn’t read as a hard rectangle. */
+const MASK_VERTICAL =
+  "linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%)";
+const MASK_VERTICAL_TIGHT =
+  "linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)";
+
+function VideoDimBackdrop({
+  className = "",
+  edgeMask = "vertical",
+}: {
+  className?: string;
+  /** `vertical` softens top/bottom; `none` keeps a hard crop. */
+  edgeMask?: "vertical" | "vertical-tight" | "none";
+}) {
+  const mask =
+    edgeMask === "none"
+      ? undefined
+      : edgeMask === "vertical-tight"
+        ? MASK_VERTICAL_TIGHT
+        : MASK_VERTICAL;
+
   return (
     <div
       className={`pointer-events-none absolute inset-0 ${className}`}
       aria-hidden
+      style={
+        mask
+          ? {
+              maskImage: mask,
+              WebkitMaskImage: mask,
+              maskSize: "100% 100%",
+              WebkitMaskSize: "100% 100%",
+            }
+          : undefined
+      }
     >
       <video
-        className="absolute inset-0 h-full w-full object-cover"
+        className="absolute inset-0 h-full w-full object-cover scale-[1.02]"
         src={PIPELINE_BG_VIDEO}
         muted
         playsInline
@@ -84,7 +114,7 @@ export function Pipeline() {
         {/* Full-bleed strip: video + same dim as flower bg behind the
             “from pixels → insight” headline and intro copy. */}
         <div className="relative left-1/2 mt-12 w-screen max-w-none -translate-x-1/2 overflow-hidden">
-          <VideoDimBackdrop />
+          <VideoDimBackdrop edgeMask="vertical" />
           <div className="relative z-10 mx-auto max-w-[1380px] px-6 py-14 sm:px-10 sm:py-20">
             <div className="grid grid-cols-1 gap-x-12 gap-y-10 lg:grid-cols-12">
               <div className="lg:col-span-7">
@@ -147,7 +177,7 @@ export function Pipeline() {
                       : ""
                   }`}
                 >
-                  {isCapture && <VideoDimBackdrop />}
+                  {isCapture && <VideoDimBackdrop edgeMask="vertical-tight" />}
 
                   {/* number marker on the connecting line */}
                   <div className="absolute top-0 left-0 z-10 flex items-center gap-3">

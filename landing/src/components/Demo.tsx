@@ -241,8 +241,14 @@ export function Demo() {
             width: "100%",
             height: "100%",
             opacity: ready ? 1 : 0,
-            transition: "opacity 0.6s ease",
+            transition: "opacity 1s cubic-bezier(0.22, 1, 0.36, 1)",
             willChange: "opacity",
+            // Feather top/bottom so the full-bleed demo doesn’t hard-cut
+            // against the sections above/below.
+            maskImage:
+              "linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%)",
           }}
         />
       </div>
