@@ -157,12 +157,15 @@ export function Signal() {
         }}
       >
         <LiquidChrome
+          // baseColor: dim purple at the troughs.
           baseColor={[0.18, 0.10, 0.28]}
+          // maxColor: brightest peak — exactly #CCCCFF (204/255).
+          maxColor={[0.8, 0.8, 1.0]}
           speed={0.35}
           amplitude={0.18}
           frequencyX={2.5}
           frequencyY={1.5}
-          interactive={false}
+          interactive={true}
         />
       </div>
 

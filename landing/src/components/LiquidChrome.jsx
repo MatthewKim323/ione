@@ -5,6 +5,11 @@ import "./LiquidChrome.css";
 
 export const LiquidChrome = ({
   baseColor = [0.1, 0.1, 0.1],
+  // The brightest the gradient can reach.  Original shader divides
+  // baseColor by |sin(...)| which blows up to white at the peaks; we
+  // mix between base and max instead so the highlight is exactly this
+  // color instead of clamping to (1, 1, 1).
+  maxColor = [1.0, 1.0, 1.0],
   speed = 0.2,
   amplitude = 0.3,
   frequencyX = 3,
@@ -37,6 +42,7 @@ export const LiquidChrome = ({
       uniform float uTime;
       uniform vec3 uResolution;
       uniform vec3 uBaseColor;
+      uniform vec3 uMaxColor;
       uniform float uAmplitude;
       uniform float uFrequencyX;
       uniform float uFrequencyY;
@@ -58,7 +64,12 @@ export const LiquidChrome = ({
           float ripple = sin(10.0 * dist - uTime * 2.0) * 0.03;
           uv += (diff / (dist + 0.0001)) * ripple * falloff;
 
-          vec3 color = uBaseColor / abs(sin(uTime - uv.y - uv.x));
+          // Brightness factor: 0 at the troughs (|sin|=1) → 1 at the
+          // peaks (|sin|≈0).  Smoothstep gives a clean falloff that
+          // doesn't blow out, so the highlight is bounded.
+          float s = abs(sin(uTime - uv.y - uv.x));
+          float t = 1.0 - smoothstep(0.0, 0.6, s);
+          vec3 color = mix(uBaseColor, uMaxColor, t);
           return vec4(color, 1.0);
       }
 
@@ -90,6 +101,7 @@ export const LiquidChrome = ({
           ]),
         },
         uBaseColor: { value: new Float32Array(baseColor) },
+        uMaxColor: { value: new Float32Array(maxColor) },
         uAmplitude: { value: amplitude },
         uFrequencyX: { value: frequencyX },
         uFrequencyY: { value: frequencyY },
@@ -133,9 +145,14 @@ export const LiquidChrome = ({
       }
     }
 
+    // Listen on the window so the chrome still reacts even when the
+    // host element (or an ancestor) has `pointer-events: none`.  The
+    // handlers compute mouse position relative to the container's
+    // bounding rect, so cursor positions outside the container land
+    // outside [0, 1] and the in-shader ripple naturally falls off.
     if (interactive) {
-      container.addEventListener("mousemove", handleMouseMove);
-      container.addEventListener("touchmove", handleTouchMove);
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("touchmove", handleTouchMove);
     }
 
     let animationId;
@@ -152,15 +169,15 @@ export const LiquidChrome = ({
       cancelAnimationFrame(animationId);
       window.removeEventListener("resize", resize);
       if (interactive) {
-        container.removeEventListener("mousemove", handleMouseMove);
-        container.removeEventListener("touchmove", handleTouchMove);
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("touchmove", handleTouchMove);
       }
       if (gl.canvas.parentElement) {
         gl.canvas.parentElement.removeChild(gl.canvas);
       }
       gl.getExtension("WEBGL_lose_context")?.loseContext();
     };
-  }, [baseColor, speed, amplitude, frequencyX, frequencyY, interactive]);
+  }, [baseColor, maxColor, speed, amplitude, frequencyX, frequencyY, interactive]);
 
   return (
     <div ref={containerRef} className="liquidChrome-container" {...props} />
