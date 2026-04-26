@@ -40,6 +40,7 @@ export default function Login() {
 
   return (
     <AuthLayout
+      dismissDeskClick
       meta="account / re-open"
       title={
         <>

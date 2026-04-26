@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" fill="#0c0a08"/>
+  <rect width="32" height="32" fill="#3d3635"/>
   <line x1="22" y1="4" x2="22" y2="28" stroke="#c4302b" stroke-width="1.5"/>
   <text x="6" y="22" font-family="serif" font-size="18" font-style="italic" fill="#f5ecd9">m</text>
 </svg>

@@ -20,21 +20,40 @@ const FILE = {
   sub: "text-ink/70",
 } as const;
 
-const tabDot = (active: boolean) =>
-  active
-    ? "bg-neon ring-1 ring-ink/15 shadow-[0_0_0_1px_rgba(0,0,0,0.06)]"
-    : "bg-neon/40 hover:bg-neon/65";
-
 const PENCIL = [0.16, 1, 0.3, 1] as const;
 
-/** Pipeline step h3 — slightly darker than brand neon + black outline (all stages). */
+/** 72° between petals, first petal at top (–90° offset) */
+const PETAL_ANGLES_5 = [0, 72, 144, 216, 288].map((d) => d - 90) as const;
+
+/** Main stage word (capture, ocr, …) — dark brown fill, light cream highlight */
 const pipelineStepTitleStyle: CSSProperties = {
-  color: "#9fb12a",
-  WebkitTextStroke: "1.5px var(--color-bark)",
-  paintOrder: "stroke fill",
-  textShadow:
-    "0 1px 0 rgba(0,0,0,0.15), 0 2px 6px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.12)",
+  color: "var(--color-bark)",
+  textShadow: "0 1px 0 rgba(255,255,255,0.2), 0 2px 5px rgba(0,0,0,0.1)",
 };
+
+/**
+ * Five-petal blossom (shared by file tabs + bottom stage controls).
+ * Slightly plumper petals (rx/ry) so it reads clearly at small sizes.
+ */
+function StageFlower({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" className={className} aria-hidden>
+      <g transform="translate(10,10)" fill="currentColor">
+        {PETAL_ANGLES_5.map((deg) => (
+          <ellipse
+            key={deg}
+            cx="0"
+            cy="-3.1"
+            rx="2.1"
+            ry="3.25"
+            transform={`rotate(${deg})`}
+          />
+        ))}
+        <circle r="1.5" />
+      </g>
+    </svg>
+  );
+}
 
 const stepListVariants = {
   hidden: { opacity: 0 },
@@ -100,7 +119,7 @@ export function PipelineStepCarousel({ steps }: Props) {
     >
       <div className="mx-auto w-full max-w-xl sm:max-w-2xl">
         {/* Tab row — right-aligned so capture + intervene (and the pair between) sit toward the right */}
-        <div className="flex min-h-[2.5rem] w-full flex-nowrap items-end justify-end gap-0.5 pl-2 sm:min-h-[2.75rem] sm:gap-1 sm:pl-4 -mb-px">
+        <div className="flex min-h-[3rem] w-full flex-nowrap items-end justify-end gap-1 pl-2 sm:min-h-[3.35rem] sm:gap-1.5 sm:pl-4 -mb-px">
           {steps.map((s, i) => {
             const active = i === index;
             return (
@@ -111,7 +130,7 @@ export function PipelineStepCarousel({ steps }: Props) {
                 role="tab"
                 aria-selected={active}
                 className={[
-                  "relative z-0 max-w-[7.2rem] shrink-0 rounded-t-md border border-b-0 px-1.5 py-1.5 text-left transition-[background-color,box-shadow] sm:max-w-none sm:rounded-t-lg sm:px-2.5 sm:py-1.5",
+                  "relative z-0 max-w-[8.5rem] shrink-0 rounded-t-md border border-b-0 px-2.5 py-2 text-left transition-[background-color,box-shadow] sm:max-w-none sm:rounded-t-lg sm:px-3.5 sm:py-2.5",
                   FILE.border,
                   "shadow-[0_1px_0_rgba(255,255,255,0.35)_inset]",
                   active
@@ -120,10 +139,17 @@ export function PipelineStepCarousel({ steps }: Props) {
                 ].join(" ")}
               >
                 <span
-                  className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full align-middle ${tabDot(active)}`}
-                />
-                <span className="ml-1 font-mono text-[6px] leading-tight tracking-[0.08em] uppercase sm:ml-1.5 sm:text-[7px] sm:tracking-[0.1em]">
-                  {s.n}_{s.name}
+                  className={`inline-block shrink-0 align-middle ${
+                    active
+                      ? "text-neon drop-shadow-[0_0_0_1px_rgba(0,0,0,0.05)]"
+                      : "text-neon/45 hover:text-neon/80"
+                  }`}
+                >
+                  <StageFlower className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                </span>
+                <span className="ml-1.5 font-mono text-[8px] leading-tight tracking-[0.08em] uppercase sm:ml-2 sm:text-[9px] sm:tracking-[0.1em]">
+                  <span className={active ? "text-ink/55" : "text-ink/45"}>{s.n}_</span>
+                  <span className="text-bark font-bold">{s.name}</span>
                   <span className={active ? "text-ink/50" : "text-ink/40"}>.json</span>
                 </span>
               </button>
@@ -195,7 +221,7 @@ function StepContent({
     <div className="flex h-full flex-col text-ink">
       <div className="mb-1 flex items-baseline justify-between gap-3">
         <h3
-          className="text-[2.35rem] leading-[0.95] sm:text-[2.7rem] md:text-[2.9rem]"
+          className="text-[2.6rem] leading-[0.95] sm:text-[2.95rem] md:text-[3.2rem]"
           style={{
             fontFamily: "var(--font-display)",
             ...pipelineStepTitleStyle,
@@ -228,7 +254,7 @@ function StepContent({
       <div className="mb-1 flex items-baseline justify-between gap-3">
         <motion.h3
           variants={stepItemVariants}
-          className="text-[2.35rem] leading-[0.95] sm:text-[2.7rem] md:text-[2.9rem]"
+          className="text-[2.6rem] leading-[0.95] sm:text-[2.95rem] md:text-[3.2rem]"
           style={{ fontFamily: "var(--font-display)", ...pipelineStepTitleStyle }}
         >
           {step.name}
@@ -292,51 +318,66 @@ function Controls({
   onNext: () => void;
   onSelect: (i: number) => void;
 }) {
+  const reduce = useReducedMotion() ?? false;
+  const n = steps.length;
+
+  const ltrMotion = (i: number) => ({
+    initial: { opacity: reduce ? 1 : 0, x: reduce ? 0 : -14 },
+    whileInView: { opacity: 1, x: 0 },
+    transition: {
+      duration: reduce ? 0 : 0.44,
+      delay: reduce ? 0 : 0.03 + i * 0.072,
+      ease: PENCIL,
+    },
+    viewport: { once: true, amount: 0.3 },
+  });
+
+  const chrome =
+    "inline-flex h-11 shrink-0 items-center justify-center rounded-md border border-ink/15 bg-[#e4ded2] text-ink/55 font-sub text-[11px] tracking-[0.16em] uppercase transition-colors hover:border-ink hover:bg-ink hover:text-white";
+
   return (
-    <>
-      <div className="mt-4 flex flex-wrap items-center justify-center gap-3 sm:mt-6 sm:gap-4">
-        <button
+    <div
+      className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:mt-6 sm:gap-2.5"
+      role="group"
+      aria-label="Pipeline stage navigation"
+    >
+      <motion.button
+        type="button"
+        className={`${chrome} min-w-[6.5rem] px-3`}
+        onClick={onPrev}
+        aria-label="Previous stage"
+        {...ltrMotion(0)}
+      >
+        ← prev
+      </motion.button>
+      {steps.map((s, i) => (
+        <motion.button
+          key={s.n}
           type="button"
-          onClick={onPrev}
-          className="font-sub text-[11px] tracking-[0.16em] uppercase text-ink/55 border border-ink/15 bg-[#e4ded2] px-4 py-2.5 transition-colors hover:border-ink hover:bg-ink hover:text-white"
-          aria-label="Previous stage"
+          role="tab"
+          aria-selected={i === index}
+          aria-label={`${s.name}, stage ${s.n}`}
+          onClick={() => onSelect(i)}
+          className={[
+            `${chrome} w-11 p-0`,
+            i === index
+              ? "text-ink ring-2 ring-ink/25 ring-offset-2 ring-offset-[#e4ded2] hover:text-white"
+              : "text-ink/40 hover:text-ink/60",
+          ].join(" ")}
+          {...ltrMotion(1 + i)}
         >
-          ← prev
-        </button>
-        <div
-          className="flex items-center justify-center gap-2 px-2"
-          role="tablist"
-          aria-label="Select pipeline stage"
-        >
-          {steps.map((s, i) => (
-            <button
-              key={s.n}
-              type="button"
-              role="tab"
-              aria-selected={i === index}
-              aria-label={`${s.name}, stage ${s.n}`}
-              onClick={() => onSelect(i)}
-              className="grid place-items-center p-1.5"
-            >
-              <span
-                className={`block h-2.5 w-2.5 rounded-full transition-transform ${
-                  i === index
-                    ? `bg-ink scale-110 ring-2 ring-ink/25 ring-offset-2 ring-offset-[#e4ded2]`
-                    : "bg-ink/25 hover:bg-ink/40"
-                }`}
-              />
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          onClick={onNext}
-          className="font-sub text-[11px] tracking-[0.16em] uppercase text-ink/55 border border-ink/15 bg-[#e4ded2] px-4 py-2.5 transition-colors hover:border-ink hover:bg-ink hover:text-white"
-          aria-label="Next stage"
-        >
-          next →
-        </button>
-      </div>
-    </>
+          <StageFlower className="h-4 w-4" />
+        </motion.button>
+      ))}
+      <motion.button
+        type="button"
+        className={`${chrome} min-w-[6.5rem] px-3`}
+        onClick={onNext}
+        aria-label="Next stage"
+        {...ltrMotion(1 + n)}
+      >
+        next →
+      </motion.button>
+    </div>
   );
 }

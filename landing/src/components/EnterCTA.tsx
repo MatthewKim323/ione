@@ -1,14 +1,5 @@
-import { motion, useReducedMotion } from "motion/react";
-import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { GlowButton } from "./design/GlowButton";
-import {
-  getHeroCtaArrowVariants,
-  getHeroCtaLabelVariants,
-  HERO_CTA_WRAPPER,
-} from "../lib/heroNeonCtaMotion";
-
-const MotionLink = motion(Link);
 
 interface EnterCTAProps {
   variant?: "primary" | "ghost";
@@ -21,15 +12,14 @@ interface EnterCTAProps {
  * routes signed-out users to /signup and signed-in users to /dashboard
  * (or /onboarding if their profile isn't filled out yet).
  *
- * The hero pass uses `className` containing `hero-primary-cta` (Shift + neon styles).
- * Other placements use the shared `GlowButton`.
+ * Hero: pass `glow-btn--see-how` (with `shrink-0` / `no-underline` as needed) to match
+ * the “see how it works” glow pill. Other placements use `GlowButton` (e.g. `glow-btn--closer`).
  */
 export function EnterCTA({
   variant = "primary",
   className = "",
   children,
 }: EnterCTAProps) {
-  const reduced = useReducedMotion() ?? false;
   const { session, profile } = useAuth();
   const to =
     session && profile && profile.onboarded_at
@@ -38,39 +28,15 @@ export function EnterCTA({
         ? "/onboarding"
         : "/signup";
 
-  const isHeroCta = className.includes("hero-primary-cta");
+  const isHeroSeeHowStyle = className.includes("glow-btn--see-how");
 
-  if (isHeroCta && variant === "primary") {
-    const labelVars = getHeroCtaLabelVariants(reduced);
-    const arrowVars = getHeroCtaArrowVariants(reduced);
-
+  if (isHeroSeeHowStyle && variant === "primary") {
     return (
-      <MotionLink
-        to={to}
-        initial="rest"
-        whileHover="hover"
-        whileTap={{ scale: 0.985 }}
-        variants={HERO_CTA_WRAPPER}
-        className={[
-          "cta",
-          "hero-primary-cta__motion overflow-hidden",
-          className,
-        ].join(" ")}
-      >
-        <motion.span
-          className="hero-primary-cta__label inline-block will-change-transform"
-          variants={labelVars}
-        >
+      <GlowButton as="link" to={to} className={className || undefined}>
+        <span className="whitespace-nowrap font-bold sm:text-[0.72rem]">
           {children ?? "open the tutor"}
-        </motion.span>
-        <motion.span
-          className="hero-primary-cta__arrow inline-block overflow-hidden will-change-transform"
-          aria-hidden
-          variants={arrowVars}
-        >
-          →
-        </motion.span>
-      </MotionLink>
+        </span>
+      </GlowButton>
     );
   }
 

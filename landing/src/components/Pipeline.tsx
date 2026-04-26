@@ -2,6 +2,7 @@ import { motion } from "motion/react";
 import { useEffect, useRef, type ReactNode } from "react";
 import { AnimatedNeonUnderlink } from "./AnimatedNeonUnderlink";
 import { TextClipPathRevealLines } from "./TextClipPathReveal";
+import { CostModelTiltCards } from "./CostModelTiltCards";
 import { PipelineStepCarousel, type PipelineStep } from "./PipelineStepCarousel";
 import { SKIP_FX } from "../lib/prerender";
 
@@ -205,7 +206,7 @@ export function Pipeline() {
           <div className="md:col-span-4">
             <span className="meta-label">cost model</span>
             <h4
-              className="mt-3 text-ink text-[1.6rem]"
+              className="mt-3 text-bark text-[1.6rem] leading-[1.1]"
               style={{ fontFamily: "var(--font-display)" }}
             >
               <TextClipPathRevealLines
@@ -218,23 +219,8 @@ export function Pipeline() {
               />
             </h4>
           </div>
-          <div className="md:col-span-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
-            {[
-              ["~ 95%", "of frames skipped", "(no diff, no work)"],
-              ["~ 4%", "reach the OCR agent", "(diff but trivial)"],
-              ["~ 1%", "reach intervene", "(and most stay silent)"],
-            ].map(([n, top, bot]) => (
-              <div key={top} className="border-l border-ink-line pl-5">
-                <div
-                  className="text-ink text-[1.8rem] leading-none mb-1 tabular-nums"
-                  style={{ fontFamily: "var(--font-display)" }}
-                >
-                  {n}
-                </div>
-                <div className="meta-label text-ink/70">{top}</div>
-                <div className="mt-1 font-sub text-[11px] text-ink/55">{bot}</div>
-              </div>
-            ))}
+          <div className="md:col-span-8">
+            <CostModelTiltCards />
           </div>
         </motion.div>
       </div>

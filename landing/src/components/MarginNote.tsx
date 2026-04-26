@@ -1,4 +1,11 @@
-import { motion, useScroll, type MotionValue } from "motion/react";
+import {
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useScroll,
+  useTransform,
+} from "motion/react";
+import type { MotionValue } from "motion/react";
 import { useEffect, useState, type ReactNode } from "react";
 
 interface MarginNoteProps {
@@ -44,15 +51,27 @@ export function MarginNote({
 }: MarginNoteProps) {
   const { scrollY } = useScroll();
   const [triggered, setTriggered] = useState(false);
+  const reduce = useReducedMotion() ?? false;
+  const safeProgress = scrollYProgress ?? useMotionValue(0.5);
 
   const useProgress = Boolean(scrollYProgress) && typeof revealAtProp === "number";
   const scrollAt = scrollAtProp ?? 70 + index * 160;
   const revealAt = revealAtProp ?? 0;
 
+  /** Fades 0 → 1 as hero `scrollYProgress` moves through a band before/after `revealAt` */
+  const scrollFadeOpacity = useTransform(
+    safeProgress,
+    useProgress && scrollYProgress
+      ? [Math.max(0, revealAt - 0.14), Math.min(1, revealAt + 0.1)]
+      : [0, 1],
+    useProgress && scrollYProgress ? [0, 1] : [1, 1],
+    { clamp: true },
+  );
+
   useEffect(() => {
     if (useProgress && scrollYProgress) {
       const check = (v: number) => {
-        if (v >= revealAt) setTriggered(true);
+        if (v >= Math.max(0, revealAt - 0.1)) setTriggered(true);
       };
       check(scrollYProgress.get());
       return scrollYProgress.on("change", check);
@@ -64,27 +83,39 @@ export function MarginNote({
     return scrollY.on("change", check);
   }, [useProgress, scrollYProgress, scrollY, revealAt, scrollAt]);
 
+  useEffect(() => {
+    if (reduce && useProgress) setTriggered(true);
+  }, [reduce, useProgress]);
+
+  const scrollDriven = !reduce && useProgress && Boolean(scrollYProgress);
+
   const fromRight = {
     atRest: { opacity: 0, x: 52 },
     active: { opacity: 1, x: 0 },
     t: { ...baseTransition, duration: 1.75 },
   } as const;
 
-  return (
+  const slideInAtRest = scrollDriven ? { x: 52 } : fromRight.atRest;
+  const slideInActive = scrollDriven ? { x: 0 } : fromRight.active;
+  const plainAtRest = scrollDriven ? { x: 20 } : { opacity: 0, x: 20 };
+  const plainActive = scrollDriven ? { x: 0, opacity: 1 } : { opacity: 1, x: 0 };
+  const plainInitial = scrollDriven ? { x: 20 } : { opacity: 0, x: 20 };
+
+  const inner = (
     <motion.div
-      initial={slideInFromRight ? fromRight.atRest : { opacity: 0, x: 20 }}
+      initial={slideInFromRight ? slideInAtRest : plainInitial}
       animate={
         triggered
           ? slideInFromRight
-            ? fromRight.active
-            : { opacity: 1, x: 0 }
+            ? slideInActive
+            : plainActive
           : slideInFromRight
-            ? fromRight.atRest
-            : { opacity: 0, x: 20 }
+            ? slideInAtRest
+            : plainAtRest
       }
       transition={slideInFromRight ? fromRight.t : { ...baseTransition, duration: 1.4, delay: 0 }}
       whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
-      className={`flex items-start gap-0 cursor-default select-none ${className}`}
+      className="flex cursor-default select-none items-start gap-0"
     >
       {arrow && (
         <div className="flex items-center shrink-0 mt-[1.0rem] mr-1.5">
@@ -139,7 +170,7 @@ export function MarginNote({
               ease: baseTransition.ease,
             }}
             className="font-sub tracking-[0.2em] uppercase mb-0.5"
-            style={{ fontSize: "0.52rem", color: "rgba(212,43,43,0.4)" }}
+            style={{ fontSize: "0.52rem", color: "rgba(212,43,43,0.55)" }}
           >
             {meta}
           </motion.div>
@@ -181,4 +212,17 @@ export function MarginNote({
       </div>
     </motion.div>
   );
+
+  if (scrollDriven) {
+    return (
+      <motion.div
+        className={`w-full min-w-0 ${className}`}
+        style={{ opacity: scrollFadeOpacity }}
+      >
+        {inner}
+      </motion.div>
+    );
+  }
+
+  return <div className={className}>{inner}</div>;
 }

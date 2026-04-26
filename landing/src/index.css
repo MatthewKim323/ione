@@ -6,17 +6,17 @@
   /* red-pencil correction accent, brass highlights. Like late-    */
   /* night studying with a leather notebook.                       */
 
-  --color-ink: #0c0a08;
-  --color-ink-deep: #161310;
-  --color-ink-line: #221d18;
-  --color-ink-raise: #1a1612;
+  --color-ink: #3d3635;
+  --color-ink-deep: #3d3635;
+  --color-ink-line: #3d3635;
+  --color-ink-raise: #3d3635;
 
   --color-paper: #f4ebd6;
   --color-paper-dim: #c7bda6;
   --color-paper-mute: #7a7164;
   --color-paper-faint: #4a463f;
-  /* Dark brown-grey — type on full-bleed video strips */
-  --color-bark: #3f3833;
+  /* Dark brown-grey — type on full-bleed video strips (aligned with primary ink) */
+  --color-bark: #3d3635;
 
   --color-red-pencil: #c4302b;
   --color-red-pencil-deep: #8d2422;
@@ -289,16 +289,6 @@
   }
   .hero-primary-cta.cta:hover::before {
     border-color: rgba(0, 0, 0, 0.12);
-  }
-
-  /* “see how it works” flower — one quick 360° on pointer enter (linear = instant start). */
-  .see-how-flower-spin {
-    animation: see-how-spin-once 0.36s linear 1;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .see-how-flower-spin {
-      animation: none;
-    }
   }
 
   .cta-ghost {
@@ -658,6 +648,75 @@
     transform: translateX(130%);
   }
 
+  /* Closer (#start): pair of default CTAs — hover inverts to neon, lift, active presses */
+  .glow-btn.glow-btn--closer {
+    transition:
+      transform 0.4s var(--ease-pencil),
+      box-shadow 0.4s var(--ease-pencil);
+  }
+  .glow-btn.glow-btn--closer:hover {
+    transform: translateY(-3px) scale(1.03);
+    background: linear-gradient(
+      155deg,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(191, 227, 42, 0.35) 45%,
+      rgba(100, 120, 40, 0.45) 100%
+    );
+    box-shadow:
+      0 0 0 1px rgba(191, 227, 42, 0.25) inset,
+      0 18px 44px -12px rgba(191, 227, 42, 0.38);
+  }
+  .glow-btn.glow-btn--closer:active {
+    transform: translateY(1px) scale(0.98);
+    transition-duration: 0.16s;
+    box-shadow:
+      0 0 0 1px rgba(191, 227, 42, 0.2) inset,
+      0 8px 20px -10px rgba(0, 0, 0, 0.35);
+  }
+  .glow-btn.glow-btn--closer:hover .glow-btn__face {
+    background: var(--color-neon);
+    color: var(--color-ink);
+    border-color: color-mix(in srgb, var(--color-neon) 55%, var(--color-ink) 45%);
+  }
+  .glow-btn.glow-btn--closer:hover .glow-btn__halo {
+    background: radial-gradient(
+      ellipse 70% 60% at 50% 45%,
+      rgba(191, 227, 42, 0.55) 0%,
+      rgba(191, 227, 42, 0.15) 48%,
+      transparent 72%
+    );
+    opacity: 0.75;
+    transform: scale(1.08);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .glow-btn.glow-btn--closer:hover,
+    .glow-btn.glow-btn--closer:active {
+      transform: none;
+    }
+  }
+
+  /* Hero (secondary) — “see how it works”: same neon / chartreuse language as .hero-primary-cta, pill not circle */
+  .glow-btn--see-how .glow-btn__face {
+    min-height: 2.5rem;
+    font-family: var(--font-sub);
+    font-size: 0.7rem;
+    line-height: 1.2;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background-image:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0) 50%),
+      linear-gradient(135deg, rgba(10, 12, 8, 0.78) 0%, rgba(20, 22, 16, 0.52) 100%);
+    background-color: rgba(8, 10, 6, 0.48);
+    border-color: rgba(191, 227, 42, 0.32);
+    color: var(--color-paper);
+  }
+  .glow-btn--see-how:hover .glow-btn__face {
+    color: var(--color-ink);
+    background: var(--color-neon);
+    background-image: none;
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+
   .glow-btn--hero {
     background: linear-gradient(
       155deg,
@@ -741,10 +800,10 @@
     color: var(--color-paper);
     border-color: rgba(74, 70, 63, 0.35);
   }
-  .glow-btn--on-light:hover .glow-btn__face {
-    background: var(--color-red-pencil);
-    border-color: var(--color-red-pencil);
-    color: var(--color-paper);
+  .glow-btn--on-light:not(.glow-btn--ghost):hover .glow-btn__face {
+    background: var(--color-paper);
+    color: var(--color-ink-deep);
+    border-color: var(--color-ink-line);
   }
   .glow-btn--on-light.glow-btn--ghost .glow-btn__face {
     background: rgba(255, 255, 255, 0.55);
@@ -759,15 +818,6 @@
 }
 
 /* ── Keyframes ──────────────────────────────────────────────── */
-@keyframes see-how-spin-once {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 @keyframes pencil-blink {
   0%,
   50% {

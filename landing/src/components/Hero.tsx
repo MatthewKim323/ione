@@ -1,5 +1,4 @@
-import { flushSync } from "react-dom";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import {
   useReducedMotion,
   useScroll,
@@ -8,44 +7,10 @@ import {
   type MotionValue,
 } from "motion/react";
 import { AnimatedNeonUnderlink } from "./AnimatedNeonUnderlink";
-import { FlowerCtaShape } from "./FlowerCtaShape";
 import { MarginNote } from "./MarginNote";
 import { EnterCTA } from "./EnterCTA";
-import { TextClipPathReveal, TextClipPathRevealLines } from "./TextClipPathReveal";
-
-/**
- * Flat neon L→R wipe (same as Closer) when the span scrolls into view; dark text on `bg-neon`.
- */
-function HeroNeonWipe({
-  children,
-  delay = 0,
-  reduced,
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  reduced: boolean;
-}) {
-  return (
-    <span className="relative inline-block">
-      <motion.span
-        aria-hidden
-        className="absolute -inset-x-0.5 -inset-y-0.5 -z-0"
-        initial={{ scaleX: reduced ? 1 : 0 }}
-        whileInView={{ scaleX: 1 }}
-        transition={{
-          duration: reduced ? 0 : 0.75,
-          delay: reduced ? 0 : delay,
-          ease: [0.16, 1, 0.3, 1],
-        }}
-        viewport={{ once: true, margin: "-8% 0px -5% 0px" }}
-        style={{ transformOrigin: "0% 50%" }}
-      >
-        <span className="block h-full w-full rounded-sm bg-neon" />
-      </motion.span>
-      <span className="relative z-10 text-ink [text-shadow:none]">{children}</span>
-    </span>
-  );
-}
+import { GlowButton } from "./design/GlowButton";
+import { TextClipPathRevealLines } from "./TextClipPathReveal";
 
 const MATH_LINES = [
   { i: 0, text: "problem 4.", kind: "label" as const },
@@ -60,8 +25,6 @@ const MATH_LINES = [
 ];
 
 export function Hero() {
-  const [seeHowSpin, setSeeHowSpin] = useState(0);
-  const reduced = useReducedMotion() ?? false;
   const heroRef = useRef<HTMLElement | null>(null);
   const { scrollYProgress: marginScrollYProgress } = useScroll({
     target: heroRef,
@@ -122,19 +85,13 @@ export function Hero() {
               lineClassName="block"
               lines={[
                 <>
-                  The one{" "}
-                  <HeroNeonWipe reduced={reduced} delay={0.5}>
-                    watches you do math on your iPad
-                  </HeroNeonWipe>{" "}
-                  and <span className="font-bold">intervenes</span> only when
+                  The one watches you do math on your iPad and{" "}
+                  <span className="font-bold">intervenes</span> only when
                   intervention will help. it is mostly silent. when it speaks, it
                 </>,
                 <>
                   asks the question that gets you <span className="font-bold">unstuck</span>{" "}
-                  — <HeroNeonWipe reduced={reduced} delay={0.9}>
-                    never the answer
-                  </HeroNeonWipe>
-                  .
+                  — never the answer.
                 </>,
               ]}
             />
@@ -146,97 +103,10 @@ export function Hero() {
             transition={{ delay: 0.7, duration: 0.6 }}
             className="mt-12 flex flex-wrap items-center gap-5"
           >
-            <EnterCTA className="hero-primary-cta" />
-            <a
-              href="#pipeline"
-              onPointerEnter={() => {
-                if (reduced) return;
-                flushSync(() => {
-                  setSeeHowSpin((k) => k + 1);
-                });
-              }}
-              className="group relative box-border inline-flex aspect-square w-max min-w-[10.25rem] min-h-[10.25rem] max-w-full shrink-0 items-center justify-center rounded-full p-3 no-underline transition-shadow duration-300 sm:min-w-[11.5rem] sm:min-h-[11.5rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neon/80 hover:shadow-[0_0_0_2px_rgba(191,227,42,0.65),0_0_28px_rgba(191,227,42,0.4)]"
-            >
-              <div
-                key={seeHowSpin}
-                className="see-how-flower-spin pointer-events-none absolute inset-1.5 will-change-transform sm:inset-2"
-                style={
-                  seeHowSpin === 0 || reduced
-                    ? { animation: "none" }
-                    : undefined
-                }
-                aria-hidden
-              >
-                <FlowerCtaShape
-                  variant="heroGreen"
-                  className="h-full w-full"
-                />
-              </div>
-              <span
-                className="relative z-10 max-w-[11ch] px-0.5 text-center text-[0.72rem] sm:text-[0.76rem] font-bold uppercase leading-[1.2] text-ink transition-colors duration-300 group-hover:text-ink/90"
-                style={{
-                  fontFamily: "var(--font-sub)",
-                  letterSpacing: "0.12em",
-                }}
-              >
-                see how
-                <br />
-                it works
-              </span>
-            </a>
-          </motion.div>
-
-          {/* tagline strip — horizontal progress bars (Framer-style track + fill) */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.05, duration: 0.6 }}
-            className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-y-6 sm:gap-y-0 gap-x-8 max-w-2xl border-t border-ink-line pt-6"
-          >
-            {[
-              ["silent observation", "watches, doesn't narrate"],
-              ["scaffolded hints", "questions, not answers"],
-              ["longitudinal memory", "remembers your stalls"],
-            ].map(([title, sub], i) => (
-              <div key={title} className="flex min-w-0 flex-col gap-2">
-                <TextClipPathRevealLines
-                  lineClassName="block"
-                  lines={[
-                    <div
-                      key="t"
-                      className="font-sub text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-ink font-bold"
-                    >
-                      <span className="text-red-pencil font-bold tabular-nums">
-                        {`0${i + 1}`}
-                      </span>
-                      <span className="ml-2">{title}</span>
-                    </div>,
-                  ]}
-                />
-                <div
-                  className="h-[2px] w-full overflow-hidden rounded-full"
-                  style={{ backgroundColor: "rgba(0,0,0,0.1)" }}
-                  aria-hidden
-                >
-                  <motion.div
-                    className="h-full w-full origin-left bg-red-pencil"
-                    initial={{ scaleX: 0 }}
-                    whileInView={{ scaleX: 1 }}
-                    viewport={{ once: true, amount: 0.6 }}
-                    transition={{
-                      delay: 0.08 * i,
-                      duration: 0.55,
-                      ease: [0.16, 1, 0.3, 1],
-                    }}
-                  />
-                </div>
-                <TextClipPathReveal
-                  text={sub}
-                  className="text-[11px] font-sub text-ink/55 leading-snug"
-                  lineClassName="block"
-                />
-              </div>
-            ))}
+            <EnterCTA className="glow-btn--see-how shrink-0 no-underline" />
+            <GlowButton as="a" href="#pipeline" className="glow-btn--see-how shrink-0 no-underline">
+              <span className="whitespace-nowrap font-bold sm:text-[0.72rem]">see how it works</span>
+            </GlowButton>
           </motion.div>
         </div>
 
@@ -349,8 +219,8 @@ function NotebookPage({
         />
       </div>
 
-      {/* margin annotations — editorial notes in the right margin */}
-      <div className="absolute right-0 z-10 sm:-right-0 md:-right-4 -translate-x-4 sm:-translate-x-5 md:-translate-x-7 top-20 sm:top-[5.25rem] flex flex-col gap-12 w-[185px]">
+      {/* margin annotations — +1 line (1.5rem) from prior offset; graph row height = 1.5rem */}
+      <div className="absolute right-0 z-10 sm:-right-0 md:-right-4 -translate-x-6 sm:-translate-x-7 md:-translate-x-9 top-[9.5rem] sm:top-[9.75rem] flex w-[185px] flex-col gap-12">
         <MarginNote
           meta="t = 0s"
           index={0}
@@ -387,8 +257,9 @@ function NotebookPage({
         </MarginNote>
       </div>
 
-      {/* tape strip / corner mark */}
-      <div className="absolute -top-3 left-12 w-20 h-5 bg-brass/15 border border-brass/30 rotate-[-3deg]" />
+      {/* tape — duplicate top + bottom, slightly darker */}
+      <div className="pointer-events-none absolute -top-3 left-12 h-5 w-20 rotate-[-3deg] border border-brass/42 bg-brass/28" />
+      <div className="pointer-events-none absolute -bottom-2 right-10 h-5 w-[5.5rem] rotate-[2.5deg] border border-brass/42 bg-brass/28 sm:right-12" />
     </motion.div>
   );
 }

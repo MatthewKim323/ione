@@ -54,12 +54,13 @@ export default function Signup() {
   if (needsConfirm) {
     return (
       <AuthLayout
+        dismissDeskClick
         meta="account / pending"
         title={<>check your inbox.</>}
         subtitle={
           <>
             we sent a confirmation link to <span className="text-ink-deep">{email}</span>.
-            click it and we'll pick right up.
+            click it and we&apos;ll pick right up.
           </>
         }
         footer={
@@ -72,8 +73,8 @@ export default function Signup() {
         }
       >
         <div className="font-sub text-xs text-paper-dim leading-relaxed">
-          if it doesn't show up in a minute or two, peek inside your spam
-          folder. ione's emails are quiet but they're real.
+          if it doesn&apos;t show up in a minute or two, peek inside your spam
+          folder. ione&apos;s emails are quiet but they&apos;re real.
         </div>
       </AuthLayout>
     );
@@ -81,6 +82,7 @@ export default function Signup() {
 
   return (
     <AuthLayout
+      dismissDeskClick
       meta="account / 001"
       title={
         <>
@@ -89,8 +91,8 @@ export default function Signup() {
       }
       subtitle={
         <>
-          ione watches your work and only intervenes when it'll help. first we
-          need to know who's at the desk.
+          ione watches your work and only intervenes when it&apos;ll help. first we
+          need to know who&apos;s at the desk.
         </>
       }
       footer={

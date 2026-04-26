@@ -33,14 +33,32 @@ export function Closer() {
         <div className="relative mx-auto max-w-[1380px] px-6 sm:px-10">
           <div className="grid grid-cols-1 items-end gap-x-12 gap-y-16 lg:grid-cols-12">
             <div className="lg:col-span-7">
-              <h2 className="h-display text-[clamp(3rem,8vw,8.4rem)] text-ink">
+              <h2 className="h-display !leading-[1.06] text-[clamp(3rem,8vw,8.4rem)] text-ink">
                 <TextClipPathRevealLines
-                  lineClassName="block"
+                  lineClassName="block pb-[0.2em] [text-rendering:optimizeLegibility]"
                   lines={[
                     "check the sign",
                     <>
-                      on <span style={{ fontStyle: "italic" }}>line three</span>
-                      <span className="text-neon">.</span>
+                      on{" "}
+                      <span className="relative z-0 inline-block italic">
+                        <motion.span
+                          aria-hidden
+                          className="absolute -left-2.5 right-0 -top-1.5 -bottom-1.5 -z-0"
+                          initial={{ scaleX: reduceMotion ? 1 : 0 }}
+                          whileInView={{ scaleX: 1 }}
+                          transition={{
+                            duration: reduceMotion ? 0 : 0.75,
+                            delay: reduceMotion ? 0 : 0.55,
+                            ease: [0.16, 1, 0.3, 1],
+                          }}
+                          viewport={{ once: true, margin: "-10% 0px -5% 0px" }}
+                          style={{ transformOrigin: "0% 50%" }}
+                        >
+                          <span className="block h-full w-full rounded-sm bg-neon" />
+                        </motion.span>
+                        <span className="relative z-10">line three</span>
+                      </span>
+                      <span className="text-ink">.</span>
                     </>,
                   ]}
                 />
@@ -84,8 +102,8 @@ export function Closer() {
                 transition={{ duration: 0.7, delay: 0.35 }}
                 className="mt-12 flex flex-wrap items-center gap-5"
               >
-                <EnterCTA />
-                <GlowButton as="link" to="/login" tone="ghost">
+                <EnterCTA className="glow-btn--closer" />
+                <GlowButton as="link" to="/login" className="glow-btn--closer">
                   already have an account?
                 </GlowButton>
               </motion.div>
@@ -162,7 +180,15 @@ export function Closer() {
   );
 }
 
+const SESSION_NAME_PARTS: readonly { k: string; t: string; italic?: boolean }[] = [
+  { k: "a", t: "ted," },
+  { k: "b", t: " " },
+  { k: "c", t: "16", italic: true },
+];
+
 function SessionCard() {
+  const reduce = useReducedMotion() ?? false;
+
   return (
     <div
       className={[
@@ -183,12 +209,36 @@ function SessionCard() {
         <span className="text-ink/50">28 min</span>
       </div>
 
-      <div
-        className="mb-4 text-[2.4rem] leading-none text-ink"
+      <motion.div
+        className="mb-4 text-[2.7rem] sm:text-[3rem] font-semibold leading-none text-ink"
         style={{ fontFamily: "var(--font-display)" }}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true, margin: "-8% 0px" }}
+        variants={{
+          hidden: {},
+          show: {
+            transition: { staggerChildren: reduce ? 0 : 0.1, delayChildren: reduce ? 0 : 0.04 },
+          },
+        }}
       >
-        ted, <span style={{ fontStyle: "italic" }}>15</span>
-      </div>
+        {SESSION_NAME_PARTS.map((p) => (
+          <motion.span
+            key={p.k}
+            variants={{
+              hidden: { opacity: reduce ? 1 : 0, x: reduce ? 0 : -18 },
+              show: {
+                opacity: 1,
+                x: 0,
+                transition: { duration: reduce ? 0 : 0.5, ease: [0.16, 1, 0.3, 1] },
+              },
+            }}
+            style={p.italic ? { fontStyle: "italic" } : undefined}
+          >
+            {p.t}
+          </motion.span>
+        ))}
+      </motion.div>
 
       <div className="font-sub text-[12px] leading-[1.8] text-ink/85">
         <Row k="frames captured" v="208" />

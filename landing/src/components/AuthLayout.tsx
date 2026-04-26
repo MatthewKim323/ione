@@ -1,7 +1,7 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
-import { useEffect } from "react";
-import type { ReactNode } from "react";
+import { useCallback, useEffect } from "react";
+import type { ReactNode, MouseEvent } from "react";
 
 /**
  * Shared chrome for /login, /signup, and /onboarding pages.
@@ -19,6 +19,7 @@ export function AuthLayout({
   children,
   footer,
   wide = false,
+  dismissDeskClick = false,
 }: {
   meta: string;
   title: ReactNode;
@@ -27,7 +28,28 @@ export function AuthLayout({
   footer?: ReactNode;
   /** Use the wider page format for steps with embedded panels (e.g. doc upload). */
   wide?: boolean;
+  /**
+   * Clicking the grey “desk” (outside the cream card + footer block) returns
+   * in history — used on /login for a light dismiss.
+   */
+  dismissDeskClick?: boolean;
 }) {
+  const navigate = useNavigate();
+
+  const onDeskClick = useCallback(
+    (e: MouseEvent<HTMLDivElement>) => {
+      if (!dismissDeskClick) return;
+      const n = e.target as Node;
+      const el = n instanceof Element ? n : n.parentElement;
+      if (!el) return;
+      if (el.closest("[data-auth-sheet]")) return;
+      if (el.closest("header")) return;
+      if (window.history.length > 1) navigate(-1);
+      else navigate("/");
+    },
+    [dismissDeskClick, navigate],
+  );
+
   // Match the landing page bg so the desk feels continuous across surfaces.
   useEffect(() => {
     const prevBody = document.body.style.backgroundColor;
@@ -41,8 +63,11 @@ export function AuthLayout({
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col desk-page">
-      <header className="px-6 sm:px-10 pt-6 sm:pt-8 flex items-center justify-between">
+    <div
+      className="desk-page flex min-h-screen flex-col pl-10 pr-6 sm:pl-20 sm:pr-10"
+      onClick={onDeskClick}
+    >
+      <header className="flex items-center justify-between pt-6 sm:pt-8">
         <Link
           to="/"
           className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute hover:text-ink-deep transition-colors"
@@ -61,15 +86,21 @@ export function AuthLayout({
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-6 sm:px-10 py-16">
+      <main className="flex min-h-0 flex-1 flex-col items-center justify-center py-16">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          className={`w-full ${wide ? "max-w-[680px]" : "max-w-[460px]"} relative`}
+          className={`h-fit w-full shrink-0 ${
+            wide ? "max-w-[680px]" : "max-w-[460px]"
+          } relative`}
         >
-          {/* the sheet of paper resting on the desk */}
-          <div className="notebook-card with-margin-rule ruled-paper-light px-8 py-10 sm:px-10 sm:py-12">
+          {/* the sheet of paper — only this + the link footer block “own” the sheet, not
+              the full-width motion wrapper, so desk clicks in <main> stay outside data-auth-sheet */}
+          <div
+            data-auth-sheet
+            className="notebook-card with-margin-rule ruled-paper-light py-10 pl-20 pr-8 sm:py-12 sm:pl-24 sm:pr-10"
+          >
             <div className="section-label-light mb-6">{meta}</div>
             <h1
               className="h-display-light text-[2.25rem] sm:text-[2.625rem] mb-3"
@@ -86,14 +117,17 @@ export function AuthLayout({
           </div>
 
           {footer && (
-            <div className="mt-6 text-center font-sub text-[11px] tracking-[0.14em] uppercase text-paper-mute">
+            <div
+              data-auth-sheet
+              className="mt-6 text-center font-sub text-[11px] tracking-[0.14em] uppercase text-paper-mute"
+            >
               {footer}
             </div>
           )}
         </motion.div>
       </main>
 
-      <footer className="px-6 sm:px-10 pb-6 font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute flex justify-between">
+      <footer className="flex justify-between pb-6 font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
         <span>© ione</span>
         <span>tutor in the margin</span>
       </footer>
