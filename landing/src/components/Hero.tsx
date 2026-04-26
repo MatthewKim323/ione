@@ -57,11 +57,14 @@ export function Hero() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.45, duration: 0.7 }}
-            className="mt-10 max-w-[42ch] text-ink/80 text-[15px] leading-[1.7] font-sub"
+            className="mt-10 max-w-[48ch] text-ink/80 text-[15px] leading-[1.7] font-sub"
           >
-            ione watches you do math on your iPad and intervenes only
-            when intervention will help. it is mostly silent. when it speaks,
-            it asks the question that gets you unstuck — never the answer.
+            The one watches you do math on your iPad and{" "}
+            <span className="font-bold text-white">intervenes</span> only
+            when intervention will help. it is mostly silent. when it
+            speaks, it asks the question that gets you{" "}
+            <span className="font-bold text-white">unstuck</span> — never the
+            answer.
           </motion.p>
 
           <motion.div
@@ -73,29 +76,25 @@ export function Hero() {
             <EnterCTA className="hero-primary-cta" />
             <a
               href="#pipeline"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: "120px",
-                height: "120px",
-                borderRadius: "50%",
-                background: "rgba(37, 99, 235, 0.18)",
-                border: "1px solid rgba(37, 99, 235, 0.5)",
-                color: "#000",
-                fontFamily: "var(--font-sub)",
-                fontSize: "0.6rem",
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                textAlign: "center",
-                lineHeight: 1.4,
-                padding: "0 16px",
-                textDecoration: "none",
-                transition: "background 0.3s ease",
-                backdropFilter: "blur(4px)",
-              }}
+              className="group relative flex h-[7.5rem] w-[7.5rem] shrink-0 items-center justify-center no-underline"
             >
-              see how<br />it works
+              <div
+                className="absolute inset-0 will-change-transform group-hover:animate-[spin_1.1s_linear_infinite] motion-reduce:group-hover:animate-none"
+                aria-hidden
+              >
+                <FlowerCtaShape className="h-full w-full" />
+              </div>
+              <span
+                className="relative z-10 w-[78%] text-center text-[0.6rem] font-bold uppercase leading-snug text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.35)]"
+                style={{
+                  fontFamily: "var(--font-sub)",
+                  letterSpacing: "0.16em",
+                }}
+              >
+                see how
+                <br />
+                it works
+              </span>
             </a>
           </motion.div>
 
@@ -165,6 +164,43 @@ export function Hero() {
         </motion.div>
       </div>
     </section>
+  );
+}
+
+/** Six-petal + center disk for “see how it works” (matches landing flower motif). */
+function FlowerCtaShape({ className = "" }: { className?: string }) {
+  const fill = "rgba(255,255,255,0.14)";
+  const stroke = "rgba(255,255,255,0.35)";
+  const petals = [0, 60, 120, 180, 240, 300].map((deg) => (
+    <ellipse
+      key={deg}
+      cx={50}
+      cy={24}
+      rx={11}
+      ry={20}
+      fill={fill}
+      stroke={stroke}
+      strokeWidth={0.6}
+      transform={`rotate(${deg} 50 50)`}
+    />
+  ));
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 100 100"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      {petals}
+      <circle
+        cx={50}
+        cy={50}
+        r={11}
+        fill={fill}
+        stroke={stroke}
+        strokeWidth={0.6}
+      />
+    </svg>
   );
 }
 

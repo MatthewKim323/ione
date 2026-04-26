@@ -4,10 +4,6 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 const BASE_W = 310;
 const BASE_H = 40;
 
-/**
- * Wavy paths (Y ~ 12–32 in 310×40 space), from Framer-style animated underlinks.
- * SVG scales to match text width without distorting the stroke.
- */
 const UNDERLINE_PATHS: readonly string[] = [
   "M5 20.9999C26.7762 16.2245 49.5532 11.5572 71.7979 14.6666C84.9553 16.5057 97.0392 21.8432 109.987 24.3888C116.413 25.6523 123.012 25.5143 129.042 22.6388C135.981 19.3303 142.586 15.1422 150.092 13.3333C156.799 11.7168 161.702 14.6225 167.887 16.8333C181.562 21.7212 194.975 22.6234 209.252 21.3888C224.678 20.0548 239.912 17.991 255.42 18.3055C272.027 18.6422 288.409 18.867 305 17.9999",
   "M4.99805 20.9998C65.6267 17.4649 126.268 13.845 187.208 12.8887C226.483 12.2723 265.751 13.2796 304.998 13.9998",
@@ -16,28 +12,35 @@ const UNDERLINE_PATHS: readonly string[] = [
 
 const PENCIL = [0.16, 1, 0.3, 1] as const;
 
+/** `once: true` is per *element instance*; `key` changes on hover so each new wave draws once. */
+const VIEWPORT = { once: true, amount: 0.2, margin: "0px 0px -12% 0px" } as const;
+
 type Props = {
   children: React.ReactNode;
   className?: string;
   viewDelay?: number;
+  /** Draw duration in seconds (default slower for readability). */
+  durationSec?: number;
   strokeWidth?: number;
   gap?: number;
 };
 
 /**
- * Hand-drawn neon stroke under text; animates in when scrolled into view; new wave on hover.
+ * Neon wavy underline: every path animates in when that stroke scrolls into view
+ * (or remounts in view, e.g. after hover). Uses Motion `whileInView` for scroll.
  */
+const DEFAULT_DRAW_SEC = 1.25;
+
 export function AnimatedNeonUnderlink({
   children,
   className = "",
   viewDelay = 0,
+  durationSec = DEFAULT_DRAW_SEC,
   strokeWidth = 3.25,
   gap = 3,
 }: Props) {
   const textRef = useRef<HTMLSpanElement>(null);
-  const rootRef = useRef<HTMLSpanElement>(null);
   const [w, setW] = useState(0);
-  const [inView, setInView] = useState(false);
   const [pathId, setPathId] = useState(0);
   const reduce = useReducedMotion();
   const id = useId();
@@ -59,32 +62,14 @@ export function AnimatedNeonUnderlink({
     return () => ro.disconnect();
   }, [update]);
 
-  useEffect(() => {
-    const el = rootRef.current;
-    if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const e of entries) {
-          if (e.isIntersecting) {
-            setInView(true);
-            return;
-          }
-        }
-      },
-      { threshold: 0.15, rootMargin: "0px 0px -5% 0px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-
   const h = w > 0 ? (w * BASE_H) / BASE_W : 0;
 
   return (
-    <span ref={rootRef} className="inline-flex max-w-full flex-col items-stretch [overflow:visible]">
+    <span className="inline-flex max-w-full flex-col items-stretch [overflow:visible]">
       <span ref={textRef} className={className}>
         {children}
       </span>
-      {inView && w > 0 && h > 0 && (
+      {w > 0 && h > 0 && (
         <span
           className="relative block w-full text-[var(--color-neon)]"
           style={{ marginTop: gap, height: h, minHeight: 8 }}
@@ -122,15 +107,20 @@ export function AnimatedNeonUnderlink({
                 filter: reduce ? undefined : `url(#${id}-glow)`,
                 strokeWidth,
               }}
-              initial={reduce ? { pathLength: 1 } : { pathLength: 0 }}
-              animate={{ pathLength: 1 }}
-              transition={{
-                pathLength: {
-                  delay: viewDelay,
-                  duration: reduce ? 0 : 0.65,
-                  ease: PENCIL,
-                },
-              }}
+              initial={reduce ? { pathLength: 1, opacity: 1 } : { pathLength: 0, opacity: 1 }}
+              whileInView={reduce ? { pathLength: 1, opacity: 1 } : { pathLength: 1, opacity: 1 }}
+              viewport={VIEWPORT}
+              transition={
+                reduce
+                  ? { duration: 0 }
+                  : {
+                      pathLength: {
+                        delay: pathId === 0 ? viewDelay : 0,
+                        duration: durationSec,
+                        ease: PENCIL,
+                      },
+                    }
+              }
             />
           </svg>
         </span>

@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { useEffect, useRef } from "react";
+import { AnimatedNeonUnderlink } from "./AnimatedNeonUnderlink";
 import { PipelineStepCarousel, type PipelineStep } from "./PipelineStepCarousel";
 import { SKIP_FX } from "../lib/prerender";
 
@@ -214,7 +215,15 @@ export function Pipeline() {
               >
                 <span className="block">from pixels</span>
                 <span className="block">
-                  to <span style={{ fontStyle: "italic" }}>insight</span>
+                  to{" "}
+                  <AnimatedNeonUnderlink
+                    className="text-bark [font-style:italic]"
+                    viewDelay={0.06}
+                    gap={5}
+                    durationSec={1.35}
+                  >
+                    insight
+                  </AnimatedNeonUnderlink>
                   <span className="text-neon">.</span>
                 </span>
               </motion.h2>
