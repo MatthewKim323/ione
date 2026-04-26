@@ -206,17 +206,17 @@ function NotebookPage() {
         />
       </div>
 
-      {/* margin annotations — positioned outside the page on the right */}
-      <div className="absolute -right-2 sm:-right-6 md:-right-14 top-12 space-y-12 w-[170px]">
-        <MarginNote meta="t = 0s" delay={1.4}>
+      {/* margin annotations — editorial notes in the right margin */}
+      <div className="absolute -right-3 sm:-right-8 md:-right-16 top-10 flex flex-col gap-10 w-[185px]">
+        <MarginNote meta="t = 0s" delay={1.4} tilt={-1.2}>
           silent.
         </MarginNote>
-        <MarginNote meta="t = 92s · stall" delay={1.7}>
+        <MarginNote meta="t = 92s · stall" delay={1.75} tilt={-2.1}>
           check the sign
           <br />
           on line three.
         </MarginNote>
-        <MarginNote meta="t = 148s · solved" delay={2.0}>
+        <MarginNote meta="t = 148s · solved" delay={2.05} tilt={-0.8}>
           nice — that&apos;s
           <br />
           it.

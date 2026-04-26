@@ -114,6 +114,7 @@
     font-family: var(--font-hand);
     color: var(--color-red-pencil);
     line-height: 1;
+    font-weight: 600;
   }
 
   /* Notebook / margin rule — vertical line that mimics a page edge */
@@ -286,6 +287,26 @@
 
 .ascii-breathe {
   animation: ascii-breathe 6s ease-in-out infinite;
+}
+
+/* Annotation glow pulse — applied to the live red notes */
+@keyframes annotation-glow {
+  0%, 100% {
+    text-shadow:
+      0 0 10px rgba(232, 41, 42, 0.35),
+      0 0 4px rgba(232, 41, 42, 0.2),
+      0 1px 4px rgba(0, 0, 0, 0.55);
+  }
+  50% {
+    text-shadow:
+      0 0 18px rgba(232, 41, 42, 0.65),
+      0 0 8px rgba(232, 41, 42, 0.4),
+      0 1px 4px rgba(0, 0, 0, 0.55);
+  }
+}
+
+.annotation-pulse {
+  animation: annotation-glow 3s ease-in-out infinite;
 }
 
 /* When ?nofx is in the URL, skip every motion-driven entrance so headless
