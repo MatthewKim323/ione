@@ -34,69 +34,79 @@ export function TitlePage() {
         />
       </motion.div>
 
-      {/* THE TITLE — IONE */}
+      {/* THE TITLE — IONE
+          Sketched-on entrance: the glyph reveals left → right via a
+          clip-path inset animation, with a yellow "pen-tip" glow that
+          tracks the writing edge and fades out at the end. */}
       <motion.h1
-        initial={{ opacity: 0, y: 18 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25, duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1, duration: 0.3 }}
         className="h-display"
         style={{
           fontSize: "clamp(7rem, 22vw, 22rem)",
           letterSpacing: "-0.04em",
           lineHeight: 0.9,
-          color: "#990257",
+          color: "#FFFFFF",
           fontStyle: "italic",
-          // Layered shadow: tight contact, mid carry, wide diffuse halo
-          // so the magenta wordmark detaches from the cream paper with
-          // real depth instead of just sitting on it.
+          // Layered shadow keeps white legible on cream paper.
           textShadow:
-            "0 1px 0 rgba(0,0,0,0.18)," +
-            " 0 6px 18px rgba(0,0,0,0.22)," +
-            " 0 18px 48px rgba(0,0,0,0.20)",
+            "0 1px 0 rgba(0,0,0,0.22)," +
+            " 0 6px 18px rgba(0,0,0,0.28)," +
+            " 0 18px 48px rgba(0,0,0,0.22)",
+          position: "relative",
+          display: "inline-block",
         }}
       >
-        {/* "i" rendered as ∫ — math integral with a tittle floating
-            directly above it, so the glyph still reads as a lowercase
-            "i" with the integral as its stem. */}
-        <span
-          aria-hidden
-          style={{
-            position: "relative",
-            display: "inline-block",
-            // Smaller integral so it reads more like a slim "i" stem
-            // alongside the regular-weight letters.
-            fontSize: "0.72em",
-            // Pull tighter to the rest of the wordmark — the integral
-            // has a generous left side-bearing in italic display fonts.
-            marginRight: "-0.04em",
-            // Drop it slightly so the smaller glyph still rests on the
-            // baseline of the adjacent lowercase letters.
-            transform: "translateY(0.18em)",
+        <motion.span
+          style={{ display: "inline-block", position: "relative" }}
+          // Inset clipping reveals the glyph left → right.
+          // -10% on the bottom keeps the integral's tail from being
+          // clipped by the inset's own bottom edge while animating.
+          initial={{ clipPath: "inset(-2% 100% -10% 0)" }}
+          animate={{ clipPath: "inset(-2% 0% -10% 0)" }}
+          transition={{
+            delay: 0.25,
+            duration: 1.7,
+            ease: [0.16, 1, 0.3, 1],
           }}
         >
-          ∫
-          {/* The "i" tittle — smaller and seated lower so it reads as a
-              proper lowercase i dot perched just above the integral. */}
+          {/* "i" rendered as ∫ — slightly smaller than the rest of the
+              letters with a tittle directly above so the whole glyph
+              reads as a proper lowercase i. */}
           <span
+            aria-hidden
             style={{
-              position: "absolute",
-              // Lower than before — closer to the top of the integral.
-              top: "-0.04em",
-              // Centered over the visual middle of the integral's stem.
-              left: "0.18em",
-              width: "0.16em",
-              height: "0.16em",
-              borderRadius: "9999px",
-              backgroundColor: "currentColor",
-              // Match the wordmark's layered shadow so the dot reads as
-              // part of the same glyph, not a floating decal.
-              boxShadow:
-                "0 1px 0 rgba(0,0,0,0.18)," +
-                " 0 6px 18px rgba(0,0,0,0.22)",
+              position: "relative",
+              display: "inline-block",
+              // Slightly smaller than the surrounding letters so the
+              // ∫ feels like a slim italic i stem, not a tall flourish.
+              fontSize: "0.88em",
+              marginRight: "-0.04em",
+              // Drop it so the smaller glyph's baseline aligns with
+              // the adjacent lowercase letters.
+              transform: "translateY(0.10em)",
             }}
-          />
-        </span>
-        <span aria-hidden>one</span>
+          >
+            ∫
+            {/* i-tittle — sized + placed where an italic lowercase i's
+                dot naturally sits in a display italic. */}
+            <span
+              style={{
+                position: "absolute",
+                top: "0.04em",
+                left: "0.40em",
+                width: "0.14em",
+                height: "0.14em",
+                borderRadius: "9999px",
+                backgroundColor: "currentColor",
+              }}
+            />
+          </span>
+          <span aria-hidden>one</span>
+          <span style={{ color: "#c4302b", fontStyle: "normal" }}>.</span>
+        </motion.span>
+
         {/* Accessible text for screen readers / SEO. */}
         <span
           style={{
@@ -109,9 +119,38 @@ export function TitlePage() {
             whiteSpace: "nowrap",
           }}
         >
-          ione
+          ione.
         </span>
-        <span style={{ color: "#c4302b", fontStyle: "normal" }}>.</span>
+
+        {/* Yellow "pen-tip" glow — tracks the right edge of the
+            reveal, then fades out as the title finishes. */}
+        <motion.span
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: "-2%",
+            bottom: "-12%",
+            width: "0.05em",
+            backgroundColor: "#FFD84A",
+            boxShadow:
+              "0 0 24px 8px rgba(255, 216, 74, 0.55)," +
+              " 0 0 60px 16px rgba(255, 200, 30, 0.30)",
+            borderRadius: "999px",
+            pointerEvents: "none",
+            filter: "blur(0.4px)",
+          }}
+          initial={{ left: "0%", opacity: 0 }}
+          animate={{
+            left: ["0%", "0%", "100%", "100%"],
+            opacity: [0, 1, 1, 0],
+          }}
+          transition={{
+            delay: 0.25,
+            duration: 1.7,
+            times: [0, 0.06, 0.92, 1],
+            ease: [0.16, 1, 0.3, 1],
+          }}
+        />
       </motion.h1>
 
       {/* SEMI-HEADER TAGLINE — cycling carousel in electric lime. */}
