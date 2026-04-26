@@ -9,6 +9,157 @@ const CAROUSEL_ITEMS = [
   "the page-respecter.",
 ];
 
+// ─── Handwriting choreography for the wordmark ────────────────────────
+// Each letter reveals via a clip-path inset.  Numbers below are tuned
+// so the cadence feels like a hand writing — quick downstrokes, brief
+// settle between letters, and the i-tittle popping in after the
+// integral stroke (the way a hand lifts to dot the i).
+const STROKE_START = 0.3; // seconds before the first stroke begins
+const STROKE_DUR = 0.42; // duration of a single letter stroke
+const STROKE_GAP = 0.12; // brief pause between letters (pen lifts)
+
+// Convenience: when does each letter start / end?
+function strokeAt(index: number) {
+  const start = STROKE_START + index * (STROKE_DUR + STROKE_GAP);
+  return { start, end: start + STROKE_DUR };
+}
+
+// Hand-like ease — a touch of acceleration at the start, settles at end.
+const HAND_EASE = [0.65, 0, 0.35, 1] as const;
+
+function HandwrittenWordmark() {
+  // Stroke order: ∫ stem, then o, n, e, then the period.
+  const integral = strokeAt(0);
+  const o = strokeAt(1);
+  const n = strokeAt(2);
+  const e = strokeAt(3);
+  const period = strokeAt(4);
+  // The i-tittle pops in just after the integral stroke completes.
+  const tittleAt = integral.end + 0.06;
+  // The whole writing window — used to time the moving pen tip.
+  const lastStrokeEnd = period.end;
+
+  // Each letter wrapper uses the same clip-path inset reveal, with
+  // -30% / -25% top/bottom buffers so the integral's top curl, the
+  // i-tittle, and the integral's bottom tail are never clipped.
+  const letterMotionProps = (start: number) => ({
+    initial: { clipPath: "inset(-30% 100% -25% 0)" },
+    animate: { clipPath: "inset(-30% 0% -25% 0)" },
+    transition: { delay: start, duration: STROKE_DUR, ease: HAND_EASE },
+    style: {
+      display: "inline-block",
+      position: "relative" as const,
+    },
+  });
+
+  return (
+    <span style={{ position: "relative", display: "inline-block" }}>
+      {/* "i" — integral as the stem, with a tittle that pops in after. */}
+      <motion.span {...letterMotionProps(integral.start)}>
+        <span
+          aria-hidden
+          style={{
+            position: "relative",
+            display: "inline-block",
+            fontSize: "0.88em",
+            marginRight: "-0.04em",
+            transform: "translateY(0.08em)",
+          }}
+        >
+          ∫
+        </span>
+      </motion.span>
+
+      {/* i-tittle — pops in (scale + opacity) after the integral stroke,
+          like a hand lifting to dot the i. */}
+      <motion.span
+        aria-hidden
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{
+          delay: tittleAt,
+          duration: 0.22,
+          // Slight overshoot for a written-by-hand bounce.
+          ease: [0.34, 1.56, 0.64, 1],
+        }}
+        style={{
+          position: "absolute",
+          // Match the i-tittle position from the static layout.  The
+          // 0.88em fontSize on the integral wrapper means these em
+          // values resolve in the title's outer font-size since this
+          // span lives outside that inner wrapper — adjust if needed.
+          top: "-0.10em",
+          left: "0.18em",
+          width: "0.13em",
+          height: "0.13em",
+          borderRadius: "9999px",
+          backgroundColor: "currentColor",
+          transformOrigin: "50% 50%",
+        }}
+      />
+
+      {/* o */}
+      <motion.span {...letterMotionProps(o.start)}>
+        <span aria-hidden>o</span>
+      </motion.span>
+
+      {/* n */}
+      <motion.span {...letterMotionProps(n.start)}>
+        <span aria-hidden>n</span>
+      </motion.span>
+
+      {/* e */}
+      <motion.span {...letterMotionProps(e.start)}>
+        <span aria-hidden>e</span>
+      </motion.span>
+
+      {/* . — accent red, drawn last */}
+      <motion.span
+        {...letterMotionProps(period.start)}
+        style={{
+          ...letterMotionProps(period.start).style,
+          color: "#c4302b",
+          fontStyle: "normal",
+        }}
+      >
+        .
+      </motion.span>
+
+      {/* Yellow "pen-tip" glow — moves left → right across the writing
+          window, fades in at the start and out as the last stroke
+          finishes.  Reads as the highlighter actually drawing the
+          letters. */}
+      <motion.span
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: "-6%",
+          bottom: "-14%",
+          width: "0.05em",
+          backgroundColor: "#FFD84A",
+          boxShadow:
+            "0 0 24px 8px rgba(255, 216, 74, 0.55)," +
+            " 0 0 60px 16px rgba(255, 200, 30, 0.30)",
+          borderRadius: "999px",
+          pointerEvents: "none",
+          filter: "blur(0.4px)",
+        }}
+        initial={{ left: "0%", opacity: 0 }}
+        animate={{
+          left: ["0%", "0%", "100%", "100%"],
+          opacity: [0, 1, 1, 0],
+        }}
+        transition={{
+          delay: integral.start,
+          duration: lastStrokeEnd - integral.start,
+          times: [0, 0.05, 0.92, 1],
+          ease: HAND_EASE,
+        }}
+      />
+    </span>
+  );
+}
+
 export function TitlePage() {
   return (
     <section
@@ -35,13 +186,15 @@ export function TitlePage() {
       </motion.div>
 
       {/* THE TITLE — IONE
-          Sketched-on entrance: the glyph reveals left → right via a
-          clip-path inset animation, with a yellow "pen-tip" glow that
-          tracks the writing edge and fades out at the end. */}
+          Per-letter handwriting reveal: each glyph is its own clip-path
+          inset that animates in sequence with a hand-like ease, so it
+          reads as the title being *written* rather than swept onto the
+          page.  The i-tittle pops in AFTER the integral's stroke
+          finishes — the way a hand lifts to dot the i. */}
       <motion.h1
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.1, duration: 0.3 }}
+        transition={{ delay: 0.1, duration: 0.25 }}
         className="h-display"
         style={{
           fontSize: "clamp(7rem, 22vw, 22rem)",
@@ -49,70 +202,16 @@ export function TitlePage() {
           lineHeight: 0.9,
           color: "#FFFFFF",
           fontStyle: "italic",
-          // Layered shadow keeps white legible on cream paper.
           textShadow:
             "0 1px 0 rgba(0,0,0,0.22)," +
             " 0 6px 18px rgba(0,0,0,0.28)," +
             " 0 18px 48px rgba(0,0,0,0.22)",
           position: "relative",
           display: "inline-block",
-          // Don't clip the i-tittle (which sits well above the line box)
-          // or the integral's tail (which dips below the baseline).
           overflow: "visible",
         }}
       >
-        <motion.span
-          style={{ display: "inline-block", position: "relative" }}
-          // Inset reveals the glyph left → right.  The negative
-          // top/bottom buffers (-30% / -25%) keep the integral's top
-          // curl, the i-tittle, and the integral's bottom tail from
-          // ever being clipped while the inset animates inward.
-          initial={{ clipPath: "inset(-30% 100% -25% 0)" }}
-          animate={{ clipPath: "inset(-30% 0% -25% 0)" }}
-          transition={{
-            delay: 0.25,
-            duration: 1.7,
-            ease: [0.16, 1, 0.3, 1],
-          }}
-        >
-          {/* "i" rendered as ∫ — slightly smaller than the rest of the
-              letters with a tittle directly above so the whole glyph
-              reads as a proper lowercase i. */}
-          <span
-            aria-hidden
-            style={{
-              position: "relative",
-              display: "inline-block",
-              // Slightly smaller than the surrounding letters so the
-              // ∫ feels like a slim italic i stem, not a tall flourish.
-              fontSize: "0.88em",
-              marginRight: "-0.04em",
-              // Drop a touch so the smaller integral's baseline aligns
-              // with the adjacent lowercase letters.
-              transform: "translateY(0.08em)",
-            }}
-          >
-            ∫
-            {/* i-tittle — sits clearly above the integral's top curl
-                with a real visual gap, so the glyph unambiguously
-                reads as a lowercase i with ∫ as its stem. */}
-            <span
-              style={{
-                position: "absolute",
-                // Negative top lifts the dot above the integral's top.
-                top: "-0.18em",
-                // Italic i tittles lean right of the stem.
-                left: "0.22em",
-                width: "0.15em",
-                height: "0.15em",
-                borderRadius: "9999px",
-                backgroundColor: "currentColor",
-              }}
-            />
-          </span>
-          <span aria-hidden>one</span>
-          <span style={{ color: "#c4302b", fontStyle: "normal" }}>.</span>
-        </motion.span>
+        <HandwrittenWordmark />
 
         {/* Accessible text for screen readers / SEO. */}
         <span
@@ -128,36 +227,6 @@ export function TitlePage() {
         >
           ione.
         </span>
-
-        {/* Yellow "pen-tip" glow — tracks the right edge of the
-            reveal, then fades out as the title finishes. */}
-        <motion.span
-          aria-hidden
-          style={{
-            position: "absolute",
-            top: "-2%",
-            bottom: "-12%",
-            width: "0.05em",
-            backgroundColor: "#FFD84A",
-            boxShadow:
-              "0 0 24px 8px rgba(255, 216, 74, 0.55)," +
-              " 0 0 60px 16px rgba(255, 200, 30, 0.30)",
-            borderRadius: "999px",
-            pointerEvents: "none",
-            filter: "blur(0.4px)",
-          }}
-          initial={{ left: "0%", opacity: 0 }}
-          animate={{
-            left: ["0%", "0%", "100%", "100%"],
-            opacity: [0, 1, 1, 0],
-          }}
-          transition={{
-            delay: 0.25,
-            duration: 1.7,
-            times: [0, 0.06, 0.92, 1],
-            ease: [0.16, 1, 0.3, 1],
-          }}
-        />
       </motion.h1>
 
       {/* SEMI-HEADER TAGLINE — cycling carousel in electric lime. */}
