@@ -239,6 +239,18 @@ function FlowerBackground() {
         ref={canvasRef}
         style={{ display: "block", width: "100%", height: "100%" }}
       />
+      {/* Dim overlay — sits on top of the flowers (still inside the
+          wrapper) so it fades out together with them on scroll, leaving
+          the rest of the page un-darkened once they're gone. */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.32)",
+          pointerEvents: "none",
+        }}
+      />
     </div>
   );
 }

@@ -44,7 +44,7 @@ export function TitlePage() {
           fontSize: "clamp(7rem, 22vw, 22rem)",
           letterSpacing: "-0.04em",
           lineHeight: 0.9,
-          color: "#D9027D",
+          color: "#990257",
           fontStyle: "italic",
           // Layered shadow: tight contact, mid carry, wide diffuse halo
           // so the magenta wordmark detaches from the cream paper with
@@ -63,24 +63,29 @@ export function TitlePage() {
           style={{
             position: "relative",
             display: "inline-block",
+            // Smaller integral so it reads more like a slim "i" stem
+            // alongside the regular-weight letters.
+            fontSize: "0.72em",
             // Pull tighter to the rest of the wordmark — the integral
             // has a generous left side-bearing in italic display fonts.
-            marginRight: "-0.06em",
-            transform: "translateY(0.04em)",
+            marginRight: "-0.04em",
+            // Drop it slightly so the smaller glyph still rests on the
+            // baseline of the adjacent lowercase letters.
+            transform: "translateY(0.18em)",
           }}
         >
           ∫
-          {/* The "i" tittle — sits clearly above the top of the integral
-              curl, sized to read as a proper lowercase i dot. */}
+          {/* The "i" tittle — smaller and seated lower so it reads as a
+              proper lowercase i dot perched just above the integral. */}
           <span
             style={{
               position: "absolute",
-              // Comfortably above the top of the integral character.
-              top: "-0.22em",
+              // Lower than before — closer to the top of the integral.
+              top: "-0.04em",
               // Centered over the visual middle of the integral's stem.
-              left: "0.20em",
-              width: "0.22em",
-              height: "0.22em",
+              left: "0.18em",
+              width: "0.16em",
+              height: "0.16em",
               borderRadius: "9999px",
               backgroundColor: "currentColor",
               // Match the wordmark's layered shadow so the dot reads as
