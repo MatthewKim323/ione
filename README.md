@@ -1,73 +1,39 @@
 # ione
 
-The AI tutor that lives in the margin of your page. A live web-based math tutor that watches you work in real time, intervenes only when it'll actually help, and remembers what you specifically struggle with across sessions.
-
-> **Hackathon tracks:** Education · Best Use of AI/ML · Best Use of Auth0 AI Agents · Best Use of Backboard
+AI math tutor in the margin: screen-aware sessions, agent pipeline (OCR → reasoning → intervention), optional voice (ElevenLabs), and a **Supabase-backed knowledge graph** grounded in files the learner uploads.
 
 ---
 
-## Project Structure
+## Repository layout
 
-```
-ione/
-├── app/                 Next.js 16 App Router (routes only — pages + API handlers)
-│   ├── tutor/           The live tutoring surface
-│   ├── dashboard/       Patterns, sessions, parent/teacher views
-│   └── api/             Server route handlers (process-frame, start-session, etc.)
-│
-├── frontend/            Client-side code imported by app/
-│   ├── components/      React components (ui/, tutor/, dashboard/)
-│   ├── hooks/           React hooks
-│   ├── lib/             capture.ts, diff.ts, loop.ts (browser-only)
-│   └── styles/          globals.css, design tokens
-│
-├── backend/             Server-only services imported by app/api/
-│   ├── auth/            Auth0 client + FGA client
-│   ├── integrations/    Mathpix, Anthropic, ElevenLabs, Backboard
-│   └── db/              Postgres schema + client (user → assistant mapping)
-│
-├── agents/              The 3-agent system (prompts + call logic)
-│   ├── ocr/             Page-understanding agent (vision + Mathpix)
-│   ├── reasoning/       Canonical solution + evaluate student work
-│   └── intervention/    Decides whether to speak, what to say
-│
-├── shared/              Types and constants shared across frontend/backend
-├── scripts/             One-offs (demo seeding, FGA migrations)
-├── public/              Static assets
-│
-├── middleware.ts        Auth0 routes auto-mounted at /auth/*
-├── next.config.ts       (TBD)
-├── package.json         (TBD)
-└── .env.local.example   Env var template
-```
+| Path | Role |
+|------|------|
+| **`landing/`** | Vite + React + Tailwind v4 — deploy this to **Vercel** (`Root Directory: landing`). |
+| **`api/`** | Hono API (`/api/cycle`, sessions, sources/extract, audio, transcribe). Deploy separately (Fly, Render, etc.). |
+| **`supabase/migrations/`** | Postgres + RLS + storage policies. |
+| **`scripts/`** | Utilities (e.g. `verify-kg.mjs`). |
 
-## The 3-agent pipeline
+Design tokens and UI rules: **`DESIGN.md`**.
 
-1. **OCR Agent** — screenshot + Mathpix LaTeX → structured page state JSON
-2. **Reasoning Agent** — two calls: cache canonical solution, then evaluate student work
-3. **Intervention Agent** — decides *whether to speak*, biased hard toward silence
+---
 
-See `agents/*/README.md` for per-agent details.
+## Quick start (local)
 
-## Stack
+1. **Supabase**: create a project, run migrations `0001` → `0007` in order in the SQL editor. See **`SETUP.md`**.
+2. **Env**: copy `landing/.env.local.example` → `landing/.env.local` and repo-root `.env.local.example` → `.env.local` (API secrets).
+3. **Run**:
+   ```bash
+   cd api && npm install && npm run dev    # http://localhost:8787
+   cd landing && npm install && npm run dev # http://localhost:5234
+   ```
 
-- **Next.js 16** (App Router, single deployable)
-- **Auth0 v4** (identity, Token Vault for Drive sync, FGA for parent/teacher views)
-- **Anthropic Claude Sonnet 4.5** (vision + reasoning)
-- **Mathpix v3/text** (LaTeX OCR)
-- **ElevenLabs Flash v2.5** (streaming TTS)
-- **Backboard** (longitudinal struggle-pattern memory)
-- **Recharts** (dashboard sparklines)
+---
 
-## Development
+## Production: Vercel + API
 
-```bash
-# Setup (TBD)
-npm install
-cp .env.local.example .env.local
-# Fill in keys
-npm run dev
-```
+Step-by-step for hosting the **landing** app on Vercel and wiring a **remote API**: **`VERCEL.md`**.
+
+---
 
 ## License
 
