@@ -10,14 +10,16 @@ export type PipelineStep = {
   color: "paper-dim" | "brass" | "moss" | "red-pencil";
 };
 
-/* Match .floating-nav--light: warm parchment shell + ink dots (Start / Demo / How dock) */
+/* File body matches landing desk; top tabs stay parchment (active = file surface, not bark) */
 const FILE = {
   surface: "bg-[#e4ded2]",
-  tabActive: "bg-[#e4ded2]",
-  tabIdle: "bg-[#cec6ba]",
   border: "border-ink/15",
   text: "text-ink",
   sub: "text-ink/70",
+  tabIdle:
+    "bg-[#c8c1b3] text-ink/80 hover:bg-[#d2cbc0] border-ink/12 border-b-0",
+  tabActive:
+    "z-20 border-b-0 border-ink/20 bg-[#e4ded2] text-ink shadow-[0_1px_0_rgba(255,255,255,0.45)_inset]",
 } as const;
 
 const PENCIL = [0.16, 1, 0.3, 1] as const;
@@ -45,13 +47,13 @@ function StageFlower({ className }: { className?: string }) {
           <ellipse
             key={deg}
             cx="0"
-            cy="-3.1"
-            rx="2.1"
-            ry="3.25"
+            cy="-3.25"
+            rx="2.35"
+            ry="3.45"
             transform={`rotate(${deg})`}
           />
         ))}
-        <circle r="1.5" />
+        <circle r="1.65" />
       </g>
     </svg>
   );
@@ -132,27 +134,28 @@ export function PipelineStepCarousel({ steps }: Props) {
                 role="tab"
                 aria-selected={active}
                 className={[
-                  "relative z-0 max-w-[8.5rem] shrink-0 rounded-t-md border border-b-0 px-2.5 py-2 text-left transition-[background-color,box-shadow] sm:max-w-none sm:rounded-t-lg sm:px-3.5 sm:py-2.5",
-                  FILE.border,
-                  "shadow-[0_1px_0_rgba(255,255,255,0.35)_inset]",
-                  active
-                    ? `z-20 ${FILE.tabActive} text-ink`
-                    : `${FILE.tabIdle} text-ink/75 hover:bg-[#d4ccc0]`,
+                  "relative z-0 max-w-[8.5rem] shrink-0 rounded-t-md px-2.5 py-2 text-left transition-[background-color,border-color,color,box-shadow] sm:max-w-none sm:rounded-t-lg sm:px-3.5 sm:py-2.5",
+                  "border border-b-0",
+                  active ? FILE.tabActive : FILE.tabIdle,
                 ].join(" ")}
               >
                 <span
-                  className={`inline-block shrink-0 align-middle ${
+                  className={`inline-flex shrink-0 items-center align-middle ${
                     active
-                      ? "text-neon drop-shadow-[0_0_0_1px_rgba(0,0,0,0.05)]"
-                      : "text-neon/45 hover:text-neon/80"
+                      ? "text-neon"
+                      : "text-neon/60 hover:text-neon"
                   }`}
                 >
-                  <StageFlower className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                  <StageFlower className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 </span>
                 <span className="ml-1.5 font-mono text-[8px] leading-tight tracking-[0.08em] uppercase sm:ml-2 sm:text-[9px] sm:tracking-[0.1em]">
-                  <span className={active ? "text-ink/55" : "text-ink/45"}>{s.n}_</span>
+                  <span className={active ? "text-ink/45" : "text-ink/40"}>
+                    {s.n}_
+                  </span>
                   <span className="text-bark font-bold">{s.name}</span>
-                  <span className={active ? "text-ink/50" : "text-ink/40"}>.json</span>
+                  <span className={active ? "text-ink/38" : "text-ink/35"}>
+                    .json
+                  </span>
                 </span>
               </button>
             );
@@ -334,8 +337,12 @@ function Controls({
     viewport: { once: true, amount: 0.3 },
   });
 
-  const chrome =
-    "inline-flex h-11 shrink-0 items-center justify-center rounded-md border border-ink/15 bg-[#e4ded2] text-ink/55 font-sub text-[11px] tracking-[0.16em] uppercase transition-colors hover:border-ink hover:bg-ink hover:text-white";
+  const chromeBase =
+    "inline-flex h-11 shrink-0 items-center justify-center rounded-md border font-sub text-[11px] tracking-[0.16em] uppercase transition-[background-color,border-color,color,box-shadow]";
+  const chromeIdle =
+    "border-ink/15 bg-[#e4ded2] text-ink/50 hover:border-ink/25 hover:bg-[#d8d0c4] hover:text-ink/75";
+  const chromeActive =
+    "border-bark/35 bg-bark shadow-[0_0_20px_rgba(191,227,42,0.28),inset_0_1px_0_rgba(255,255,255,0.1)]";
 
   return (
     <div
@@ -345,7 +352,7 @@ function Controls({
     >
       <motion.button
         type="button"
-        className={`${chrome} min-w-[6.5rem] px-3`}
+        className={`${chromeBase} ${chromeIdle} min-w-[6.5rem] px-3`}
         onClick={onPrev}
         aria-label="Previous stage"
         {...ltrMotion(0)}
@@ -361,19 +368,18 @@ function Controls({
           aria-label={`${s.name}, stage ${s.n}`}
           onClick={() => onSelect(i)}
           className={[
-            `${chrome} w-11 p-0`,
-            i === index
-              ? "text-ink ring-2 ring-ink/25 ring-offset-2 ring-offset-[#e4ded2] hover:text-white"
-              : "text-ink/40 hover:text-ink/60",
+            `${chromeBase} w-11 p-0`,
+            i === index ? chromeActive : chromeIdle,
+            i === index ? "text-neon" : "text-ink/40",
           ].join(" ")}
           {...ltrMotion(1 + i)}
         >
-          <StageFlower className="h-4 w-4" />
+          <StageFlower className="h-5 w-5" />
         </motion.button>
       ))}
       <motion.button
         type="button"
-        className={`${chrome} min-w-[6.5rem] px-3`}
+        className={`${chromeBase} ${chromeIdle} min-w-[6.5rem] px-3`}
         onClick={onNext}
         aria-label="Next stage"
         {...ltrMotion(1 + n)}

@@ -109,7 +109,8 @@ const STEPS: readonly PipelineStep[] = [
     sub: "vision + mathpix",
     body: "Sonnet sees the page and emits a structured page state — problem text, the canonical setup, every line of student work, what's circled, what's crossed out.",
     out: "page_state.json · t≈420ms",
-    color: "brass",
+    /* Same file-stack tint as capture (brass was too separate from 01) */
+    color: "paper-dim",
   },
   {
     n: "03",
@@ -161,7 +162,7 @@ export function Pipeline() {
                 />
               </h2>
             </div>
-            <div className="pt-0 lg:col-span-5 lg:pt-14">
+            <div className="pt-10 sm:pt-12 lg:col-span-5 lg:pt-28">
               <div className="text-bark/95 text-sm sm:text-base font-sub font-bold leading-[1.75] tracking-[0.1em] drop-shadow-[0_1px_1px_rgba(255,255,255,0.4)]">
                 <TextClipPathRevealLines
                   lineClassName="block"
