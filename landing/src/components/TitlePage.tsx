@@ -1,7 +1,5 @@
 import { motion } from "motion/react";
 import { TextCarousel } from "./TextCarousel";
-// @ts-expect-error — GhostCursor is a JSX file w/o type defs.
-import GhostCursor from "./GhostCursor";
 
 const CAROUSEL_ITEMS = [
   "the tutor in the margin.",
@@ -169,36 +167,6 @@ export function TitlePage() {
       className="relative min-h-screen flex flex-col items-center justify-center px-6 sm:px-10 text-center"
       style={{ minHeight: "100vh" }}
     >
-      {/* Watercolor cursor — blue-purple smear that follows the pointer
-          across the title page. mixBlendMode "screen" lightens whatever
-          it passes over, so the white wordmark + supporting text stay
-          legible. */}
-      <GhostCursor
-        color="#8B7CFF"
-        brightness={1.15}
-        edgeIntensity={0}
-        trailLength={60}
-        inertia={0.55}
-        bloomStrength={0.25}
-        bloomRadius={1.0}
-        bloomThreshold={0.02}
-        grainIntensity={0.04}
-        fadeDelayMs={900}
-        fadeDurationMs={1600}
-        mixBlendMode="screen"
-        zIndex={5}
-      />
-
-      {/* All the section contents stack ABOVE the GhostCursor canvas
-          (which sits at zIndex 5) so they remain readable.  The cursor
-          still blends underneath via mix-blend-mode.  This wrapper
-          re-establishes the column flex layout the section had before
-          the GhostCursor canvas was nested inside. */}
-      <div
-        className="relative flex flex-col items-center w-full"
-        style={{ zIndex: 6 }}
-      >
-
       {/* tiny meta line — same eyebrow style as the hero */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -302,15 +270,13 @@ export function TitlePage() {
         remembers what you specifically struggle with — across every session.
       </motion.p>
 
-      </div>
-
       {/* scroll cue */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.4, duration: 0.6 }}
         className="absolute bottom-10 left-1/2 -translate-x-1/2 font-mono text-[10px] tracking-[0.28em] uppercase flex flex-col items-center gap-2"
-        style={{ color: "rgba(255,255,255,0.75)", zIndex: 6 }}
+        style={{ color: "rgba(255,255,255,0.75)" }}
       >
         <span>scroll</span>
         <span
