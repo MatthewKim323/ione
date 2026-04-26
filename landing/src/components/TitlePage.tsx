@@ -172,17 +172,21 @@ export function TitlePage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1, duration: 0.6 }}
-        className="font-mono text-[10px] tracking-[0.32em] uppercase mb-10 flex items-center gap-3 justify-center"
-        style={{ color: "rgba(255,255,255,0.85)" }}
+        className="text-[10px] tracking-[0.32em] uppercase mb-10 flex items-center gap-3 justify-center"
+        style={{
+          color: "#FFFFFF",
+          fontFamily: "'Poppins', system-ui, sans-serif",
+          fontWeight: 500,
+        }}
       >
         <span
           className="inline-block h-px w-10"
-          style={{ background: "rgba(255,255,255,0.55)" }}
+          style={{ background: "rgba(255,255,255,0.7)" }}
         />
         <span>an AI math tutor · est. 2026</span>
         <span
           className="inline-block h-px w-10"
-          style={{ background: "rgba(255,255,255,0.55)" }}
+          style={{ background: "rgba(255,255,255,0.7)" }}
         />
       </motion.div>
 
@@ -247,7 +251,7 @@ export function TitlePage() {
           items={CAROUSEL_ITEMS}
           interval={2600}
           style={{
-            color: "rgba(255,255,255,0.92)",
+            color: "#FFFFFF",
           }}
         />
       </motion.h2>
@@ -257,13 +261,15 @@ export function TitlePage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.85, duration: 0.7 }}
-        className="mt-10 sm:mt-12 font-mono mx-auto"
+        className="mt-10 sm:mt-12 mx-auto"
         style={{
           fontSize: "13px",
           letterSpacing: "0.02em",
           lineHeight: 1.7,
-          color: "rgba(255,255,255,0.85)",
+          color: "#FFFFFF",
           maxWidth: "52ch",
+          fontFamily: "'Poppins', system-ui, sans-serif",
+          fontWeight: 700,
         }}
       >
         watches you do math, intervenes only when intervention helps, and
@@ -275,15 +281,19 @@ export function TitlePage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.4, duration: 0.6 }}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 font-mono text-[10px] tracking-[0.28em] uppercase flex flex-col items-center gap-2"
-        style={{ color: "rgba(255,255,255,0.75)" }}
+        className="absolute bottom-10 left-1/2 -translate-x-1/2 text-[10px] tracking-[0.28em] uppercase flex flex-col items-center gap-2"
+        style={{
+          color: "#FFFFFF",
+          fontFamily: "'Poppins', system-ui, sans-serif",
+          fontWeight: 500,
+        }}
       >
         <span>scroll</span>
         <span
           className="inline-block w-px h-8"
           style={{
             background:
-              "linear-gradient(to bottom, rgba(255,255,255,0.6), rgba(255,255,255,0))",
+              "linear-gradient(to bottom, rgba(255,255,255,0.7), rgba(255,255,255,0))",
           }}
         />
       </motion.div>
