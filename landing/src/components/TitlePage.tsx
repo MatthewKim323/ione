@@ -56,15 +56,19 @@ export function TitlePage() {
             " 0 18px 48px rgba(0,0,0,0.22)",
           position: "relative",
           display: "inline-block",
+          // Don't clip the i-tittle (which sits well above the line box)
+          // or the integral's tail (which dips below the baseline).
+          overflow: "visible",
         }}
       >
         <motion.span
           style={{ display: "inline-block", position: "relative" }}
-          // Inset clipping reveals the glyph left → right.
-          // -10% on the bottom keeps the integral's tail from being
-          // clipped by the inset's own bottom edge while animating.
-          initial={{ clipPath: "inset(-2% 100% -10% 0)" }}
-          animate={{ clipPath: "inset(-2% 0% -10% 0)" }}
+          // Inset reveals the glyph left → right.  The negative
+          // top/bottom buffers (-30% / -25%) keep the integral's top
+          // curl, the i-tittle, and the integral's bottom tail from
+          // ever being clipped while the inset animates inward.
+          initial={{ clipPath: "inset(-30% 100% -25% 0)" }}
+          animate={{ clipPath: "inset(-30% 0% -25% 0)" }}
           transition={{
             delay: 0.25,
             duration: 1.7,
@@ -83,21 +87,24 @@ export function TitlePage() {
               // ∫ feels like a slim italic i stem, not a tall flourish.
               fontSize: "0.88em",
               marginRight: "-0.04em",
-              // Drop it so the smaller glyph's baseline aligns with
-              // the adjacent lowercase letters.
-              transform: "translateY(0.10em)",
+              // Drop a touch so the smaller integral's baseline aligns
+              // with the adjacent lowercase letters.
+              transform: "translateY(0.08em)",
             }}
           >
             ∫
-            {/* i-tittle — sized + placed where an italic lowercase i's
-                dot naturally sits in a display italic. */}
+            {/* i-tittle — sits clearly above the integral's top curl
+                with a real visual gap, so the glyph unambiguously
+                reads as a lowercase i with ∫ as its stem. */}
             <span
               style={{
                 position: "absolute",
-                top: "0.04em",
-                left: "0.40em",
-                width: "0.14em",
-                height: "0.14em",
+                // Negative top lifts the dot above the integral's top.
+                top: "-0.18em",
+                // Italic i tittles lean right of the stem.
+                left: "0.22em",
+                width: "0.15em",
+                height: "0.15em",
                 borderRadius: "9999px",
                 backgroundColor: "currentColor",
               }}
