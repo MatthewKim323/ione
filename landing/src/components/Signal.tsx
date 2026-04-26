@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { SectionLabel } from "./SectionLabel";
+// @ts-expect-error — LiquidChrome is a JSX file w/o type defs.
+import LiquidChrome from "./LiquidChrome";
 
 interface LogLine {
   t: string;
@@ -135,9 +137,36 @@ export function Signal() {
   return (
     <section
       id="signal"
-      className="relative px-6 sm:px-10 py-32 sm:py-44 border-t border-ink-line"
+      className="relative px-6 sm:px-10 py-32 sm:py-44 border-t border-ink-line overflow-hidden"
     >
-      <div className="max-w-[1380px] mx-auto">
+      {/* Subtle purple LiquidChrome backdrop — sits behind everything,
+          dim opacity + low amplitude so it reads as ambient depth, not
+          a feature.  Non-interactive so it doesn't compete with the
+          terminal box for pointer attention. */}
+      <div
+        aria-hidden
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          opacity: 0.22,
+          // Slight dark vignette around the edges so the chrome bleeds
+          // into the page instead of butting hard against the borders.
+          maskImage:
+            "radial-gradient(ellipse at center, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%)",
+          WebkitMaskImage:
+            "radial-gradient(ellipse at center, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%)",
+        }}
+      >
+        <LiquidChrome
+          baseColor={[0.18, 0.10, 0.28]}
+          speed={0.35}
+          amplitude={0.18}
+          frequencyX={2.5}
+          frequencyY={1.5}
+          interactive={false}
+        />
+      </div>
+
+      <div className="relative max-w-[1380px] mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           whileInView={{ opacity: 1, y: 0 }}
