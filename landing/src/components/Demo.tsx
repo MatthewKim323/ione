@@ -18,13 +18,9 @@ const FRAME_LERP = 0.22;
 // being on screen. Keeps the flower preload uncontested at page load.
 const PRELOAD_ROOT_MARGIN = "150% 0px";
 
-// Match the surrounding page background so the video edges can dissolve
-// into the page rather than landing as a hard rectangle.
+// Match the surrounding page background so any letterbox around the
+// contain-fit video reads as part of the page, not as a hard rectangle.
 const PAGE_BG = "#f2f2f2";
-
-// Height (in viewport heights) of the top/bottom feather that blends
-// the video into the surrounding page background.
-const EDGE_FADE_VH = 0.18;
 
 async function preloadFrames(
   src: string,
@@ -216,20 +212,6 @@ export function Demo() {
     };
   }, [ready]);
 
-  // Top/bottom feather gradients: fade the video edges into the page bg.
-  // Solid PAGE_BG at the very top/bottom, transparent inside.
-  const topFade =
-    "linear-gradient(to bottom," +
-    ` ${PAGE_BG} 0%,` +
-    ` rgba(242,242,242,0.9) 40%,` +
-    ` rgba(242,242,242,0.0) 100%)`;
-
-  const bottomFade =
-    "linear-gradient(to top," +
-    ` ${PAGE_BG} 0%,` +
-    ` rgba(242,242,242,0.9) 40%,` +
-    ` rgba(242,242,242,0.0) 100%)`;
-
   return (
     <section
       ref={sectionRef}
@@ -251,7 +233,6 @@ export function Demo() {
           backgroundColor: PAGE_BG,
         }}
       >
-        {/* Canvas underlay — fills the viewport, fades in when frames are ready. */}
         <canvas
           ref={canvasRef}
           aria-hidden
@@ -264,34 +245,6 @@ export function Demo() {
             opacity: ready ? 1 : 0,
             transition: "opacity 0.6s ease",
             willChange: "opacity",
-          }}
-        />
-
-        {/* Top feather → fades into the section above. */}
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: `${EDGE_FADE_VH * 100}vh`,
-            background: topFade,
-            pointerEvents: "none",
-          }}
-        />
-
-        {/* Bottom feather → fades into the section below. */}
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: `${EDGE_FADE_VH * 100}vh`,
-            background: bottomFade,
-            pointerEvents: "none",
           }}
         />
       </div>
