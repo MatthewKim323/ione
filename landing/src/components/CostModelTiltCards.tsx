@@ -1,16 +1,15 @@
-import { useRef } from "react";
-import { motion, useReducedMotion, useSpring } from "motion/react";
+import { motion } from "motion/react";
 
-const PERSPECTIVE = 1000;
-const TILT_DEG = 6;
-
-/* Parchment tiles — aligned with PipelineStepCarousel / pipeline shell, not a separate “card deck”. */
 const CARD_SURFACE = [
   "relative h-full w-full rounded-xl border p-5 sm:p-6",
   "border-ink/12 bg-[#ebe4d6]/85",
   "shadow-[0_3px_12px_rgba(22,19,16,0.06),0_0_0_1px_rgba(255,255,255,0.22)_inset]",
   "[background-image:repeating-linear-gradient(0deg,transparent,transparent_1px,rgba(61,54,53,0.025)_1px,rgba(61,54,53,0.025)_2px),repeating-linear-gradient(90deg,transparent,transparent_1px,rgba(61,54,53,0.02)_1px,rgba(61,54,53,0.02)_2px)]",
-  "min-h-[9.5rem] will-change-transform",
+  "min-h-[9.5rem]",
+  "transition-[box-shadow,border-color] duration-300 ease-out",
+  /* Neon glow on hover — matches --color-neon chartreuse */
+  "hover:border-neon/50",
+  "hover:shadow-[0_0_26px_rgba(191,227,42,0.42),0_0_52px_rgba(191,227,42,0.18),0_3px_14px_rgba(22,19,16,0.07),0_0_0_1px_rgba(255,255,255,0.2)_inset]",
 ].join(" ");
 
 type Stat = { n: string; top: string; bot: string };
@@ -21,58 +20,22 @@ const STATS: readonly Stat[] = [
   { n: "~ 1%", top: "reach intervene", bot: "(and most stay silent)" },
 ];
 
-/**
- * One cream card per stat: full stat as a single line, whole card tilts on hover.
- */
-function StatTiltCard({ n, top, bot }: Stat) {
-  const ref = useRef<HTMLDivElement>(null);
-  const reduce = useReducedMotion() ?? false;
-  const rx = useSpring(0, { stiffness: 300, damping: 32, mass: 0.35 });
-  const ry = useSpring(0, { stiffness: 300, damping: 32, mass: 0.35 });
-
-  const onMove = (e: React.MouseEvent) => {
-    if (reduce) return;
-    const el = ref.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width - 0.5;
-    const y = (e.clientY - r.top) / r.height - 0.5;
-    rx.set(-y * TILT_DEG);
-    ry.set(x * TILT_DEG);
-  };
-
-  const onLeave = () => {
-    rx.set(0);
-    ry.set(0);
-  };
-
+function StatCard({ n, top, bot }: Stat) {
   return (
-    <div className="h-full" style={{ perspective: PERSPECTIVE }}>
-      <motion.div
-        ref={ref}
-        onMouseMove={onMove}
-        onMouseLeave={onLeave}
-        className={CARD_SURFACE}
+    <div className={`${CARD_SURFACE} cursor-default`}>
+      <div
+        className="text-bark text-[1.75rem] leading-none tabular-nums sm:text-[1.9rem]"
         style={{
-          transformStyle: "preserve-3d",
-          rotateX: rx,
-          rotateY: ry,
+          fontFamily: "var(--font-display)",
+          textShadow: "0 1px 0 rgba(255,255,255,0.18)",
         }}
       >
-        <div
-          className="text-bark text-[1.75rem] leading-none tabular-nums sm:text-[1.9rem]"
-          style={{
-            fontFamily: "var(--font-display)",
-            textShadow: "0 1px 0 rgba(255,255,255,0.18)",
-          }}
-        >
-          {n}
-        </div>
-        <div className="meta-label mt-3 !text-bark/70">{top}</div>
-        <div className="mt-1.5 font-sub text-[11px] leading-snug text-bark/58">
-          {bot}
-        </div>
-      </motion.div>
+        {n}
+      </div>
+      <div className="meta-label mt-3 !text-bark/70">{top}</div>
+      <div className="mt-1.5 font-sub text-[11px] leading-snug text-bark/58">
+        {bot}
+      </div>
     </div>
   );
 }
@@ -90,7 +53,7 @@ export function CostModelTiltCards() {
           viewport={{ once: true, margin: "-6%" }}
           transition={{ ...REVEAL, delay: i * 0.08 }}
         >
-          <StatTiltCard n={s.n} top={s.top} bot={s.bot} />
+          <StatCard n={s.n} top={s.top} bot={s.bot} />
         </motion.div>
       ))}
     </div>
