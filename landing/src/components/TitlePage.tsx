@@ -44,31 +44,52 @@ export function TitlePage() {
           fontSize: "clamp(7rem, 22vw, 22rem)",
           letterSpacing: "-0.04em",
           lineHeight: 0.9,
-          color: "#15275C",
+          color: "#D9027D",
           fontStyle: "italic",
-          // Layered shadow tuned for the dark-blue glyph: a tight contact
-          // drop, a mid carry, and a wide diffuse halo so the title
-          // detaches from the cream paper with real depth.
+          // Layered shadow: tight contact, mid carry, wide diffuse halo
+          // so the magenta wordmark detaches from the cream paper with
+          // real depth instead of just sitting on it.
           textShadow:
             "0 1px 0 rgba(0,0,0,0.18)," +
             " 0 6px 18px rgba(0,0,0,0.22)," +
             " 0 18px 48px rgba(0,0,0,0.20)",
         }}
       >
-        {/* "i" rendered as ∫ — math integral, in keeping with the brand. */}
+        {/* "i" rendered as ∫ — math integral with a tittle floating
+            directly above it, so the glyph still reads as a lowercase
+            "i" with the integral as its stem. */}
         <span
           aria-hidden
           style={{
-            // Pull it visually closer to the rest of the wordmark since
-            // the integral glyph has a generous left side-bearing.
+            position: "relative",
             display: "inline-block",
-            marginRight: "-0.08em",
-            // Nudge the integral down a touch so its tail aligns with
-            // the baseline of the lowercase letters next to it.
+            // Pull tighter to the rest of the wordmark — the integral
+            // has a generous left side-bearing in italic display fonts.
+            marginRight: "-0.06em",
             transform: "translateY(0.04em)",
           }}
         >
           ∫
+          {/* The "i" tittle — sits clearly above the top of the integral
+              curl, sized to read as a proper lowercase i dot. */}
+          <span
+            style={{
+              position: "absolute",
+              // Comfortably above the top of the integral character.
+              top: "-0.22em",
+              // Centered over the visual middle of the integral's stem.
+              left: "0.20em",
+              width: "0.22em",
+              height: "0.22em",
+              borderRadius: "9999px",
+              backgroundColor: "currentColor",
+              // Match the wordmark's layered shadow so the dot reads as
+              // part of the same glyph, not a floating decal.
+              boxShadow:
+                "0 1px 0 rgba(0,0,0,0.18)," +
+                " 0 6px 18px rgba(0,0,0,0.22)",
+            }}
+          />
         </span>
         <span aria-hidden>one</span>
         {/* Accessible text for screen readers / SEO. */}
