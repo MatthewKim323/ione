@@ -18,17 +18,6 @@ const FRAME_LERP = 0.22;
 // being on screen. Keeps the flower preload uncontested at page load.
 const PRELOAD_ROOT_MARGIN = "150% 0px";
 
-// Match the surrounding page background so any letterbox around the
-// contain-fit video reads as part of the page, not as a hard rectangle.
-const PAGE_BG = "#f2f2f2";
-
-// Inset the framed plate from the viewport edges so the video sits
-// inside the page like every other section, instead of edge-bleeding.
-// Tuned to leave a comfortable margin without shrinking the plate too
-// much on small laptops.
-const PLATE_INSET_VH = 8; // top/bottom margin in vh
-const PLATE_INSET_VW = 5; // left/right margin in vw
-
 async function preloadFrames(
   src: string,
   count: number,
@@ -158,9 +147,11 @@ export function Demo() {
       const bmp = frames[i];
       if (!bmp) return;
       const { vw, vh: vhPx } = dimsRef.current;
-      // contain-fit so nothing is cropped — screen-recording content
-      // is information-dense and cropping looks broken.
-      const scale = Math.min(cssWidth / vw, cssHeight / vhPx);
+      // cover-fit so the video spans the whole viewport. The source
+      // aspect is ~1.78 which matches most desktop viewports, so the
+      // crop is negligible there; on tall mobile screens we accept
+      // some left/right edge cropping in exchange for full bleed.
+      const scale = Math.max(cssWidth / vw, cssHeight / vhPx);
       const w = vw * scale;
       const h = vhPx * scale;
       const x = (cssWidth - w) / 2;
@@ -227,9 +218,6 @@ export function Demo() {
       aria-label="demo"
       className="relative"
       style={{
-        // No explicit background — let the surrounding page bg (and any
-        // residual flowers fading from the section above) show through,
-        // so this section feels continuous with Hero / Pedagogy.
         height: `${SECTION_VH * 100}vh`,
       }}
     >
@@ -239,44 +227,24 @@ export function Demo() {
           top: 0,
           height: "100vh",
           width: "100%",
-          // Center the framed plate within the viewport.
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          overflow: "hidden",
+          backgroundColor: "#000",
         }}
       >
-        <div
+        <canvas
+          ref={canvasRef}
+          aria-hidden
           style={{
-            position: "relative",
-            // Plate is inset from the viewport edges so the section
-            // reads as a framed piece sitting inside the page rather
-            // than a full-bleed video punching through it.
-            width: `calc(100% - ${PLATE_INSET_VW * 2}vw)`,
-            height: `calc(100% - ${PLATE_INSET_VH * 2}vh)`,
-            backgroundColor: PAGE_BG,
-            // Soft, low-contrast shadow so it lifts off the page without
-            // looking like a heavy chrome'd window.
-            boxShadow:
-              "0 24px 60px -28px rgba(0,0,0,0.18)," +
-              " 0 4px 18px -8px rgba(0,0,0,0.10)",
-            overflow: "hidden",
+            position: "absolute",
+            inset: 0,
+            display: "block",
+            width: "100%",
+            height: "100%",
+            opacity: ready ? 1 : 0,
+            transition: "opacity 0.6s ease",
+            willChange: "opacity",
           }}
-        >
-          <canvas
-            ref={canvasRef}
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: 0,
-              display: "block",
-              width: "100%",
-              height: "100%",
-              opacity: ready ? 1 : 0,
-              transition: "opacity 0.6s ease",
-              willChange: "opacity",
-            }}
-          />
-        </div>
+        />
       </div>
     </section>
   );

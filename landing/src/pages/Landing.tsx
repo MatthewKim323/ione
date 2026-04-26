@@ -26,7 +26,9 @@ const FADE_START_T = 0.78;
 const FRAME_COUNT = 240;
 
 // rAF lerp toward target frame. Lower = more inertia / smoother glide.
-const FRAME_LERP = 0.22;
+// 0.32 keeps the bloom locked tight to the scroll position; lower if
+// you want the flowers to lag a beat behind for a softer feel.
+const FRAME_LERP = 0.32;
 
 // ─────────────────────────────────────────────────────────────────────
 // Pre-decode N frames from /bg.mp4 → ImageBitmap[].

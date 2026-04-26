@@ -45,3 +45,6 @@ Thumbs.db
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Source-of-truth video originals (kept local, re-encoded copies are committed)
+*.original.mp4.bak
