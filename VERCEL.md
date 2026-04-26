@@ -6,15 +6,21 @@ This repo’s **production web app** is the Vite + React client in **`landing/`*
 
 ## 1. Vercel project
 
-1. [Import the repository](https://vercel.com/new) into Vercel.
-2. **Root Directory**: `landing`  
-   (Critical: do not use the monorepo root; `package.json` and `vercel.json` live under `landing/`.)
-3. Framework: **Vite** (auto-detected from `landing/vercel.json`).
-4. **Build Command**: `npm run build` (default).  
-5. **Output Directory**: `dist` (default).  
-6. **Install Command**: `npm ci` (default in `vercel.json`; requires `landing/package-lock.json`).
+**Two supported setups** (pick one):
 
-`landing/vercel.json` already configures SPA fallbacks for React Router (excluding paths that start with `api/`, in case you add a proxy later) and long-cache headers for hashed assets.
+### A — Root Directory empty (repo root) — default after fix
+
+The repo includes a **root `vercel.json`** that runs `npm ci` + `npm run build` **inside `landing/`** and publishes **`landing/dist`**. Import the repo and deploy **without** setting a subdirectory.
+
+### B — Root Directory = `landing`
+
+Set **Root Directory** to `landing` in the project settings. Vercel then uses **`landing/vercel.json`** only (root `vercel.json` is ignored). Framework **Vite**, build `npm run build`, output `dist`.
+
+---
+
+If you deployed **before** this setup **without** Root Directory = `landing` and **without** root `vercel.json`, Vercel built the **monorepo root** `package.json` (scripts tooling, not the Vite app): Node `engines` warnings, wrong install, or a broken site. Redeploy from latest `main`.
+
+SPA rewrites and asset cache headers live in `vercel.json` (root and/or `landing/`).
 
 ---
 

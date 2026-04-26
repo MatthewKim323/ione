@@ -20,7 +20,7 @@
     "three": "^0.184.0"
   },
   "engines": {
-    "node": ">=20"
+    "node": "20.x"
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.104.1",
