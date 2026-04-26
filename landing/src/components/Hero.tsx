@@ -1,11 +1,50 @@
 import { flushSync } from "react-dom";
-import { useState } from "react";
-import { useReducedMotion } from "motion/react";
-import { motion } from "motion/react";
+import { useRef, useState } from "react";
+import {
+  useReducedMotion,
+  useScroll,
+  motion,
+  type Variants,
+  type MotionValue,
+} from "motion/react";
 import { AnimatedNeonUnderlink } from "./AnimatedNeonUnderlink";
 import { FlowerCtaShape } from "./FlowerCtaShape";
 import { MarginNote } from "./MarginNote";
 import { EnterCTA } from "./EnterCTA";
+
+/**
+ * Flat neon L→R wipe (same as Closer) when the span scrolls into view; dark text on `bg-neon`.
+ */
+function HeroNeonWipe({
+  children,
+  delay = 0,
+  reduced,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  reduced: boolean;
+}) {
+  return (
+    <span className="relative inline-block">
+      <motion.span
+        aria-hidden
+        className="absolute -inset-x-0.5 -inset-y-0.5 -z-0"
+        initial={{ scaleX: reduced ? 1 : 0 }}
+        whileInView={{ scaleX: 1 }}
+        transition={{
+          duration: reduced ? 0 : 0.75,
+          delay: reduced ? 0 : delay,
+          ease: [0.16, 1, 0.3, 1],
+        }}
+        viewport={{ once: true, margin: "-8% 0px -5% 0px" }}
+        style={{ transformOrigin: "0% 50%" }}
+      >
+        <span className="block h-full w-full rounded-sm bg-neon" />
+      </motion.span>
+      <span className="relative z-10 text-ink [text-shadow:none]">{children}</span>
+    </span>
+  );
+}
 
 const MATH_LINES = [
   { i: 0, text: "problem 4.", kind: "label" as const },
@@ -22,9 +61,16 @@ const MATH_LINES = [
 export function Hero() {
   const [seeHowSpin, setSeeHowSpin] = useState(0);
   const reduced = useReducedMotion() ?? false;
+  const heroRef = useRef<HTMLElement | null>(null);
+  const { scrollYProgress: marginScrollYProgress } = useScroll({
+    target: heroRef,
+    // Longer band → progress eases 0–1 over more page scroll, so each note can fire slower / one at a time
+    offset: ["start 0.94", "end 0.06"],
+  });
 
   return (
     <section
+      ref={heroRef}
       data-hero
       className="relative min-h-screen flex items-center px-6 sm:px-10 pt-32 pb-24"
     >
@@ -72,11 +118,15 @@ export function Hero() {
                 " 0 10px 32px rgba(0,0,0,0.22)",
             }}
           >
-            The one watches you do math on your iPad and{" "}
-            <span className="font-bold">intervenes</span> only when
+            The one{" "}
+            <HeroNeonWipe reduced={reduced} delay={0.5}>
+              watches you do math on your iPad
+            </HeroNeonWipe>{" "}
+            and <span className="font-bold">intervenes</span> only when
             intervention will help. it is mostly silent. when it speaks, it
             asks the question that gets you <span className="font-bold">unstuck</span>{" "}
-            — never the answer.
+            — <HeroNeonWipe reduced={reduced} delay={0.9}>never the answer</HeroNeonWipe>
+            .
           </motion.p>
 
           <motion.div
@@ -171,7 +221,7 @@ export function Hero() {
 
         {/* ── Right: notebook page render ──────────────────────────── */}
         <div className="lg:col-span-5 relative">
-          <NotebookPage />
+          <NotebookPage marginScrollYProgress={marginScrollYProgress} />
         </div>
 
         {/* bottom-corner scroll hint */}
@@ -194,52 +244,82 @@ export function Hero() {
   );
 }
 
-function NotebookPage() {
+/** Graph cell + paper (one rhythm: text rows snap to 1.5rem lines). */
+const NB_CELL = "1.5rem";
+const NB_PAPER = "#e0d6c4";
+
+const notebookPageVariants: Variants = {
+  hidden: { opacity: 0, y: 56, rotate: -0.2 },
+  show: {
+    opacity: 1,
+    y: 0,
+    rotate: -0.6,
+    transition: {
+      delay: 0.15,
+      duration: 0.95,
+      ease: [0.16, 1, 0.3, 1],
+    },
+  },
+};
+
+function NotebookPage({
+  marginScrollYProgress,
+}: {
+  marginScrollYProgress: MotionValue<number>;
+}) {
+  const reduced = useReducedMotion() ?? false;
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, rotate: -0.4 }}
-      animate={{ opacity: 1, y: 0, rotate: -0.6 }}
-      transition={{ delay: 0.4, duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
-      className="relative mx-auto max-w-[480px]"
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, amount: 0.22, margin: "0px 0px -10% 0px" }}
+      variants={reduced ? { hidden: { opacity: 0 }, show: { opacity: 1 } } : notebookPageVariants}
+      className="relative mx-auto max-w-[540px]"
     >
-      {/* the page itself */}
-      <div className="relative bg-ink-deep border border-ink-line ruled-paper px-7 py-10 pr-16 sm:pr-20 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)]">
-        {/* top-left page meta */}
-        <div className="flex items-center justify-between mb-8 font-sub text-[9px] tracking-[0.22em] uppercase" style={{ color: "#b89a78" }}>
+      <div
+        className="relative overflow-hidden border border-ink/20 pr-16 pb-12 pl-6 pt-6 sm:pr-20"
+        style={{
+          backgroundColor: NB_PAPER,
+          backgroundImage: [
+            "linear-gradient(rgba(34, 29, 24, 0.12) 1px, transparent 1px)",
+            "linear-gradient(90deg, rgba(34, 29, 24, 0.12) 1px, transparent 1px)",
+          ].join(", "),
+          backgroundSize: `${NB_CELL} ${NB_CELL}`,
+          backgroundPosition: "0 0",
+          boxShadow:
+            "0 30px 80px -30px rgba(0,0,0,0.28),0 0 0 1px rgba(0,0,0,0.05) inset",
+        }}
+      >
+        {/* one grid row: meta (height = one cell) + one row gap; then work lines each min-h = one cell */}
+        <div className="mb-6 flex h-6 items-center justify-between font-sub text-[11px] leading-none tracking-[0.2em] text-bark/80">
           <span>calculus i · sec 5.3</span>
           <span>p. 4</span>
         </div>
 
-        {/* the problem + worked solution */}
-        <div className="space-y-3">
+        <div className="space-y-6">
           {MATH_LINES.map((line) => {
             if (line.kind === "blank") {
-              return <div key={line.i} className="h-3" />;
+              return <div key={line.i} className="h-6 shrink-0" aria-hidden />;
             }
             if (line.kind === "label") {
               return (
-                <motion.div
+                <div
                   key={line.i}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6 + line.i * 0.06 }}
-                  className="text-paper-dim text-[15px]"
+                  className="flex min-h-6 items-end text-ink/85 text-base leading-6"
                   style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
                 >
                   {line.text}
-                </motion.div>
+                </div>
               );
             }
             return (
-              <motion.div
+              <div
                 key={line.i}
-                initial={{ opacity: 0, x: -6 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.7 + line.i * 0.08, duration: 0.5 }}
-                className="font-sub text-[16px] text-paper tracking-tight"
+                className="font-sub min-h-6 text-lg leading-6 text-ink tracking-tight"
               >
                 {line.text}
-              </motion.div>
+              </div>
             );
           })}
         </div>
@@ -247,21 +327,42 @@ function NotebookPage() {
         {/* red margin rule on the right */}
         <div
           aria-hidden
-          className="absolute top-0 bottom-0 right-12 w-px bg-red-pencil/60"
+          className="absolute top-0 bottom-0 right-12 w-px bg-red-pencil/55"
         />
       </div>
 
       {/* margin annotations — editorial notes in the right margin */}
-      <div className="absolute -right-3 sm:-right-8 md:-right-16 top-10 flex flex-col gap-10 w-[185px]">
-        <MarginNote meta="t = 0s" index={0} tilt={-1.2}>
+      <div className="absolute right-0 z-10 sm:-right-0 md:-right-4 -translate-x-4 sm:-translate-x-5 md:-translate-x-7 top-20 sm:top-[5.25rem] flex flex-col gap-12 w-[185px]">
+        <MarginNote
+          meta="t = 0s"
+          index={0}
+          scrollYProgress={marginScrollYProgress}
+          revealAt={0.1}
+          slideInFromRight
+          tilt={-1.2}
+        >
           silent.
         </MarginNote>
-        <MarginNote meta="t = 92s · stall" index={1} tilt={-2.1}>
+        <MarginNote
+          meta="t = 92s · stall"
+          index={1}
+          scrollYProgress={marginScrollYProgress}
+          revealAt={0.38}
+          slideInFromRight
+          tilt={-2.1}
+        >
           check the sign
           <br />
           on line three.
         </MarginNote>
-        <MarginNote meta="t = 148s · solved" index={2} tilt={-0.8}>
+        <MarginNote
+          meta="t = 148s · solved"
+          index={2}
+          scrollYProgress={marginScrollYProgress}
+          revealAt={0.64}
+          slideInFromRight
+          tilt={-0.8}
+        >
           nice — that&apos;s
           <br />
           it.

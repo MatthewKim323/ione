@@ -83,7 +83,7 @@ function HandwrittenWordmark() {
         {...letterMotionProps(period.start)}
         style={{
           ...letterMotionProps(period.start).style,
-          color: "var(--color-neon)",
+          color: "#FFFFFF",
           fontStyle: "normal",
         }}
       >

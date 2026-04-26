@@ -1,77 +1,121 @@
-import { motion, useScroll } from "motion/react";
+import { motion, useScroll, type MotionValue } from "motion/react";
 import { useEffect, useState, type ReactNode } from "react";
 
 interface MarginNoteProps {
   children: ReactNode;
   meta?: string;
-  /** Stagger index (0, 1, 2). Each note waits longer than the previous. */
+  /** Stagger index (0, 1, 2) — used for default `scrollAt` if unset. */
   index?: number;
+  /** Reveal this note after page scroll (px) hits this Y (ignored if `revealByProgress` is set). */
+  scrollAt?: number;
+  /**
+   * Reveal when section scroll progress crosses `revealAt` (0–1). Uses `scrollYProgress` from
+   * `useScroll({ target: sectionRef })` so notes appear one by one as you move through the hero.
+   */
+  scrollYProgress?: MotionValue<number>;
+  /** Trigger when `scrollYProgress` &gt; this (e.g. 0.1, 0.38, 0.66). */
+  revealAt?: number;
   arrow?: boolean;
+  /** Stronger R→L slide + fade when revealed (e.g. first margin notes in hero). */
+  slideInFromRight?: boolean;
   tilt?: number;
   className?: string;
 }
 
+const baseTransition = {
+  ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
+};
+
 /**
- * Handwritten margin annotation that only begins animating after the user
- * has scrolled at least 60 px — so it never fires on initial page load.
- * Each note fades + draws in very slowly, editorial-pace.
+ * Handwritten margin note: either after scroll Y (`scrollAt`) or after section
+ * `scrollYProgress` crosses `revealAt` (scroll-driven, one by one through the page).
  */
 export function MarginNote({
   children,
   meta,
   index = 0,
+  scrollAt: scrollAtProp,
+  scrollYProgress,
+  revealAt: revealAtProp,
   arrow = true,
+  slideInFromRight = false,
   tilt = -1.5,
   className = "",
 }: MarginNoteProps) {
   const { scrollY } = useScroll();
   const [triggered, setTriggered] = useState(false);
 
-  // Fire once the user has scrolled > 60 px
+  const useProgress = Boolean(scrollYProgress) && typeof revealAtProp === "number";
+  const scrollAt = scrollAtProp ?? 70 + index * 160;
+  const revealAt = revealAtProp ?? 0;
+
   useEffect(() => {
-    return scrollY.on("change", (y) => {
-      if (y > 60) setTriggered(true);
-    });
-  }, [scrollY]);
+    if (useProgress && scrollYProgress) {
+      const check = (v: number) => {
+        if (v >= revealAt) setTriggered(true);
+      };
+      check(scrollYProgress.get());
+      return scrollYProgress.on("change", check);
+    }
+    const check = (y: number) => {
+      if (y >= scrollAt) setTriggered(true);
+    };
+    check(scrollY.get());
+    return scrollY.on("change", check);
+  }, [useProgress, scrollYProgress, scrollY, revealAt, scrollAt]);
 
-  // Large stagger so each note arrives well after the previous one
-  const stagger = index * 1.4;
-
-  const baseTransition = {
-    ease: [0.16, 1, 0.3, 1] as [number, number, number, number],
-  };
+  const fromRight = {
+    atRest: { opacity: 0, x: 52 },
+    active: { opacity: 1, x: 0 },
+    t: { ...baseTransition, duration: 1.75 },
+  } as const;
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={triggered ? { opacity: 1, x: 0 } : { opacity: 0, x: 20 }}
-      transition={{ ...baseTransition, duration: 2.2, delay: stagger }}
+      initial={slideInFromRight ? fromRight.atRest : { opacity: 0, x: 20 }}
+      animate={
+        triggered
+          ? slideInFromRight
+            ? fromRight.active
+            : { opacity: 1, x: 0 }
+          : slideInFromRight
+            ? fromRight.atRest
+            : { opacity: 0, x: 20 }
+      }
+      transition={slideInFromRight ? fromRight.t : { ...baseTransition, duration: 1.4, delay: 0 }}
       whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
       className={`flex items-start gap-0 cursor-default select-none ${className}`}
     >
-      {/* ── Connecting line + arrow ─────────────────────────── */}
       {arrow && (
         <div className="flex items-center shrink-0 mt-[1.0rem] mr-1.5">
           <motion.div
-            initial={{ scaleX: 0 }}
-            animate={triggered ? { scaleX: 1 } : { scaleX: 0 }}
-            transition={{
-              ...baseTransition,
-              duration: 1.2,
-              delay: stagger + 0.9,
-            }}
+            initial={{ scaleX: 0, opacity: 0, x: 12 }}
+            animate={
+              triggered
+                ? { scaleX: 1, opacity: 1, x: 0 }
+                : { scaleX: 0, opacity: 0, x: 12 }
+            }
+            transition={
+              slideInFromRight
+                ? { ...baseTransition, duration: 1.2, delay: 0.2 }
+                : {
+                    ...baseTransition,
+                    duration: 0.95,
+                    delay: 0.16,
+                  }
+            }
             style={{
               width: "36px",
               height: "1px",
               background:
                 "linear-gradient(to right, rgba(212,43,43,0.1), rgba(212,43,43,0.45))",
-              transformOrigin: "left center",
+              transformOrigin: "right center",
             }}
           />
           <motion.span
-            initial={{ opacity: 0 }}
-            animate={triggered ? { opacity: 0.7 } : { opacity: 0 }}
-            transition={{ duration: 1.0, delay: stagger + 1.8 }}
+            initial={{ opacity: 0, x: 6 }}
+            animate={triggered ? { opacity: 0.7, x: 0 } : { opacity: 0, x: 6 }}
+            transition={{ duration: 0.75, delay: slideInFromRight ? 0.5 : 0.42, ease: baseTransition.ease }}
             style={{
               color: "#d42b2b",
               fontSize: "0.62rem",
@@ -84,13 +128,16 @@ export function MarginNote({
         </div>
       )}
 
-      {/* ── Annotation body ──────────────────────────────────── */}
       <div className="relative">
         {meta && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={triggered ? { opacity: 1 } : { opacity: 0 }}
-            transition={{ duration: 1.4, delay: stagger + 1.0 }}
+            initial={{ opacity: 0, x: slideInFromRight ? 18 : 0 }}
+            animate={triggered ? { opacity: 1, x: 0 } : { opacity: 0, x: slideInFromRight ? 18 : 0 }}
+            transition={{
+              duration: slideInFromRight ? 1.05 : 0.6,
+              delay: slideInFromRight ? 0.12 : 0.1,
+              ease: baseTransition.ease,
+            }}
             className="font-sub tracking-[0.2em] uppercase mb-0.5"
             style={{ fontSize: "0.52rem", color: "rgba(212,43,43,0.4)" }}
           >
@@ -98,27 +145,35 @@ export function MarginNote({
           </motion.div>
         )}
 
-        {/* ink draw — left to right, very slow */}
         <motion.div
-          initial={{ clipPath: "inset(0 100% 0 0)" }}
+          initial={
+            slideInFromRight
+              ? { clipPath: "inset(0 0 0 100%)", opacity: 0, x: 16 }
+              : { clipPath: "inset(0 100% 0 0)" }
+          }
           animate={
             triggered
-              ? { clipPath: "inset(0 0% 0 0)" }
-              : { clipPath: "inset(0 100% 0 0)" }
+              ? slideInFromRight
+                ? { clipPath: "inset(0 0 0 0)", opacity: 1, x: 0 }
+                : { clipPath: "inset(0 0% 0 0)" }
+              : slideInFromRight
+                ? { clipPath: "inset(0 0 0 100%)", opacity: 0, x: 16 }
+                : { clipPath: "inset(0 100% 0 0)" }
           }
           transition={{
             ...baseTransition,
-            duration: 1.6,
-            delay: stagger + 1.0,
+            duration: slideInFromRight ? 1.45 : 1.05,
+            delay: slideInFromRight ? 0.16 : 0.14,
           }}
           className="hand"
           style={{
             fontSize: "clamp(1.5rem, 2.2vw, 1.85rem)",
             lineHeight: 1.15,
             color: "#d42b2b",
-            transform: `rotate(${tilt}deg)`,
+            rotate: tilt,
             textShadow: "0 1px 6px rgba(0,0,0,0.28)",
             fontWeight: 600,
+            willChange: "clip-path, opacity, transform",
           }}
         >
           {children}

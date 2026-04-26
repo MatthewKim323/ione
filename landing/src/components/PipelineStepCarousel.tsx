@@ -10,22 +10,18 @@ export type PipelineStep = {
   color: "paper-dim" | "brass" | "moss" | "red-pencil";
 };
 
-const dotColor = (c: PipelineStep["color"]) => {
-  if (c === "red-pencil") return "bg-red-pencil";
-  if (c === "brass") return "bg-brass";
-  if (c === "moss") return "bg-moss";
-  return "bg-paper-dim";
-};
-
-/* Opaque folder gray (reference: matte light blue–gray) */
+/* Match .floating-nav--light: warm parchment shell + ink dots (Start / Demo / How dock) */
 const FILE = {
-  surface: "bg-[#c5c8d0]",
-  tabActive: "bg-[#c5c8d0]",
-  tabIdle: "bg-[#b0b3bd]",
-  border: "border-[#989fad]",
+  surface: "bg-[#e4ded2]",
+  tabActive: "bg-[#e4ded2]",
+  tabIdle: "bg-[#cec6ba]",
+  border: "border-ink/15",
   text: "text-ink",
   sub: "text-ink/70",
 } as const;
+
+const tabDot = (active: boolean) =>
+  active ? "bg-ink opacity-100" : "bg-ink/38 opacity-90";
 
 const PENCIL = [0.16, 1, 0.3, 1] as const;
 
@@ -109,13 +105,11 @@ export function PipelineStepCarousel({ steps }: Props) {
                   "shadow-[0_1px_0_rgba(255,255,255,0.35)_inset]",
                   active
                     ? `z-20 ${FILE.tabActive} text-ink`
-                    : `${FILE.tabIdle} text-ink/75 hover:bg-[#b8bac4]`,
+                    : `${FILE.tabIdle} text-ink/75 hover:bg-[#d4ccc0]`,
                 ].join(" ")}
               >
                 <span
-                  className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full align-middle ${
-                    active ? "opacity-100" : "opacity-80"
-                  } ${dotColor(s.color)}`}
+                  className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full align-middle ${tabDot(active)}`}
                 />
                 <span className="ml-1 font-mono text-[6px] leading-tight tracking-[0.08em] uppercase sm:ml-1.5 sm:text-[7px] sm:tracking-[0.1em]">
                   {s.n}_{s.name}
@@ -290,7 +284,7 @@ function Controls({
         <button
           type="button"
           onClick={onPrev}
-          className="font-sub text-[11px] tracking-[0.16em] uppercase text-ink/55 border border-ink/20 bg-[#e8e6e1] px-4 py-2.5 transition-colors hover:border-ink/35 hover:text-ink"
+          className="font-sub text-[11px] tracking-[0.16em] uppercase text-ink/55 border border-ink/15 bg-[#e4ded2] px-4 py-2.5 transition-colors hover:border-ink/30 hover:text-ink"
           aria-label="Previous stage"
         >
           ← prev
@@ -313,8 +307,8 @@ function Controls({
               <span
                 className={`block h-2.5 w-2.5 rounded-full transition-transform ${
                   i === index
-                    ? `${dotColor(s.color)} scale-110 ring-2 ring-ink/25 ring-offset-2 ring-offset-[#e8e6e1]`
-                    : "bg-ink/20 hover:bg-ink/35"
+                    ? `bg-ink scale-110 ring-2 ring-ink/25 ring-offset-2 ring-offset-[#e4ded2]`
+                    : "bg-ink/25 hover:bg-ink/40"
                 }`}
               />
             </button>
@@ -323,7 +317,7 @@ function Controls({
         <button
           type="button"
           onClick={onNext}
-          className="font-sub text-[11px] tracking-[0.16em] uppercase text-ink/55 border border-ink/20 bg-[#e8e6e1] px-4 py-2.5 transition-colors hover:border-ink/35 hover:text-ink"
+          className="font-sub text-[11px] tracking-[0.16em] uppercase text-ink/55 border border-ink/15 bg-[#e4ded2] px-4 py-2.5 transition-colors hover:border-ink/30 hover:text-ink"
           aria-label="Next stage"
         >
           next →

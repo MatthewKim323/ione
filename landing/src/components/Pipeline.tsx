@@ -166,11 +166,12 @@ export function Pipeline() {
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true, margin: "-10%" }}
                 transition={{ duration: 0.7, delay: 0.1 }}
-                className="text-bark/95 text-[15px] leading-[1.7] font-sub drop-shadow-[0_1px_1px_rgba(255,255,255,0.4)]"
+                className="text-bark/95 text-sm sm:text-base font-sub font-bold leading-[1.75] tracking-[0.1em] drop-shadow-[0_1px_1px_rgba(255,255,255,0.4)]"
               >
-                Every eight seconds your screen becomes a JSON document. Three
-                specialised agents read it in series — each one cheaper, faster,
-                and more skeptical than the last.
+                Every eight seconds your screen becomes a{" "}
+                <span className="font-extrabold text-bark">JSON</span> document.
+                Three specialised agents read it in series — each one cheaper,
+                faster, and more skeptical than the last.
               </motion.p>
             </div>
           </div>
@@ -182,7 +183,7 @@ export function Pipeline() {
             viewport={{ once: true, margin: "-8%" }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="relative rounded-2xl border border-ink/10 bg-[#f2f2f2]/50 p-3 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)] backdrop-blur-[2px] sm:p-4">
+            <div className="relative rounded-2xl border border-ink/15 bg-[#e4ded2]/45 p-3 shadow-[0_10px_32px_-14px_rgba(22,19,16,0.12),0_0_0_1px_rgba(255,255,255,0.18)_inset] backdrop-blur-[2px] sm:p-4">
               <PipelineStepCarousel steps={STEPS} />
             </div>
           </motion.div>

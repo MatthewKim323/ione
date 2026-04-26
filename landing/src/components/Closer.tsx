@@ -58,7 +58,7 @@ export function Closer() {
                 <span className="relative inline-block text-ink/80">
                   <motion.span
                     aria-hidden
-                    className="absolute -left-1 -right-1 bottom-[0.04em] h-[1.05em] w-[calc(100%+0.5rem)] origin-left"
+                    className="absolute -left-1 -right-1 bottom-[0.04em] h-[1.05em] w-[calc(100%+0.5rem)]"
                     initial={{ scaleX: reduceMotion ? 1 : 0 }}
                     whileInView={{ scaleX: 1 }}
                     transition={{
@@ -69,7 +69,7 @@ export function Closer() {
                     viewport={{ once: true, margin: "-10% 0px -5% 0px" }}
                     style={{ transformOrigin: "0% 50%" }}
                   >
-                    <span className="block h-full w-full -skew-x-[0.7deg] rounded-[2px] bg-gradient-to-b from-[#d4ff2c]/92 via-[#b8d420]/88 to-[#8aa612]/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-1px_0_rgba(0,0,0,0.1)]" />
+                    <span className="block h-full w-full rounded-[2px] bg-neon" />
                   </motion.span>
                   <span className="relative z-10">one specific question</span>
                 </span>
@@ -95,9 +95,28 @@ export function Closer() {
                 whileInView={{ opacity: 1 }}
                 viewport={{ once: true, margin: "-10%" }}
                 transition={{ duration: 0.7, delay: 0.5 }}
-                className="mt-8 font-sub text-[11px] tracking-[0.18em] text-ink/45"
+                className="mt-8"
               >
-                works with iPad + goodnotes · no setup · email + password
+                <span className="relative inline-block">
+                  <motion.span
+                    aria-hidden
+                    className="absolute -inset-x-0.5 -inset-y-0.5 -z-0"
+                    initial={{ scaleX: reduceMotion ? 1 : 0 }}
+                    whileInView={{ scaleX: 1 }}
+                    transition={{
+                      duration: reduceMotion ? 0 : 0.75,
+                      delay: reduceMotion ? 0 : 0.5,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
+                    viewport={{ once: true, margin: "-10%" }}
+                    style={{ transformOrigin: "0% 50%" }}
+                  >
+                    <span className="block h-full w-full rounded-sm bg-neon" />
+                  </motion.span>
+                  <span className="relative z-10 font-sub text-[0.6875rem] sm:text-[11px] font-bold leading-relaxed tracking-[0.1em] text-ink/90">
+                    works with iPad + goodnotes · no setup · email + password
+                  </span>
+                </span>
               </motion.div>
             </div>
 
