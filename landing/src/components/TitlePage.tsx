@@ -9,136 +9,154 @@ const CAROUSEL_ITEMS = [
   "the page-respecter.",
 ];
 
-// ─── Handwriting wordmark — vector-traced ─────────────────────────────
-// Each glyph is a real SVG <path> whose stroke is drawn by animating
-// pathLength 0 → 1, so the pen visibly *traces* the letter's outline
-// instead of swiping over it.  Once the stroke completes, the path's
-// fill fades in to give the glyph its body.
-//
-// Stroke order: ∫ stem → o loop → n arch → e curl → "." period.
-// The i-tittle pops in after the ∫ stroke, the way a hand lifts to
-// dot the i.
+// ─── Handwriting choreography for the wordmark ────────────────────────
+// Each letter reveals via a clip-path inset.  Numbers below are tuned
+// so the cadence feels like a hand writing — quick downstrokes, brief
+// settle between letters, and the i-tittle popping in after the
+// integral stroke (the way a hand lifts to dot the i).
+const STROKE_START = 0.3; // seconds before the first stroke begins
+const STROKE_DUR = 0.42; // duration of a single letter stroke
+const STROKE_GAP = 0.12; // brief pause between letters (pen lifts)
 
-const STROKE_START = 0.3;
-const STROKE_DUR = 0.55;
-const STROKE_GAP = 0.10;
-const HAND_EASE = [0.65, 0, 0.35, 1] as const;
-
+// Convenience: when does each letter start / end?
 function strokeAt(index: number) {
   const start = STROKE_START + index * (STROKE_DUR + STROKE_GAP);
   return { start, end: start + STROKE_DUR };
 }
 
-// Stylized italic "∫one." paths. Coordinates inside a 360 × 120 viewBox,
-// hand-tuned so the strokes read as cursive italic letters.  Not a
-// pixel-perfect tracing of the display font — the goal is the writing
-// motion, not glyph identity.
-const STROKES: Array<{ d: string; color: string }> = [
-  // ∫ — top hook → slanted stem → bottom tail.  One continuous curve.
-  {
-    d: "M 58,8 C 42,16 36,40 46,72 C 54,98 42,108 22,112",
-    color: "#FFFFFF",
-  },
-  // o — italic oval, drawn clockwise from the top-right.
-  {
-    d: "M 124,52 C 86,52 84,108 116,108 C 150,108 152,52 124,52 Z",
-    color: "#FFFFFF",
-  },
-  // n — down-stem, then arch up and over to a second down-stem.
-  {
-    d: "M 174,52 L 168,108 M 174,64 C 188,52 220,52 226,72 L 222,108",
-    color: "#FFFFFF",
-  },
-  // e — horizontal cross-bar, then curl underneath.
-  {
-    d: "M 254,82 L 296,80 C 296,58 256,56 250,84 C 246,108 286,114 300,96",
-    color: "#FFFFFF",
-  },
-  // . — small filled disk in the brand red.
-  {
-    d: "M 322,104 a 4 4 0 1 0 0.01 0 Z",
-    color: "#c4302b",
-  },
-];
+// Hand-like ease — a touch of acceleration at the start, settles at end.
+const HAND_EASE = [0.65, 0, 0.35, 1] as const;
 
 function HandwrittenWordmark() {
+  // Stroke order: ∫ stem, then o, n, e, then the period.
   const integral = strokeAt(0);
   const o = strokeAt(1);
   const n = strokeAt(2);
   const e = strokeAt(3);
   const period = strokeAt(4);
-  const allStrokes = [integral, o, n, e, period];
-  const tittleAt = integral.end + 0.04;
+  // The i-tittle pops in just after the integral stroke completes.
+  const tittleAt = integral.end + 0.06;
+  // The whole writing window — used to time the moving pen tip.
+  const lastStrokeEnd = period.end;
+
+  // Each letter wrapper uses the same clip-path inset reveal, with
+  // -30% / -25% top/bottom buffers so the integral's top curl, the
+  // i-tittle, and the integral's bottom tail are never clipped.
+  const letterMotionProps = (start: number) => ({
+    initial: { clipPath: "inset(-30% 100% -25% 0)" },
+    animate: { clipPath: "inset(-30% 0% -25% 0)" },
+    transition: { delay: start, duration: STROKE_DUR, ease: HAND_EASE },
+    style: {
+      display: "inline-block",
+      position: "relative" as const,
+    },
+  });
 
   return (
-    <svg
-      // viewBox extends above y=0 so the i-tittle (sits above the ∫'s
-      // top hook) is inside the box and never clipped by an ancestor.
-      viewBox="0 -16 360 140"
-      preserveAspectRatio="xMidYMid meet"
-      style={{
-        // Tuned so the wordmark reads at roughly the same visual size
-        // as the old static title.  Width is auto so the SVG keeps its
-        // natural aspect ratio (≈2.57 : 1).
-        height: "0.95em",
-        width: "auto",
-        display: "block",
-        // SVG stroke + fill gets the same layered shadow the static
-        // title used to have, via chained drop-shadow filters.
-        filter:
-          "drop-shadow(0 1px 0 rgba(0,0,0,0.22))" +
-          " drop-shadow(0 6px 18px rgba(0,0,0,0.28))" +
-          " drop-shadow(0 18px 48px rgba(0,0,0,0.22))",
-        overflow: "visible",
-      }}
-    >
-      {STROKES.map((s, i) => {
-        const { start } = allStrokes[i];
-        return (
-          <motion.path
-            key={i}
-            d={s.d}
-            stroke={s.color}
-            strokeWidth={6}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill={s.color}
-            initial={{ pathLength: 0, fillOpacity: 0 }}
-            animate={{ pathLength: 1, fillOpacity: 1 }}
-            transition={{
-              pathLength: {
-                delay: start,
-                duration: STROKE_DUR,
-                ease: HAND_EASE,
-              },
-              fillOpacity: {
-                // Body fades in as the stroke is finishing.
-                delay: start + STROKE_DUR * 0.78,
-                duration: 0.32,
-              },
-            }}
-          />
-        );
-      })}
+    <span style={{ position: "relative", display: "inline-block" }}>
+      {/* "i" — integral as the stem, with a tittle that pops in after. */}
+      <motion.span {...letterMotionProps(integral.start)}>
+        <span
+          aria-hidden
+          style={{
+            position: "relative",
+            display: "inline-block",
+            fontSize: "0.88em",
+            marginRight: "-0.04em",
+            transform: "translateY(0.08em)",
+          }}
+        >
+          ∫
+        </span>
+      </motion.span>
 
-      {/* i-tittle — round disk popping in after the integral stroke.
-          Sits ABOVE the integral's top hook (which starts at y≈8) so
-          the glyph reads as a dotted i. */}
-      <motion.circle
-        cx={44}
-        cy={-6}
-        r={4}
-        fill="#FFFFFF"
+      {/* i-tittle — pops in (scale + opacity) after the integral stroke,
+          like a hand lifting to dot the i. */}
+      <motion.span
+        aria-hidden
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{
           delay: tittleAt,
           duration: 0.22,
-          ease: [0.34, 1.56, 0.64, 1], // slight overshoot
+          // Slight overshoot for a written-by-hand bounce.
+          ease: [0.34, 1.56, 0.64, 1],
         }}
-        style={{ transformOrigin: "44px -6px" }}
+        style={{
+          position: "absolute",
+          // Match the i-tittle position from the static layout.  The
+          // 0.88em fontSize on the integral wrapper means these em
+          // values resolve in the title's outer font-size since this
+          // span lives outside that inner wrapper — adjust if needed.
+          top: "-0.10em",
+          left: "0.18em",
+          width: "0.13em",
+          height: "0.13em",
+          borderRadius: "9999px",
+          backgroundColor: "currentColor",
+          transformOrigin: "50% 50%",
+        }}
       />
-    </svg>
+
+      {/* o */}
+      <motion.span {...letterMotionProps(o.start)}>
+        <span aria-hidden>o</span>
+      </motion.span>
+
+      {/* n */}
+      <motion.span {...letterMotionProps(n.start)}>
+        <span aria-hidden>n</span>
+      </motion.span>
+
+      {/* e */}
+      <motion.span {...letterMotionProps(e.start)}>
+        <span aria-hidden>e</span>
+      </motion.span>
+
+      {/* . — accent red, drawn last */}
+      <motion.span
+        {...letterMotionProps(period.start)}
+        style={{
+          ...letterMotionProps(period.start).style,
+          color: "#c4302b",
+          fontStyle: "normal",
+        }}
+      >
+        .
+      </motion.span>
+
+      {/* Yellow "pen-tip" glow — moves left → right across the writing
+          window, fades in at the start and out as the last stroke
+          finishes.  Reads as the highlighter actually drawing the
+          letters. */}
+      <motion.span
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: "-6%",
+          bottom: "-14%",
+          width: "0.05em",
+          backgroundColor: "#FFD84A",
+          boxShadow:
+            "0 0 24px 8px rgba(255, 216, 74, 0.55)," +
+            " 0 0 60px 16px rgba(255, 200, 30, 0.30)",
+          borderRadius: "999px",
+          pointerEvents: "none",
+          filter: "blur(0.4px)",
+        }}
+        initial={{ left: "0%", opacity: 0 }}
+        animate={{
+          left: ["0%", "0%", "100%", "100%"],
+          opacity: [0, 1, 1, 0],
+        }}
+        transition={{
+          delay: integral.start,
+          duration: lastStrokeEnd - integral.start,
+          times: [0, 0.05, 0.92, 1],
+          ease: HAND_EASE,
+        }}
+      />
+    </span>
   );
 }
 
@@ -168,13 +186,11 @@ export function TitlePage() {
       </motion.div>
 
       {/* THE TITLE — IONE
-          The wordmark is rendered as inline SVG paths that animate
-          their pathLength 0 → 1 in sequence, so each letter is *traced*
-          like a vector being drawn rather than swept onto the page.
-          Once each stroke completes the path's fill fades in.  The
-          i-tittle pops in after the integral's stroke — the way a hand
-          lifts to dot the i.  The h1 is kept for semantics + sets the
-          font-size that the SVG sizes itself off of via em units. */}
+          Per-letter handwriting reveal: each glyph is its own clip-path
+          inset that animates in sequence with a hand-like ease, so it
+          reads as the title being *written* rather than swept onto the
+          page.  The i-tittle pops in AFTER the integral's stroke
+          finishes — the way a hand lifts to dot the i. */}
       <motion.h1
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -182,8 +198,14 @@ export function TitlePage() {
         className="h-display"
         style={{
           fontSize: "clamp(7rem, 22vw, 22rem)",
+          letterSpacing: "-0.04em",
           lineHeight: 0.9,
           color: "#FFFFFF",
+          fontStyle: "italic",
+          textShadow:
+            "0 1px 0 rgba(0,0,0,0.22)," +
+            " 0 6px 18px rgba(0,0,0,0.28)," +
+            " 0 18px 48px rgba(0,0,0,0.22)",
           position: "relative",
           display: "inline-block",
           overflow: "visible",
