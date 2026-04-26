@@ -72,14 +72,23 @@ async function preloadFrames(count: number): Promise<{
   return { frames, width: video.videoWidth, height: video.videoHeight };
 }
 
+// ─────────────────────────────────────────────────────────────────────
+// Hybrid background: <video> paints instantly on mount (Phase A — scrub
+// via currentTime), while we silently decode FRAME_COUNT ImageBitmaps in
+// the background. Once those are ready, we crossfade to a canvas
+// (Phase B — pixel-perfect bitmap blits, no codec hitch) and stop
+// touching the video. If the decode fails, Phase A persists forever.
+// ─────────────────────────────────────────────────────────────────────
 function FlowerBackground() {
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const framesRef = useRef<ImageBitmap[]>([]);
   const dimsRef = useRef({ vw: 0, vh: 0 });
-  const [ready, setReady] = useState(false);
+  const [framesReady, setFramesReady] = useState(false);
 
-  // Preload bitmaps once on mount.
+  // Background-decode the bitmaps. Don't gate the UI on this; the
+  // <video> below is already painting the bloom in real time.
   useEffect(() => {
     if (SKIP_FX) return;
 
@@ -92,10 +101,10 @@ function FlowerBackground() {
         }
         framesRef.current = frames;
         dimsRef.current = { vw: width, vh: height };
-        setReady(true);
+        setFramesReady(true);
       })
       .catch(() => {
-        /* fallback bg stays */
+        // Decode failed — Phase A (native video) keeps running.
       });
 
     return () => {
@@ -105,118 +114,152 @@ function FlowerBackground() {
     };
   }, []);
 
-  // Frame loop: scroll → frame index, scroll → opacity.
+  // The single rAF loop. Always running. Reads scroll, drives whichever
+  // renderer is currently active.
   useEffect(() => {
-    if (!ready) return;
     const wrapper = wrapperRef.current;
+    const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!wrapper || !canvas) return;
+    if (!wrapper || !video || !canvas) return;
+
+    if (SKIP_FX) {
+      wrapper.style.opacity = "1";
+      return;
+    }
 
     const ctx = canvas.getContext("2d", { alpha: false });
-    if (!ctx) return;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     let cssWidth = window.innerWidth;
     let cssHeight = window.innerHeight;
 
-    function syncCanvas() {
+    const syncCanvas = () => {
       cssWidth = window.innerWidth;
       cssHeight = window.innerHeight;
-      canvas!.width = Math.floor(cssWidth * dpr);
-      canvas!.height = Math.floor(cssHeight * dpr);
-      canvas!.style.width = cssWidth + "px";
-      canvas!.style.height = cssHeight + "px";
-      ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
+      canvas.width = Math.floor(cssWidth * dpr);
+      canvas.height = Math.floor(cssHeight * dpr);
+      canvas.style.width = cssWidth + "px";
+      canvas.style.height = cssHeight + "px";
+      ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
     syncCanvas();
 
     let cachedVh = window.innerHeight || 1;
-    let targetIdx = 0;
+    let videoDuration = 0;
+    let renderedTime = 0;
+    let lastSeekTime = -1;
     let displayIdx = 0;
     let lastDrawnIdx = -1;
     let lastOpacity = -1;
-    let scrollDirty = true;
     let rafId = 0;
     let running = true;
 
-    const total = framesRef.current.length;
+    // Native-video scrub smoothing (0.18 ≈ 6 frames @60fps to catch up).
+    const SEEK_LERP_VIDEO = 0.18;
 
-    function drawFrame(idx: number) {
+    const getProgress = () => {
+      const t = window.scrollY / (cachedVh * SCRUB_RANGE_VH);
+      return t < 0 ? 0 : t > 1 ? 1 : t;
+    };
+
+    const updateOpacity = (t: number) => {
+      const fadeT =
+        t < FADE_START_T
+          ? 0
+          : (t - FADE_START_T) / Math.max(0.001, 1 - FADE_START_T);
+      const opacity = 1 - (fadeT > 1 ? 1 : fadeT);
+      if (Math.abs(opacity - lastOpacity) > 0.005) {
+        wrapper.style.opacity = String(opacity);
+        lastOpacity = opacity;
+      }
+    };
+
+    const drawFrame = (idx: number) => {
+      if (!ctx) return;
       const frames = framesRef.current;
+      const total = frames.length;
+      if (!total) return;
       const i = Math.max(0, Math.min(total - 1, idx | 0));
       const bmp = frames[i];
       if (!bmp) return;
       const { vw, vh: vhPx } = dimsRef.current;
-      // cover-fit
       const scale = Math.max(cssWidth / vw, cssHeight / vhPx);
       const w = vw * scale;
       const h = vhPx * scale;
       const x = (cssWidth - w) / 2;
       const y = (cssHeight - h) / 2;
-      ctx!.drawImage(bmp, x, y, w, h);
-    }
+      ctx.drawImage(bmp, x, y, w, h);
+    };
 
-    function compute() {
-      const vh = cachedVh;
-      const scrollPx = window.scrollY;
-
-      const t = scrollPx / (vh * SCRUB_RANGE_VH);
-      const clamped = t < 0 ? 0 : t > 1 ? 1 : t;
-      targetIdx = clamped * (total - 1);
-
-      const fadeT =
-        clamped < FADE_START_T
-          ? 0
-          : (clamped - FADE_START_T) / Math.max(0.001, 1 - FADE_START_T);
-      const opacity = 1 - (fadeT > 1 ? 1 : fadeT);
-      if (Math.abs(opacity - lastOpacity) > 0.005) {
-        wrapper!.style.opacity = String(opacity);
-        lastOpacity = opacity;
-      }
-    }
-
-    function frame() {
+    const tick = () => {
       if (!running) return;
-      if (scrollDirty) {
-        compute();
-        scrollDirty = false;
-      }
-      const delta = targetIdx - displayIdx;
-      if (Math.abs(delta) > 0.005) {
-        displayIdx += delta * FRAME_LERP;
-      }
-      const rounded = Math.round(displayIdx);
-      if (rounded !== lastDrawnIdx) {
-        drawFrame(rounded);
-        lastDrawnIdx = rounded;
-      }
-      rafId = requestAnimationFrame(frame);
-    }
+      const t = getProgress();
+      updateOpacity(t);
 
-    function onScroll() {
-      scrollDirty = true;
-    }
-    function onResize() {
+      const total = framesRef.current.length;
+      if (total > 0) {
+        // ── Phase B: canvas blit ──────────────────────────────────────
+        const targetIdx = t * (total - 1);
+        const delta = targetIdx - displayIdx;
+        if (Math.abs(delta) > 0.005) {
+          displayIdx += delta * FRAME_LERP;
+        } else {
+          displayIdx = targetIdx;
+        }
+        const rounded = Math.round(displayIdx);
+        if (rounded !== lastDrawnIdx) {
+          drawFrame(rounded);
+          lastDrawnIdx = rounded;
+        }
+      } else if (videoDuration > 0) {
+        // ── Phase A: native-video scrub ───────────────────────────────
+        const target = t * videoDuration;
+        renderedTime += (target - renderedTime) * SEEK_LERP_VIDEO;
+        if (Math.abs(target - renderedTime) < 0.005) renderedTime = target;
+        if (Math.abs(renderedTime - lastSeekTime) > 0.012) {
+          if (!video.paused) video.pause();
+          try {
+            video.currentTime = renderedTime;
+          } catch {
+            // metadata not quite ready; will retry next tick
+          }
+          lastSeekTime = renderedTime;
+        }
+      }
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    const onMeta = () => {
+      videoDuration = Number.isFinite(video.duration) ? video.duration : 0;
+      renderedTime = getProgress() * videoDuration;
+      try {
+        if (!video.paused) video.pause();
+        video.currentTime = renderedTime;
+      } catch {
+        // ignore
+      }
+    };
+
+    const onResize = () => {
       cachedVh = window.innerHeight || 1;
       syncCanvas();
       lastDrawnIdx = -1;
-      scrollDirty = true;
-    }
+    };
 
-    window.addEventListener("scroll", onScroll, { passive: true });
+    if (video.readyState >= 1) onMeta();
+    else video.addEventListener("loadedmetadata", onMeta, { once: true });
+
     window.addEventListener("resize", onResize, { passive: true });
-
-    compute();
-    drawFrame(0);
-    rafId = requestAnimationFrame(frame);
+    rafId = requestAnimationFrame(tick);
 
     return () => {
       running = false;
       cancelAnimationFrame(rafId);
-      window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
+      video.removeEventListener("loadedmetadata", onMeta);
     };
-  }, [ready]);
+  }, []);
 
   return (
     <div
@@ -231,17 +274,44 @@ function FlowerBackground() {
         willChange: "opacity",
         transform: "translateZ(0)",
         backfaceVisibility: "hidden",
-        opacity: ready ? 1 : 0,
-        transition: "opacity 0.5s ease",
+        opacity: 1,
       }}
     >
+      {/* Phase A renderer — paints instantly. Faded out once Phase B
+          (canvas) takes over. */}
+      <video
+        ref={videoRef}
+        src="/bg.mp4"
+        muted
+        playsInline
+        preload="auto"
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          width: "100%",
+          height: "100%",
+          objectFit: "cover",
+          opacity: framesReady ? 0 : 1,
+          transition: "opacity 0.45s ease",
+        }}
+      />
+      {/* Phase B renderer — drawn into once frames are decoded. */}
       <canvas
         ref={canvasRef}
-        style={{ display: "block", width: "100%", height: "100%" }}
+        style={{
+          position: "absolute",
+          inset: 0,
+          display: "block",
+          width: "100%",
+          height: "100%",
+          opacity: framesReady ? 1 : 0,
+          transition: "opacity 0.45s ease",
+        }}
       />
-      {/* Dim overlay — sits on top of the flowers (still inside the
-          wrapper) so it fades out together with them on scroll, leaving
-          the rest of the page un-darkened once they're gone. */}
+      {/* Dim overlay — sits on top of both renderers so it fades out
+          together with them on scroll, leaving the rest of the page
+          un-darkened once they're gone. */}
       <div
         aria-hidden
         style={{

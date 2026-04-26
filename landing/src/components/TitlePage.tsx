@@ -19,7 +19,6 @@ function HandwrittenWordmark() {
   const e = strokeAt(3);
   const period = strokeAt(4);
   const tittleAt = integral.end + 0.06;
-  const lastStrokeEnd = period.end;
 
   const letterMotionProps = (start: number) => ({
     initial: { opacity: 0, y: "0.06em" },
@@ -91,34 +90,6 @@ function HandwrittenWordmark() {
       >
         .
       </motion.span>
-
-      <motion.span
-        aria-hidden
-        style={{
-          position: "absolute",
-          top: "-6%",
-          bottom: "-14%",
-          width: "0.05em",
-          backgroundColor: "#FFD84A",
-          boxShadow:
-            "0 0 24px 8px rgba(255, 216, 74, 0.55)," +
-            " 0 0 60px 16px rgba(255, 200, 30, 0.30)",
-          borderRadius: "999px",
-          pointerEvents: "none",
-          filter: "blur(0.4px)",
-        }}
-        initial={{ left: "0%", opacity: 0 }}
-        animate={{
-          left: ["0%", "0%", "100%", "100%"],
-          opacity: [0, 1, 1, 0],
-        }}
-        transition={{
-          delay: integral.start,
-          duration: lastStrokeEnd - integral.start,
-          times: [0, 0.05, 0.92, 1],
-          ease: HAND_EASE,
-        }}
-      />
     </span>
   );
 }
