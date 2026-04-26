@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 import { SourceList } from "../components/SourceList";
 import { SourceUpload } from "../components/SourceUpload";
+import { MemoryFeed } from "../components/MemoryFeed";
 import { CaptureLog, CapturePanel } from "../components/CaptureSurface";
 import { useScreenCapture } from "../lib/capture";
 import type {
@@ -93,6 +94,12 @@ export default function Dashboard() {
           </span>
         </div>
         <div className="flex items-center gap-6">
+          <Link
+            to="/dashboard/memory"
+            className="hidden sm:inline-block font-mono text-[11px] tracking-[0.14em] uppercase pencil-link"
+          >
+            memory
+          </Link>
           <Link
             to="/"
             className="hidden sm:inline-block font-mono text-[11px] tracking-[0.14em] uppercase pencil-link"
@@ -256,8 +263,9 @@ export default function Dashboard() {
             <div className="lg:col-span-7">
               <SourceUpload />
             </div>
-            <div className="lg:col-span-5">
+            <div className="lg:col-span-5 space-y-8">
               <SourceList />
+              <MemoryFeed />
             </div>
           </div>
         </motion.section>

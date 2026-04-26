@@ -1,0 +1,88 @@
+# ─── ione CI ──────────────────────────────────────────────────────────────────
+# Push gate (per master plan §13 / J4):
+#   - api: typecheck + vitest (RUN_EVAL is OFF — no live LLM calls in CI)
+#   - landing: tsc + vite build (catches dead imports + type errors)
+#
+# RUN_EVAL=1 is intentionally NOT wired here. The eval suite costs real money
+# (~$0.40 per full run) and needs ANTHROPIC_API_KEY. It runs locally with
+# `pnpm eval` or as a manual workflow_dispatch from the Actions tab.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Don't pile up concurrent CI runs on the same branch — newer wins.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  api:
+    name: api · typecheck + vitest
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build (tsconfig.build.json)
+        run: npm run build
+
+      - name: Test (vitest, no RUN_EVAL)
+        run: npm test -- --reporter=default
+        env:
+          # Make sure live-eval gates stay closed even if the runner inherits
+          # something from the org-level secrets.
+          RUN_EVAL: ""
+
+  landing:
+    name: landing · tsc + vite build
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    defaults:
+      run:
+        working-directory: landing
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: landing/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Build (tsc -b && vite build)
+        run: npm run build
+        env:
+          # CI builds with placeholder env so import.meta.env access doesn't crash
+          # at module init. Real values are injected by Vercel/Cloudflare at deploy
+          # time. Keep these obviously-fake.
+          VITE_API_URL: "http://localhost:8787"
+          VITE_SUPABASE_URL: "https://ci-placeholder.supabase.co"
+          VITE_SUPABASE_ANON_KEY: "ci-placeholder-anon-key"

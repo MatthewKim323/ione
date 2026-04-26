@@ -1,0 +1,6 @@
+/**
+ * Local re-export of KaTeX's stylesheet so we don't need to set up a
+ * separate CSS pipeline for the math rendering. Imported once from
+ * components/design/Math.tsx — Vite tree-shakes the unused fonts.
+ */
+@import "katex/dist/katex.min.css";

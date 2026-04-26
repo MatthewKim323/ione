@@ -56,11 +56,26 @@ const RECENT_DIFFS_KEEP = 24;
 const LOG_KEEP = 240;
 const COST_PER_SKIP = 0.005;
 
+/**
+ * Region of interest, expressed in normalized 0..1 coordinates relative to
+ * the full source frame. (0,0) is the top-left, (1,1) the bottom-right.
+ * If supplied, the frame is cropped before WebP encode and before diff —
+ * so we don't waste tokens on the rest of the screen.
+ */
+export type RoiRect = {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+};
+
 export type UseScreenCaptureOptions = {
   /** Slider value in seconds, default cadence between cycles. Default 8. */
   baseIntervalSec?: number;
   /** Optional callback fired whenever a frame is encoded and would be sent. */
   onFrameEncoded?: (blob: Blob, meta: { ts: number; diffPct: number }) => void;
+  /** If set, frames are cropped to this region before diff + encode. */
+  roi?: RoiRect | null;
 };
 
 export type UseScreenCaptureResult = {
@@ -86,6 +101,7 @@ export function useScreenCapture(
   opts: UseScreenCaptureOptions = {},
 ): UseScreenCaptureResult {
   const onFrameEncoded = opts.onFrameEncoded;
+  const roi = opts.roi ?? null;
   const [baseIntervalSec, setBaseIntervalSec] = useState(
     opts.baseIntervalSec ?? 8,
   );
@@ -134,7 +150,21 @@ export function useScreenCapture(
     diffCtx: CanvasRenderingContext2D | null;
     encode: HTMLCanvasElement | null;
     encodeCtx: CanvasRenderingContext2D | null;
-  }>({ diff: null, diffCtx: null, encode: null, encodeCtx: null });
+    crop: HTMLCanvasElement | null;
+    cropCtx: CanvasRenderingContext2D | null;
+  }>({
+    diff: null,
+    diffCtx: null,
+    encode: null,
+    encodeCtx: null,
+    crop: null,
+    cropCtx: null,
+  });
+
+  const roiRef = useRef<RoiRect | null>(roi);
+  useEffect(() => {
+    roiRef.current = roi;
+  }, [roi]);
 
   const ensureCanvases = () => {
     if (!canvases.current.diff) {
@@ -150,6 +180,11 @@ export function useScreenCapture(
       const e = document.createElement("canvas");
       canvases.current.encode = e;
       canvases.current.encodeCtx = e.getContext("2d");
+    }
+    if (!canvases.current.crop) {
+      const c = document.createElement("canvas");
+      canvases.current.crop = c;
+      canvases.current.cropCtx = c.getContext("2d");
     }
   };
 
@@ -222,6 +257,17 @@ export function useScreenCapture(
     if (!frame) {
       scheduleNext(r.effectiveInterval);
       return;
+    }
+
+    // Apply ROI crop (if set) so diff + encode see only the math region.
+    if (roiRef.current) {
+      ensureCanvases();
+      frame = cropFrame(
+        frame,
+        roiRef.current,
+        canvases.current.crop as HTMLCanvasElement,
+        canvases.current.cropCtx as CanvasRenderingContext2D,
+      );
     }
 
     r.cyclesRun += 1;
@@ -519,6 +565,29 @@ function computeDiff(curr: ImageData, prev: ImageData): number {
       Math.abs(a[i + 2] - b[i + 2]);
   }
   return (sum / (64 * 64 * 3 * 255)) * 100;
+}
+
+function cropFrame(
+  src: ImageBitmap | HTMLCanvasElement,
+  roi: RoiRect,
+  canvas: HTMLCanvasElement,
+  ctx: CanvasRenderingContext2D,
+): HTMLCanvasElement {
+  const sw = (src as { width: number }).width;
+  const sh = (src as { height: number }).height;
+  const x = clamp(roi.x0, 0, 1) * sw;
+  const y = clamp(roi.y0, 0, 1) * sh;
+  const w = Math.max(8, (clamp(roi.x1, 0, 1) - clamp(roi.x0, 0, 1)) * sw);
+  const h = Math.max(8, (clamp(roi.y1, 0, 1) - clamp(roi.y0, 0, 1)) * sh);
+  canvas.width = Math.round(w);
+  canvas.height = Math.round(h);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(src as CanvasImageSource, x, y, w, h, 0, 0, canvas.width, canvas.height);
+  return canvas;
+}
+
+function clamp(v: number, lo: number, hi: number): number {
+  return Math.min(hi, Math.max(lo, v));
 }
 
 function encodeWebp(

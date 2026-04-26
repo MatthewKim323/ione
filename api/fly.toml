@@ -1,0 +1,55 @@
+# fly.toml — Margin AI Tutor API
+#
+# Region: sea (Seattle) — closest to demo location and to Mathpix/Anthropic
+# West-coast endpoints. `auto_stop_machines` saves $$$ between rehearsals
+# while still cold-starting in <2s. `min_machines_running = 1` keeps a single
+# instance hot during demo day; flip to 0 between events.
+#
+# Memory: 512MB. Sharp + Hono + the agent pipeline comfortably fit; we've
+# seen peak ~280MB during a 5-cycle session with frame-storage on. 256MB was
+# too tight on cold start when sharp loads its musl prebuild.
+#
+# Important: SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY, MATHPIX_*, and
+# ELEVENLABS_API_KEY are NOT here — set them via:
+#   flyctl secrets set ANTHROPIC_API_KEY=... -a ione-api
+# and friends. Only ALLOWED_ORIGINS lives in this file because it's not a
+# secret and changes per-environment.
+
+app = "ione-api"
+primary_region = "sea"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "8787"
+  LOG_LEVEL = "info"
+  # Override at deploy time with whichever VITE_API_URL points here.
+  ALLOWED_ORIGINS = "https://ione.app,https://www.ione.app,https://ione.vercel.app"
+  # Cost guardrails — match defaults in api/src/env.ts but make them explicit.
+  COST_CAP_USD_PER_SESSION = "1.5"
+  COST_CAP_USD_PER_USER_DAY = "5"
+  COST_CAP_USD_BUILD = "8"
+  # Frame archival — set STORE_FRAMES=1 only after applying 0005 migration.
+  STORE_FRAMES = "0"
+
+[http_service]
+  internal_port = 8787
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/healthz"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { listSourceFiles } from "../lib/graph/query";
 import { deleteSource } from "../lib/graph/ingest";
 import type { SourceFile, SourceKind } from "../lib/database.types";
@@ -107,7 +108,11 @@ export function SourceList({ reloadKey = 0 }: SourceListProps) {
               key={file.id}
               className="px-1 py-3 flex items-start justify-between gap-4 group"
             >
-              <div className="min-w-0 flex-1">
+              <Link
+                to={`/dashboard/sources/${file.id}`}
+                className="min-w-0 flex-1 group/link"
+                aria-label={`open ${file.filename}`}
+              >
                 <div className="flex items-baseline gap-2 mb-0.5">
                   <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-red-pencil">
                     {KIND_LABEL[file.kind]}
@@ -115,7 +120,7 @@ export function SourceList({ reloadKey = 0 }: SourceListProps) {
                   <StatusDot status={file.status} />
                 </div>
                 <div
-                  className="text-paper text-[15px] truncate"
+                  className="text-paper text-[15px] truncate group-hover/link:text-red-pencil transition-colors"
                   style={{ fontFamily: "var(--font-display)" }}
                   title={file.filename}
                 >
@@ -125,7 +130,7 @@ export function SourceList({ reloadKey = 0 }: SourceListProps) {
                   {formatSize(file.size_bytes)} ·{" "}
                   {timeAgo(file.uploaded_at)}
                 </div>
-              </div>
+              </Link>
               <button
                 type="button"
                 onClick={() => onDelete(file)}

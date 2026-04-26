@@ -6,6 +6,13 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Onboarding from "./pages/Onboarding";
 import Dashboard from "./pages/Dashboard";
+import Tutor from "./pages/Tutor";
+import MemoryPage from "./pages/dashboard/Memory";
+import PatternsPage from "./pages/dashboard/Patterns";
+import SessionsPage from "./pages/dashboard/Sessions";
+import SessionDetailPage from "./pages/dashboard/SessionDetail";
+import SourceDetailPage from "./pages/dashboard/SourceDetail";
+import { Toaster } from "./components/Toaster";
 
 export default function App() {
   return (
@@ -45,8 +52,57 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/dashboard/memory"
+            element={
+              <ProtectedRoute requireOnboarded>
+                <MemoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/patterns"
+            element={
+              <ProtectedRoute requireOnboarded>
+                <PatternsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/sessions"
+            element={
+              <ProtectedRoute requireOnboarded>
+                <SessionsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/sessions/:id"
+            element={
+              <ProtectedRoute requireOnboarded>
+                <SessionDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/sources/:id"
+            element={
+              <ProtectedRoute requireOnboarded>
+                <SourceDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/tutor"
+            element={
+              <ProtectedRoute requireOnboarded>
+                <Tutor />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <Toaster />
       </AuthProvider>
     </BrowserRouter>
   );

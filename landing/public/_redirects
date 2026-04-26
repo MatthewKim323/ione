@@ -1,0 +1,3 @@
+# Cloudflare Pages SPA fallback. Vercel uses vercel.json; CF Pages uses this.
+# Order matters — list specific routes (if any) before the catch-all.
+/*    /index.html   200

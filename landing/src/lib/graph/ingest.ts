@@ -1,4 +1,5 @@
 import { supabase } from "../supabase";
+import { authedJson } from "../api";
 import type {
   SourceFile,
   SourceKind,
@@ -144,7 +145,55 @@ export async function ingestSource(input: IngestInput): Promise<IngestResult> {
     },
   });
 
+  // ── 6. kick KG extraction (non-blocking) ──────────────────────────────
+  // For text sources we already have a chunk, so the server can extract
+  // immediately. For binaries (PDFs, images) the call is still safe — the
+  // server returns a no-op no_chunks error and the row stays status='pending'
+  // until a future OCR worker fills in chunks. We deliberately *await* the
+  // call (rather than fire-and-forget) so the UI can show "memory updating…"
+  // and the realtime feed populates synchronously after the promise resolves.
+  // If the API is down, ingestion still succeeds — extraction is best-effort.
+  void triggerExtraction(row.id, row.kind).catch((e) => {
+    console.warn("[ingest] extraction trigger failed (non-fatal)", e);
+  });
+
   return { ok: true, sourceFile: row };
+}
+
+type ExtractionResponse = {
+  source_file_id: string;
+  inserted_claim_ids: string[];
+  per_extractor: Array<{
+    extractor: string;
+    claims: number;
+    errors: Array<{ code: string; message: string }>;
+    usd: number;
+    ms: number;
+    model: string | null;
+    summary?: string;
+  }>;
+  total_cost_usd: number;
+  errors: Array<{ code: string; message: string }>;
+};
+
+/**
+ * Calls POST /api/sources/extract. Exported so callers (e.g. a "re-extract"
+ * button on the source detail page in Phase 4 / G6) can invoke it directly
+ * without re-uploading.
+ */
+export async function triggerExtraction(
+  sourceFileId: string,
+  sourceKind?: SourceKind,
+): Promise<ExtractionResponse | null> {
+  try {
+    return await authedJson<ExtractionResponse>("/api/sources/extract", {
+      source_file_id: sourceFileId,
+      ...(sourceKind ? { source_kind: sourceKind } : {}),
+    });
+  } catch (e) {
+    console.warn("[ingest] /api/sources/extract failed", e);
+    return null;
+  }
 }
 
 /** Public read URL is signed, since the bucket is private. */

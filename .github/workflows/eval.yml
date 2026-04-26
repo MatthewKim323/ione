@@ -1,0 +1,68 @@
+# Live agent-eval suite. Costs real Anthropic budget (~$0.40 per full run on
+# 2026-04-25 prices) so this is *manual* (workflow_dispatch) and gated behind
+# the EVAL_OPT_IN secret. CI (.github/workflows/ci.yml) deliberately runs with
+# RUN_EVAL unset.
+
+name: eval
+
+on:
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: "Why are you re-running the eval? (e.g. 'pre-demo dress rehearsal')"
+        required: true
+        default: "manual"
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  eval:
+    name: orchestrator + KG extractor evals
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    # Set repo variable EVAL_OPT_IN=true (Settings → Variables) before this
+    # workflow can run. This is a guardrail against accidental $$$ drains —
+    # secrets are tested at runtime; the variable is the green-light flag.
+    if: ${{ vars.EVAL_OPT_IN == 'true' }}
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Run eval (RUN_EVAL=1)
+        run: npm run eval
+        env:
+          RUN_EVAL: "1"
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Eval-only budget cap so a runaway loop can't drain the prod cap.
+          COST_CAP_USD_BUILD: "5.00"
+
+      - name: Build summary (api/.eval/summary.md)
+        if: always()
+        working-directory: ${{ github.workspace }}
+        run: node scripts/eval-report.mjs
+
+      - name: Upload eval artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          # Both per-suite JSON and the human-readable summary.
+          path: |
+            api/.eval/orchestrator.json
+            api/.eval/kg.json
+            api/.eval/summary.md
+          if-no-files-found: warn
+          retention-days: 30

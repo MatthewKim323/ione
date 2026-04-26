@@ -140,6 +140,7 @@ export type Chunk = {
   artifact_id: string | null;
   source_kind: SourceKind;
   text: string;
+  position: number | null;
   offset_start: number | null;
   offset_end: number | null;
   tokens: unknown[];
@@ -209,6 +210,163 @@ export type GraphEventInsert = {
   kind: string;
   payload?: Record<string, unknown>;
 };
+
+// ── tutor sessions / cycles / hints (mirrors 0003_tutor_sessions.sql) ─────
+
+export type PageState =
+  | "fresh_problem"
+  | "in_progress"
+  | "near_complete"
+  | "stalled_or_stuck";
+
+export type StepStatus =
+  | "correct"
+  | "minor_error"
+  | "major_error"
+  | "stalled"
+  | "off_track"
+  | "complete"
+  | "unknown";
+
+export type HintType =
+  | "error_callout"
+  | "scaffolding_question"
+  | "encouragement"
+  | "redirect";
+
+export type SessionEndReason =
+  | "user_stopped"
+  | "browser_closed"
+  | "cost_exceeded"
+  | "error"
+  | "idle_timeout";
+
+export type TutorSession = {
+  id: string;
+  user_id: string;
+  problem_text: string | null;
+  problem_topic: string | null;
+  problem_id: string | null;
+  canonical_solution_json: Record<string, unknown> | null;
+  demo_mode: boolean;
+  client_user_agent: string | null;
+  started_at: string;
+  ended_at: string | null;
+  end_reason: SessionEndReason | null;
+  total_cost_usd: number;
+  total_cycles: number;
+  total_hints: number;
+  predicted_correct: number;
+  predicted_total: number;
+};
+
+export type TutorSessionInsert = Partial<
+  Omit<TutorSession, "id" | "user_id" | "started_at">
+> & {
+  id?: string;
+  user_id: string;
+  started_at?: string;
+};
+
+export type TutorSessionUpdate = Partial<
+  Omit<TutorSession, "id" | "user_id" | "started_at">
+>;
+
+export type TutorCycle = {
+  id: string;
+  session_id: string;
+  user_id: string;
+  cycle_index: number;
+  client_ts: string;
+  server_started_at: string;
+  server_finished_at: string | null;
+
+  diff_pct: number | null;
+  is_stalled: boolean;
+  seconds_since_last_change: number | null;
+
+  ocr_problem_text: string | null;
+  ocr_current_step_latex: string | null;
+  ocr_completed_steps_latex: unknown;
+  ocr_page_state: PageState | null;
+  ocr_confidence: number | null;
+  ocr_is_blank: boolean;
+  mathpix_latex: string | null;
+  mathpix_confidence: number | null;
+
+  step_status: StepStatus | null;
+  error_type: string | null;
+  error_location: string | null;
+  severity: number | null;
+  what_they_should_do_next: string | null;
+  scaffolding_question: string | null;
+  matches_known_error_pattern: boolean | null;
+
+  predicted_error_type: string | null;
+  predicted_error_basis: string | null;
+  predicted_confidence: number | null;
+  predicted_recommend_intervene: boolean | null;
+
+  spoke: boolean;
+  suppression_reason: string | null;
+
+  cost_usd: number;
+  latency_ms: number | null;
+  tokens_input: number | null;
+  tokens_output: number | null;
+
+  frame_storage_path: string | null;
+
+  ocr_json: Record<string, unknown>;
+  reasoning_json: Record<string, unknown>;
+  predictive_json: Record<string, unknown>;
+  intervention_json: Record<string, unknown>;
+};
+
+export type TutorCycleInsert = Partial<
+  Omit<TutorCycle, "id" | "server_started_at">
+> & {
+  id?: string;
+  session_id: string;
+  user_id: string;
+  cycle_index: number;
+  client_ts: string;
+  server_started_at?: string;
+};
+
+export type TutorCycleUpdate = Partial<
+  Omit<TutorCycle, "id" | "session_id" | "user_id">
+>;
+
+export type TutorHint = {
+  id: string;
+  session_id: string;
+  cycle_id: string | null;
+  user_id: string;
+  hint_type: HintType;
+  text: string;
+  predicted: boolean;
+  severity: number | null;
+  audio_storage_path: string | null;
+  audio_duration_ms: number | null;
+  was_helpful: boolean | null;
+  reasoning_for_decision: string | null;
+  created_at: string;
+};
+
+export type TutorHintInsert = Partial<
+  Omit<TutorHint, "id" | "created_at">
+> & {
+  id?: string;
+  session_id: string;
+  user_id: string;
+  hint_type: HintType;
+  text: string;
+};
+
+export type TutorHintUpdate = Partial<
+  Omit<TutorHint, "id" | "session_id" | "user_id" | "created_at">
+>;
 
 // ── Database root, shaped for @supabase/supabase-js v2 ────────────────────
 // Mirrors the shape `supabase gen types typescript` emits in 2.x. The
@@ -282,6 +440,24 @@ export type Database = {
         Update: Partial<GraphEventInsert>;
         Relationships: [];
       };
+      tutor_sessions: {
+        Row: TutorSession;
+        Insert: TutorSessionInsert;
+        Update: TutorSessionUpdate;
+        Relationships: [];
+      };
+      tutor_cycles: {
+        Row: TutorCycle;
+        Insert: TutorCycleInsert;
+        Update: TutorCycleUpdate;
+        Relationships: [];
+      };
+      tutor_hints: {
+        Row: TutorHint;
+        Insert: TutorHintInsert;
+        Update: TutorHintUpdate;
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };
@@ -293,6 +469,10 @@ export type Database = {
       source_kind: SourceKind;
       claim_status: ClaimStatus;
       sensitivity: Sensitivity;
+      page_state: PageState;
+      step_status: StepStatus;
+      hint_type: HintType;
+      session_end_reason: SessionEndReason;
     };
     CompositeTypes: { [_ in never]: never };
   };
