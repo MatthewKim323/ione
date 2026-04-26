@@ -22,6 +22,13 @@ const PRELOAD_ROOT_MARGIN = "150% 0px";
 // contain-fit video reads as part of the page, not as a hard rectangle.
 const PAGE_BG = "#f2f2f2";
 
+// Inset the framed plate from the viewport edges so the video sits
+// inside the page like every other section, instead of edge-bleeding.
+// Tuned to leave a comfortable margin without shrinking the plate too
+// much on small laptops.
+const PLATE_INSET_VH = 8; // top/bottom margin in vh
+const PLATE_INSET_VW = 5; // left/right margin in vw
+
 async function preloadFrames(
   src: string,
   count: number,
@@ -121,16 +128,17 @@ export function Demo() {
     if (!ctx) return;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    let cssWidth = window.innerWidth;
-    let cssHeight = window.innerHeight;
+    let cssWidth = 0;
+    let cssHeight = 0;
 
     function syncCanvas() {
-      cssWidth = window.innerWidth;
-      cssHeight = window.innerHeight;
+      // Read the canvas's own rendered size — it's CSS-inset from the
+      // viewport (PLATE_INSET_*) so we don't want window dimensions.
+      const rect = canvas!.getBoundingClientRect();
+      cssWidth = Math.max(1, rect.width);
+      cssHeight = Math.max(1, rect.height);
       canvas!.width = Math.floor(cssWidth * dpr);
       canvas!.height = Math.floor(cssHeight * dpr);
-      canvas!.style.width = cssWidth + "px";
-      canvas!.style.height = cssHeight + "px";
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
     }
     syncCanvas();
@@ -231,22 +239,44 @@ export function Demo() {
           width: "100%",
           overflow: "hidden",
           backgroundColor: PAGE_BG,
+          // Center the framed plate within the viewport.
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        <canvas
-          ref={canvasRef}
-          aria-hidden
+        <div
           style={{
-            position: "absolute",
-            inset: 0,
-            display: "block",
-            width: "100%",
-            height: "100%",
-            opacity: ready ? 1 : 0,
-            transition: "opacity 0.6s ease",
-            willChange: "opacity",
+            position: "relative",
+            // Plate is inset from the viewport edges so the section
+            // reads as a framed piece sitting inside the page rather
+            // than a full-bleed video punching through it.
+            width: `calc(100% - ${PLATE_INSET_VW * 2}vw)`,
+            height: `calc(100% - ${PLATE_INSET_VH * 2}vh)`,
+            backgroundColor: PAGE_BG,
+            // Soft, low-contrast shadow so it lifts off the page without
+            // looking like a heavy chrome'd window.
+            boxShadow:
+              "0 24px 60px -28px rgba(0,0,0,0.18)," +
+              " 0 4px 18px -8px rgba(0,0,0,0.10)",
+            overflow: "hidden",
           }}
-        />
+        >
+          <canvas
+            ref={canvasRef}
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "block",
+              width: "100%",
+              height: "100%",
+              opacity: ready ? 1 : 0,
+              transition: "opacity 0.6s ease",
+              willChange: "opacity",
+            }}
+          />
+        </div>
       </div>
     </section>
   );
