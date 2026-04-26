@@ -1,0 +1,4 @@
+# Root `api/` is the Hono backend (deployed on Fly/Render/etc.), not Vercel
+# serverless routes. Vercel auto-registers each file under `/api` as a function
+# and hits the Hobby plan limit (12 functions per deployment).
+api/

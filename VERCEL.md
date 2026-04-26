@@ -12,6 +12,8 @@ This repo’s **production web app** is the Vite + React client in **`landing/`*
 
 The repo includes a **root `vercel.json`** that runs `npm ci` + `npm run build` **inside `landing/`** and publishes **`landing/dist`**. Import the repo and deploy **without** setting a subdirectory.
 
+**Hobby plan:** Vercel treats a root **`api/`** tree as *one serverless function per route file*. This repo’s **`api/`** is the full Hono app (dozens of modules), not Vercel lambdas — that trips the **12 functions per deployment** cap. **`.vercelignore`** excludes **`api/`** so only the static site ships; keep hosting the API on Fly/Render/etc. (Setup B avoids uploading the parent `api/` folder entirely.)
+
 ### B — Root Directory = `landing`
 
 Set **Root Directory** to `landing` in the project settings. Vercel then uses **`landing/vercel.json`** only (root `vercel.json` is ignored). Framework **Vite**, build `npm run build`, output `dist`.
