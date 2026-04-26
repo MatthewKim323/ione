@@ -39,12 +39,13 @@ function HandwrittenWordmark() {
   // The whole writing window — used to time the moving pen tip.
   const lastStrokeEnd = period.end;
 
-  // Each letter wrapper uses the same clip-path inset reveal, with
-  // -30% / -25% top/bottom buffers so the integral's top curl, the
-  // i-tittle, and the integral's bottom tail are never clipped.
+  // Each letter reveals with opacity + a tiny lift — no clip-path,
+  // since clipping italic glyphs slices off their side bearings and
+  // tops/bottoms.  Cadence still feels like a hand writing because the
+  // letters arrive in sequence, paced by STROKE_DUR / STROKE_GAP.
   const letterMotionProps = (start: number) => ({
-    initial: { clipPath: "inset(-30% 100% -25% 0)" },
-    animate: { clipPath: "inset(-30% 0% -25% 0)" },
+    initial: { opacity: 0, y: "0.06em" },
+    animate: { opacity: 1, y: "0em" },
     transition: { delay: start, duration: STROKE_DUR, ease: HAND_EASE },
     style: {
       display: "inline-block",
