@@ -23,21 +23,10 @@ export function Hero() {
       <div className="relative w-full max-w-[1380px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-x-12 gap-y-16 items-center">
         {/* ── Left: headline + CTAs ─────────────────────────────────── */}
         <div className="lg:col-span-7 relative">
-          {/* tiny upper-left meta */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
-            className="font-sub text-[10px] tracking-[0.22em] uppercase text-ink/55 mb-12 flex items-center gap-3"
-          >
-            <span className="inline-block h-px w-8 bg-ink/25" />
-            <span>an AI math tutor · est. 2026</span>
-          </motion.div>
-
           <motion.h1
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ delay: 0.2, duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
             className="h-display text-[clamp(3.2rem,8.4vw,8.6rem)]"
             style={{
               color: "#FFFFFF",
@@ -55,14 +44,14 @@ export function Hero() {
               </span>
             </span>
             <span className="block">
-              of your page<span className="text-red-pencil">.</span>
+              of your page<span className="text-neon">.</span>
             </span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.55, duration: 0.7 }}
+            transition={{ delay: 0.45, duration: 0.7 }}
             className="mt-10 max-w-[42ch] text-ink/80 text-[15px] leading-[1.7] font-sub"
           >
             ione watches you do math on your iPad and intervenes only
@@ -73,7 +62,7 @@ export function Hero() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.85, duration: 0.6 }}
+            transition={{ delay: 0.7, duration: 0.6 }}
             className="mt-12 flex flex-wrap items-center gap-5"
           >
             <EnterCTA className="hero-primary-cta" />
@@ -105,24 +94,43 @@ export function Hero() {
             </a>
           </motion.div>
 
-          {/* tagline strip */}
+          {/* tagline strip — horizontal progress bars (Framer-style track + fill) */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.05, duration: 0.6 }}
-            className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-y-3 gap-x-8 max-w-2xl border-t border-ink-line pt-6"
+            className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-y-6 sm:gap-y-0 gap-x-8 max-w-2xl border-t border-ink-line pt-6"
           >
             {[
               ["silent observation", "watches, doesn't narrate"],
               ["scaffolded hints", "questions, not answers"],
               ["longitudinal memory", "remembers your stalls"],
             ].map(([title, sub], i) => (
-              <div key={title} className="flex flex-col gap-1">
-                <span className="meta-label text-ink">
-                  <span className="text-red-pencil mr-2">{`0${i + 1}`}</span>
-                  {title}
-                </span>
-                <span className="text-[11px] font-sub text-ink/55">
+              <div key={title} className="flex min-w-0 flex-col gap-2">
+                <div className="font-sub text-[10px] sm:text-[11px] tracking-[0.2em] uppercase text-ink font-bold">
+                  <span className="text-red-pencil font-bold tabular-nums">
+                    {`0${i + 1}`}
+                  </span>
+                  <span className="ml-2">{title}</span>
+                </div>
+                <div
+                  className="h-[2px] w-full overflow-hidden rounded-full"
+                  style={{ backgroundColor: "rgba(0,0,0,0.1)" }}
+                  aria-hidden
+                >
+                  <motion.div
+                    className="h-full w-full origin-left bg-red-pencil"
+                    initial={{ scaleX: 0 }}
+                    whileInView={{ scaleX: 1 }}
+                    viewport={{ once: true, amount: 0.6 }}
+                    transition={{
+                      delay: 0.08 * i,
+                      duration: 0.55,
+                      ease: [0.16, 1, 0.3, 1],
+                    }}
+                  />
+                </div>
+                <span className="text-[11px] font-sub text-ink/55 leading-snug">
                   {sub}
                 </span>
               </div>

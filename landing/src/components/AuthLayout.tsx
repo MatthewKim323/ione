@@ -40,7 +40,7 @@ export function AuthLayout({
           className="text-paper text-2xl leading-none"
           style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
         >
-          ione<span className="text-red-pencil">.</span>
+          ione<span className="text-neon">.</span>
         </Link>
         <div className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
           {meta}

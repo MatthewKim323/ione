@@ -1,59 +1,21 @@
 import { motion } from "motion/react";
-import { SectionLabel } from "./SectionLabel";
+import { useEffect, useRef } from "react";
+import { PipelineStepCarousel, type PipelineStep } from "./PipelineStepCarousel";
+import { SKIP_FX } from "../lib/prerender";
 
-/** Same clip as the capture step — lives in /public. */
+/** Same clip as the capture step — lives in /public. A 720p / lower-bitrate re-encode will decode cheaper. */
 const PIPELINE_BG_VIDEO = "/pipeline-capture-bg.mp4";
 
-/** Feather video edges into the page so the strip doesn’t read as a hard rectangle. */
-const MASK_VERTICAL =
-  "linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%)";
-const MASK_VERTICAL_TIGHT =
-  "linear-gradient(to bottom, transparent 0%, black 18%, black 82%, transparent 100%)";
+// Scroll-scrub: map progress across a *longer* virtual distance so each pixel of scroll nudges
+// the clip less (smoother, fewer big seeks). Lerp a bit snappier so the loop stops sooner = less CPU.
+// Coalesce seeks: many codecs struggle with 60 sub-second seeks/sec; throttling is cheaper & reads fine as background.
+const SEEK_LERP = 0.58;
+/** >1 = full 0→1 range takes more scroll (finer “frames” per scroll distance). */
+const SCRUB_RANGE_MULT = 1.7;
+/** Cap how often we touch currentTime (~24 fps) to ease decoder + main thread. */
+const MIN_SEEK_INTERVAL_SEC = 0.04;
 
-function VideoBackdrop({
-  className = "",
-  edgeMask = "vertical",
-}: {
-  className?: string;
-  /** `vertical` softens top/bottom; `none` keeps a hard crop. */
-  edgeMask?: "vertical" | "vertical-tight" | "none";
-}) {
-  const mask =
-    edgeMask === "none"
-      ? undefined
-      : edgeMask === "vertical-tight"
-        ? MASK_VERTICAL_TIGHT
-        : MASK_VERTICAL;
-
-  return (
-    <div
-      className={`pointer-events-none absolute inset-0 ${className}`}
-      aria-hidden
-      style={
-        mask
-          ? {
-              maskImage: mask,
-              WebkitMaskImage: mask,
-              maskSize: "100% 100%",
-              WebkitMaskSize: "100% 100%",
-            }
-          : undefined
-      }
-    >
-      <video
-        className="absolute inset-0 h-full w-full object-cover scale-[1.02]"
-        src={PIPELINE_BG_VIDEO}
-        muted
-        playsInline
-        loop
-        autoPlay
-        preload="metadata"
-      />
-    </div>
-  );
-}
-
-const STEPS = [
+const STEPS: readonly PipelineStep[] = [
   {
     n: "01",
     name: "capture",
@@ -89,172 +51,222 @@ const STEPS = [
 ];
 
 export function Pipeline() {
-  return (
-    <section
-      id="pipeline"
-      className="relative px-6 sm:px-10 py-32 sm:py-44 border-t border-ink-line"
-    >
-      <div className="max-w-[1380px] mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-15%" }}
-          transition={{ duration: 0.6 }}
-        >
-          <SectionLabel number="002" name="pipeline" />
-        </motion.div>
+  const videoFieldRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const renderedTimeRef = useRef(0);
+  const durationRef = useRef(0);
+  const lastSeekRef = useRef(-1);
 
-        {/* Full-bleed strip: video behind “from pixels → insight” + intro. */}
-        <div className="relative left-1/2 mt-12 w-screen max-w-none -translate-x-1/2 overflow-hidden">
-          <VideoBackdrop edgeMask="vertical" />
-          <div className="relative z-10 mx-auto max-w-[1380px] px-6 py-14 sm:px-10 sm:py-20">
-            <div className="grid grid-cols-1 gap-x-12 gap-y-10 lg:grid-cols-12">
-              <div className="lg:col-span-7">
-                <motion.h2
-                  initial={{ opacity: 0, y: 14 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-10%" }}
-                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-                  className="h-display text-[clamp(2.4rem,5vw,4.6rem)] text-bark"
-                >
-                  <span className="block">from pixels</span>
-                  <span className="block">
-                    to <span style={{ fontStyle: "italic" }}>insight</span>
-                    <span className="text-red-pencil">.</span>
-                  </span>
-                </motion.h2>
-              </div>
-              <div className="lg:col-span-5 lg:pt-4">
-                <motion.p
-                  initial={{ opacity: 0 }}
-                  whileInView={{ opacity: 1 }}
-                  viewport={{ once: true, margin: "-10%" }}
-                  transition={{ duration: 0.7, delay: 0.1 }}
-                  className="text-bark/90 text-[15px] leading-[1.7] font-sub"
-                >
-                  Every eight seconds your screen becomes a JSON document.
-                  Three specialised agents read it in series — each one
-                  cheaper, faster, and more skeptical than the last.
-                </motion.p>
-              </div>
+  useEffect(() => {
+    const field = videoFieldRef.current;
+    const video = videoRef.current;
+    if (!field || !video) return;
+
+    if (SKIP_FX) {
+      const onMeta = () => {
+        const d = Number.isFinite(video.duration) ? video.duration : 0;
+        if (d > 0) {
+          try {
+            video.pause();
+            video.currentTime = d * 0.45;
+          } catch {
+            /* ignore */
+          }
+        }
+      };
+      if (video.readyState >= 1) onMeta();
+      else video.addEventListener("loadedmetadata", onMeta, { once: true });
+      return () => video.removeEventListener("loadedmetadata", onMeta);
+    }
+
+    let rafId = 0;
+    let running = true;
+
+    const readProgress = () => {
+      const vh = window.innerHeight || 1;
+      const rect = field.getBoundingClientRect();
+      const scrubPx = Math.max(1, (rect.height - vh) * SCRUB_RANGE_MULT);
+      const u = -rect.top / scrubPx;
+      return u < 0 ? 0 : u > 1 ? 1 : u;
+    };
+
+    const tick = () => {
+      rafId = 0;
+      if (!running) return;
+      const dur = durationRef.current;
+      if (dur > 0) {
+        const target = readProgress() * dur;
+        let rt = renderedTimeRef.current;
+        rt += (target - rt) * SEEK_LERP;
+        if (Math.abs(target - rt) < 0.008) rt = target;
+        renderedTimeRef.current = rt;
+
+        const last = lastSeekRef.current;
+        if (last < 0 || Math.abs(rt - last) >= MIN_SEEK_INTERVAL_SEC) {
+          if (!video.paused) video.pause();
+          try {
+            video.currentTime = rt;
+            lastSeekRef.current = rt;
+          } catch {
+            /* seek before ready */
+          }
+        }
+        if (Math.abs(target - rt) > 0.02) {
+          rafId = requestAnimationFrame(tick);
+        }
+      }
+    };
+
+    const kick = () => {
+      if (!running) return;
+      if (rafId) return;
+      rafId = requestAnimationFrame(tick);
+    };
+
+    const onMeta = () => {
+      const d = Number.isFinite(video.duration) ? video.duration : 0;
+      durationRef.current = d;
+      if (d > 0) {
+        const initial = readProgress() * d;
+        renderedTimeRef.current = initial;
+        lastSeekRef.current = -1;
+        try {
+          if (!video.paused) video.pause();
+          video.currentTime = initial;
+          lastSeekRef.current = initial;
+        } catch {
+          /* ignore */
+        }
+        kick();
+      }
+    };
+
+    if (video.readyState >= 1) onMeta();
+    else video.addEventListener("loadedmetadata", onMeta, { once: true });
+
+    const onActivity = () => {
+      kick();
+    };
+    window.addEventListener("scroll", onActivity, { passive: true });
+    window.addEventListener("wheel", onActivity, { passive: true });
+    window.addEventListener("resize", onActivity, { passive: true });
+    onActivity();
+
+    return () => {
+      running = false;
+      cancelAnimationFrame(rafId);
+      video.removeEventListener("loadedmetadata", onMeta);
+      window.removeEventListener("scroll", onActivity);
+      window.removeEventListener("wheel", onActivity);
+      window.removeEventListener("resize", onActivity);
+    };
+  }, []);
+
+  return (
+    <section id="pipeline" className="relative">
+      {/*
+        Full-bleed video: scroll-scrubbed (0→duration) over the field height, like /bg.
+        16:9-friendly min height, soft top blend from pedagogy.
+      */}
+      <div
+        ref={videoFieldRef}
+        className="relative left-1/2 w-screen min-h-[max(100svh,56.25vw)] max-w-none -translate-x-1/2 overflow-hidden"
+      >
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 h-full w-full">
+            <video
+              ref={videoRef}
+              className="absolute left-1/2 top-1/2 h-full w-full -translate-x-1/2 -translate-y-1/2 min-h-full min-w-full object-cover object-center"
+              src={PIPELINE_BG_VIDEO}
+              muted
+              playsInline
+              preload="auto"
+            />
+          </div>
+        </div>
+
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 z-[2] h-28 bg-gradient-to-b from-[#f2f2f2] from-5% via-[#f2f2f2]/40 via-35% to-transparent sm:h-40 sm:from-10%"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-[2] h-36 bg-gradient-to-t from-[#f2f2f2] from-10% via-[#f2f2f2]/50 to-transparent sm:h-44"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-y-0 left-0 z-[1] w-8 bg-gradient-to-r from-[#f2f2f2]/50 to-transparent sm:w-12"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute inset-y-0 right-0 z-[1] w-8 bg-gradient-to-l from-[#f2f2f2]/50 to-transparent sm:w-12"
+          aria-hidden
+        />
+
+        <div className="relative z-10 mx-auto flex min-h-[max(100svh,56.25vw)] max-w-[1380px] flex-col justify-between px-6 sm:px-10">
+          <div className="grid flex-1 grid-cols-1 content-center gap-x-12 gap-y-10 pb-12 pt-24 sm:pb-16 sm:pt-28 lg:grid-cols-12 lg:pt-32">
+            <div className="lg:col-span-7">
+              <motion.h2
+                initial={{ opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-10%" }}
+                transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                className="h-display text-[clamp(2.4rem,5vw,4.6rem)] text-bark drop-shadow-[0_1px_2px_rgba(255,255,255,0.35)]"
+              >
+                <span className="block">from pixels</span>
+                <span className="block">
+                  to <span style={{ fontStyle: "italic" }}>insight</span>
+                  <span className="text-neon">.</span>
+                </span>
+              </motion.h2>
+            </div>
+            <div className="lg:col-span-5 lg:pt-2">
+              <motion.p
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true, margin: "-10%" }}
+                transition={{ duration: 0.7, delay: 0.1 }}
+                className="text-bark/95 text-[15px] leading-[1.7] font-sub drop-shadow-[0_1px_1px_rgba(255,255,255,0.4)]"
+              >
+                Every eight seconds your screen becomes a JSON document. Three
+                specialised agents read it in series — each one cheaper, faster,
+                and more skeptical than the last.
+              </motion.p>
             </div>
           </div>
+
+          <motion.div
+            className="w-full max-w-xl pb-12 pt-4 sm:max-w-2xl sm:pb-16 sm:pt-6"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-8%" }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <div className="relative rounded-2xl border border-ink/10 bg-[#f2f2f2]/50 p-3 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.12)] backdrop-blur-[2px] sm:p-4">
+              <PipelineStepCarousel steps={STEPS} />
+            </div>
+          </motion.div>
         </div>
+      </div>
 
-        {/* the four-step diagram */}
-        <div className="mt-24 relative">
-          {/* connecting line behind the steps */}
-          <div
-            aria-hidden
-            className="hidden md:block absolute top-[68px] left-0 right-0 h-px bg-ink-line"
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-px md:gap-8 lg:gap-12">
-            {STEPS.map((step, i) => {
-              const isCapture = step.name === "capture";
-              return (
-                <motion.div
-                  key={step.n}
-                  initial={{ opacity: 0, y: 18 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-10%" }}
-                  transition={{
-                    duration: 0.7,
-                    delay: i * 0.15,
-                    ease: [0.16, 1, 0.3, 1],
-                  }}
-                  className={`relative pt-8 ${
-                    isCapture
-                      ? "overflow-hidden rounded-sm md:min-h-[420px]"
-                      : ""
-                  }`}
-                >
-                  {isCapture && <VideoBackdrop edgeMask="vertical-tight" />}
-
-                  {/* number marker on the connecting line */}
-                  <div className="absolute top-0 left-0 z-10 flex items-center gap-3">
-                    <span
-                      className={`w-2.5 h-2.5 rounded-full ${
-                        step.color === "red-pencil"
-                          ? "bg-red-pencil"
-                          : step.color === "brass"
-                            ? "bg-brass"
-                            : step.color === "moss"
-                              ? "bg-moss"
-                              : "bg-paper-dim"
-                      }`}
-                    />
-                    <span
-                      className={`font-sub text-[10px] tracking-[0.22em] uppercase tabular-nums ${
-                        isCapture ? "text-bark/55" : "text-paper-mute"
-                      }`}
-                    >
-                      {step.n}
-                    </span>
-                  </div>
-
-                  <div
-                    className={`relative z-10 pt-12 ${
-                      isCapture ? "px-1 sm:px-2 pb-4" : ""
-                    }`}
-                  >
-                    <h3
-                      className={`text-[2.6rem] leading-[0.95] mb-1 ${
-                        isCapture ? "text-bark" : "text-ink"
-                      }`}
-                      style={{ fontFamily: "var(--font-display)" }}
-                    >
-                      {step.name}
-                    </h3>
-                    <div
-                      className={`meta-label mb-6 ${
-                        isCapture ? "text-bark/70" : ""
-                      }`}
-                    >
-                      {step.sub}
-                    </div>
-                    <p
-                      className={`text-[13px] leading-[1.65] font-sub mb-8 ${
-                        isCapture ? "text-bark/85" : "text-paper-dim"
-                      }`}
-                    >
-                      {step.body}
-                    </p>
-                    <div
-                      className={`font-sub text-[10px] tracking-[0.12em] uppercase pt-4 border-t flex items-center gap-2 ${
-                        isCapture
-                          ? "border-bark/25 text-bark/75"
-                          : "border-ink-line text-paper-mute"
-                      }`}
-                    >
-                      <span className="text-red-pencil">→</span>
-                      <span className="truncate">{step.out}</span>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* aside: why this works */}
+      <div className="mx-auto max-w-[1380px] px-6 sm:px-10">
         <motion.div
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true, margin: "-10%" }}
           transition={{ duration: 0.7 }}
-          className="mt-32 grid grid-cols-1 md:grid-cols-12 gap-8 border-t border-ink-line pt-12"
+          className="mt-20 grid grid-cols-1 gap-8 border-t border-ink-line bg-[#f2f2f2] py-20 pt-16 sm:mt-24 sm:pt-20 md:grid-cols-12"
         >
           <div className="md:col-span-4">
             <span className="meta-label">cost model</span>
             <h4
-              className="text-ink text-[1.6rem] mt-3"
+              className="mt-3 text-ink text-[1.6rem]"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              two cents per cycle, mostly skipped.
+              two cents per cycle, mostly skipped
+              <span className="text-neon">.</span>
             </h4>
           </div>
-          <div className="md:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="md:col-span-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
             {[
               ["~ 95%", "of frames skipped", "(no diff, no work)"],
               ["~ 4%", "reach the OCR agent", "(diff but trivial)"],
@@ -268,9 +280,7 @@ export function Pipeline() {
                   {n}
                 </div>
                 <div className="meta-label text-ink/70">{top}</div>
-                <div className="font-sub text-[11px] text-ink/55 mt-1">
-                  {bot}
-                </div>
+                <div className="mt-1 font-sub text-[11px] text-ink/55">{bot}</div>
               </div>
             ))}
           </div>

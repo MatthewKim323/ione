@@ -19,7 +19,7 @@ export function DashboardShell({ children }: { children: ReactNode }) {
           className="text-paper text-2xl leading-none hover:opacity-80 transition-opacity"
           style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
         >
-          ione<span className="text-red-pencil">.</span>
+          ione<span className="text-neon">.</span>
         </Link>
         <div className="flex items-center gap-6">
           <Link

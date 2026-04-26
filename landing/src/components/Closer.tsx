@@ -62,7 +62,7 @@ export function Closer() {
               <span className="block">
                 on{" "}
                 <span style={{ fontStyle: "italic" }}>line three</span>
-                <span className="text-red-pencil">.</span>
+                <span className="text-neon">.</span>
               </span>
             </motion.h2>
 
@@ -122,7 +122,7 @@ export function Closer() {
             className="text-paper text-2xl leading-none normal-case tracking-normal"
             style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
           >
-            ione<span className="text-red-pencil">.</span>
+            ione<span className="text-neon">.</span>
           </span>
           <span className="text-paper-faint">© mmxxvi</span>
         </div>

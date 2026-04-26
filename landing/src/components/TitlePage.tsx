@@ -39,34 +39,33 @@ function HandwrittenWordmark() {
             position: "relative",
             display: "inline-block",
             fontSize: "0.88em",
-            marginRight: "-0.04em",
+            marginRight: "-0.1em",
             transform: "translateY(0.08em)",
           }}
         >
           ∫
+          <motion.span
+            aria-hidden
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{
+              delay: tittleAt,
+              duration: 0.22,
+              ease: [0.34, 1.56, 0.64, 1],
+            }}
+            style={{
+              position: "absolute",
+              left: "0.28em",
+              top: "-0.12em",
+              width: "0.1em",
+              height: "0.1em",
+              borderRadius: "9999px",
+              backgroundColor: "currentColor",
+              transformOrigin: "50% 50%",
+            }}
+          />
         </span>
       </motion.span>
-
-      <motion.span
-        aria-hidden
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{
-          delay: tittleAt,
-          duration: 0.22,
-          ease: [0.34, 1.56, 0.64, 1],
-        }}
-        style={{
-          position: "absolute",
-          top: "-0.09em",
-          left: "0.09em",
-          width: "0.13em",
-          height: "0.13em",
-          borderRadius: "9999px",
-          backgroundColor: "currentColor",
-          transformOrigin: "50% 50%",
-        }}
-      />
 
       <motion.span {...letterMotionProps(o.start)}>
         <span aria-hidden>o</span>
@@ -84,7 +83,7 @@ function HandwrittenWordmark() {
         {...letterMotionProps(period.start)}
         style={{
           ...letterMotionProps(period.start).style,
-          color: "#c4302b",
+          color: "var(--color-neon)",
           fontStyle: "normal",
         }}
       >

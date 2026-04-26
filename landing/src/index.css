@@ -23,6 +23,8 @@
   --color-rust: #9a5a2c;
   --color-brass: #c8a44d;
   --color-moss: #6b7e4a;
+  /* Chartreuse / neon — matches ::selection, headline periods */
+  --color-neon: #d4ff2c;
 
   /* ── Typography ──────────────────────────────────────────────── */
   /* Primary / display — body copy + big heads */
@@ -211,21 +213,49 @@
     border-color: var(--color-paper);
   }
 
-  /* Hero + onboarding: “open the tutor” — blue glass fill, bold, rounded. */
+  /* Hero + onboarding: “open the tutor” — blue glass, top sheen, white glow (Framer-style). */
   .hero-primary-cta.cta {
     font-weight: 700;
     border-radius: 0.5rem;
     color: var(--color-paper);
-    background-color: rgba(29, 78, 216, 0.34);
-    border-color: rgba(29, 78, 216, 0.52);
+    border-color: rgba(255, 255, 255, 0.28);
+    background-image:
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.22) 0%,
+        rgba(255, 255, 255, 0) 42%,
+        rgba(255, 255, 255, 0) 58%,
+        rgba(29, 78, 216, 0.15) 100%
+      ),
+      linear-gradient(
+        135deg,
+        rgba(29, 78, 216, 0.55) 0%,
+        rgba(29, 78, 216, 0.28) 100%
+      );
+    background-color: transparent;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.12),
+      0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+      0 8px 28px -6px rgba(37, 99, 235, 0.55),
+      0 20px 50px 4px rgba(255, 255, 255, 0.1);
   }
   .hero-primary-cta.cta::before {
     border-radius: 0.375rem;
-    border-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.18);
   }
   .hero-primary-cta.cta:hover {
-    background-color: var(--color-red-pencil);
-    border-color: var(--color-red-pencil);
+    color: var(--color-paper);
+    border-color: rgba(255, 255, 255, 0.32);
+    background-image: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.12) 0%,
+      var(--color-red-pencil) 100%
+    );
+    box-shadow:
+      0 2px 8px rgba(0, 0, 0, 0.18),
+      0 0 0 1px rgba(255, 255, 255, 0.2) inset,
+      0 0 36px 2px rgba(255, 255, 255, 0.28),
+      0 10px 40px -8px rgba(196, 48, 43, 0.65);
   }
 
   .cta-ghost {
