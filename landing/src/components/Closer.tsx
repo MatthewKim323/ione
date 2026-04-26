@@ -127,9 +127,7 @@ export function Closer() {
           <span className="text-paper-faint">© mmxxvi</span>
         </div>
         <div className="flex flex-wrap gap-x-7 gap-y-2">
-          <a href="#pedagogy" className="pencil-link">pedagogy</a>
           <a href="#pipeline" className="pencil-link">pipeline</a>
-          <a href="#signal" className="pencil-link">signal</a>
           <a href="https://github.com/MatthewKim323/ione" className="pencil-link">github</a>
           <a href="#" className="pencil-link">privacy</a>
         </div>

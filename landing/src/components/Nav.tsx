@@ -112,12 +112,6 @@ export function Nav() {
               how
             </a>
             <a
-              href="#signal"
-              className="text-paper/90 transition hover:text-paper whitespace-nowrap"
-            >
-              terminal
-            </a>
-            <a
               href="https://github.com/MatthewKim323/ione"
               target="_blank"
               rel="noopener noreferrer"

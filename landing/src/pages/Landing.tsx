@@ -2,10 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Nav } from "../components/Nav";
 import { TitlePage } from "../components/TitlePage";
 import { Hero } from "../components/Hero";
-import { Pedagogy } from "../components/Pedagogy";
 import { Pipeline } from "../components/Pipeline";
 import { Demo } from "../components/Demo";
-import { Signal } from "../components/Signal";
 import { Closer } from "../components/Closer";
 import { SKIP_FX } from "../lib/prerender";
 
@@ -371,9 +369,7 @@ export default function Landing() {
           <TitlePage />
           <Hero />
           <Demo />
-          <Pedagogy />
           <Pipeline />
-          <Signal />
           <Closer />
         </main>
       </div>
