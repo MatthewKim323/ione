@@ -80,7 +80,7 @@ export default function Dashboard() {
           </Link>
           <span
             className={[
-              "hidden sm:inline-flex items-center gap-2 font-mono text-[10px] tracking-[0.22em] uppercase",
+              "hidden sm:inline-flex items-center gap-2 font-sub text-[10px] tracking-[0.22em] uppercase",
               capture.isRunning ? "text-red-pencil" : "text-paper-mute",
             ].join(" ")}
           >
@@ -96,23 +96,23 @@ export default function Dashboard() {
         <div className="flex items-center gap-6">
           <Link
             to="/dashboard/memory"
-            className="hidden sm:inline-block font-mono text-[11px] tracking-[0.14em] uppercase pencil-link"
+            className="hidden sm:inline-block font-sub text-[11px] tracking-[0.14em] uppercase pencil-link"
           >
             memory
           </Link>
           <Link
             to="/"
-            className="hidden sm:inline-block font-mono text-[11px] tracking-[0.14em] uppercase pencil-link"
+            className="hidden sm:inline-block font-sub text-[11px] tracking-[0.14em] uppercase pencil-link"
           >
             ← landing
           </Link>
-          <span className="hidden md:inline-block font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+          <span className="hidden md:inline-block font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
             {user?.email}
           </span>
           <button
             type="button"
             onClick={signOut}
-            className="font-mono text-[11px] tracking-[0.14em] uppercase pencil-link"
+            className="font-sub text-[11px] tracking-[0.14em] uppercase pencil-link"
           >
             sign out
           </button>
@@ -240,7 +240,7 @@ export default function Dashboard() {
           <div className="flex items-baseline justify-between mb-4">
             <div className="section-label">© ione — 001 / sources</div>
             <span
-              className="hidden sm:inline-block font-mono text-[10px] tracking-[0.22em] uppercase text-paper-faint"
+              className="hidden sm:inline-block font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint"
               title="every claim ione makes will cite a chunk from one of these"
             >
               receipts ↑ ground truth
@@ -293,13 +293,13 @@ function BriefRow({
       ].join(" ")}
     >
       <div
-        className="font-mono text-paper-mute text-sm pt-0.5"
+        className="font-sub text-paper-mute text-sm pt-0.5"
         style={{ fontStyle: "italic", fontFamily: "var(--font-display)" }}
       >
         {meta}
       </div>
       <div>
-        <div className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute mb-1">
+        <div className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute mb-1">
           {label}
         </div>
         <div className="text-paper text-base leading-snug">{value}</div>

@@ -72,7 +72,7 @@ export function CapturePanel({ capture }: { capture: UseScreenCaptureResult }) {
         >
           ●
         </span>
-        <span className="font-mono text-[11px] tracking-[0.22em] uppercase text-paper-dim">
+        <span className="font-sub text-[11px] tracking-[0.22em] uppercase text-paper-dim">
           {isRunning ? "capturing · live" : "not yet capturing"}
         </span>
       </div>
@@ -96,7 +96,7 @@ export function CapturePanel({ capture }: { capture: UseScreenCaptureResult }) {
         />
         {!isRunning && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
-            <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+            <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
               awaiting share
             </span>
             <span
@@ -116,7 +116,7 @@ export function CapturePanel({ capture }: { capture: UseScreenCaptureResult }) {
 
       {/* preview meta */}
       {isRunning && (
-        <div className="flex items-center justify-between font-mono text-[10px] tracking-[0.18em] uppercase text-paper-mute mb-6 -mt-3">
+        <div className="flex items-center justify-between font-sub text-[10px] tracking-[0.18em] uppercase text-paper-mute mb-6 -mt-3">
           <span>live · what the agent sees</span>
           <span className="tabular-nums tracking-[0.12em]">
             {videoSize ? `${videoSize.width} × ${videoSize.height}` : "— × —"}
@@ -151,7 +151,7 @@ export function CapturePanel({ capture }: { capture: UseScreenCaptureResult }) {
 
       {/* ── unsupported notice ──────────────────────────────────────── */}
       {!isSupported && (
-        <div className="mb-6 font-mono text-[11px] tracking-[0.14em] uppercase text-paper-mute">
+        <div className="mb-6 font-sub text-[11px] tracking-[0.14em] uppercase text-paper-mute">
           getDisplayMedia not available in this context.
         </div>
       )}
@@ -194,7 +194,7 @@ export function CapturePanel({ capture }: { capture: UseScreenCaptureResult }) {
       {/* ── cadence + adaptive status ───────────────────────────────── */}
       <div className="mt-8 pt-6 border-t border-ink-line">
         <div className="flex items-center justify-between mb-3">
-          <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+          <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
             base cadence
           </span>
           <span
@@ -226,7 +226,7 @@ export function CapturePanel({ capture }: { capture: UseScreenCaptureResult }) {
             lineHeight: 1.4,
           }}
         >
-          <span className="font-mono text-sm not-italic w-4 text-center">
+          <span className="font-sub text-sm not-italic w-4 text-center">
             {status.glyph}
           </span>
           <span>{status.line(stats.effectiveInterval)}</span>
@@ -242,7 +242,7 @@ export function CapturePanel({ capture }: { capture: UseScreenCaptureResult }) {
           value={
             <>
               {(stats.totalEncodedBytes / 1024).toFixed(1)}
-              <span className="ml-1.5 font-mono text-[10px] tracking-[0.14em] uppercase text-paper-mute not-italic">
+              <span className="ml-1.5 font-sub text-[10px] tracking-[0.14em] uppercase text-paper-mute not-italic">
                 KB
               </span>
             </>
@@ -313,7 +313,7 @@ function Stat({
 }) {
   return (
     <div>
-      <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-paper-mute mb-1.5">
+      <div className="font-sub text-[10px] tracking-[0.18em] uppercase text-paper-mute mb-1.5">
         {label}
       </div>
       <div
@@ -345,7 +345,7 @@ export function CaptureLog({ log }: { log: CycleEntry[] }) {
     >
       <div className="flex items-baseline justify-between mb-5">
         <div className="section-label">cycle log</div>
-        <div className="font-mono text-[10px] tracking-[0.18em] uppercase text-paper-faint">
+        <div className="font-sub text-[10px] tracking-[0.18em] uppercase text-paper-faint">
           newest first · last {log.length}
         </div>
       </div>
@@ -387,7 +387,7 @@ function LogRow({ entry }: { entry: CycleEntry }) {
           encoded {entry.kb?.toFixed(1)} KB
         </span>
         <span className="text-moss/40 mx-2">→</span>
-        <span className="text-paper-dim font-mono text-[12px] tracking-tight">
+        <span className="text-paper-dim font-sub text-[12px] tracking-tight">
           POST /api/cycle
         </span>
       </>

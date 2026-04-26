@@ -70,7 +70,7 @@ export default function Signup() {
           </>
         }
       >
-        <div className="font-mono text-xs text-paper-dim leading-relaxed">
+        <div className="font-sub text-xs text-paper-dim leading-relaxed">
           if it doesn't show up in a minute or two, peek inside your spam
           folder. ione's emails are quiet but they're real.
         </div>

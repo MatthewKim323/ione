@@ -214,7 +214,7 @@ export function Signal() {
               whileInView={{ opacity: 1 }}
               viewport={{ once: true, margin: "-10%" }}
               transition={{ duration: 0.7, delay: 0.1 }}
-              className="text-paper-dim text-[15px] leading-[1.7] font-mono mt-10 max-w-[42ch]"
+              className="text-paper-dim text-[15px] leading-[1.7] font-sub mt-10 max-w-[42ch]"
             >
               Every cycle prints a single line. Skipped frames in faint grey,
               processed frames in brass, the rare moment of speech in red. Most
@@ -240,7 +240,7 @@ export function Signal() {
                             : "bg-paper-mute"
                     }`}
                   />
-                  <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-paper-mute">
+                  <span className="font-sub text-[11px] uppercase tracking-[0.18em] text-paper-mute">
                     {label}
                   </span>
                 </div>
@@ -258,10 +258,10 @@ export function Signal() {
                   <span className="w-2.5 h-2.5 rounded-full bg-brass/80" />
                   <span className="w-2.5 h-2.5 rounded-full bg-moss/80" />
                 </div>
-                <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-paper-mute">
+                <div className="font-sub text-[10px] uppercase tracking-[0.22em] text-paper-mute">
                   ~/ione · ted&apos;s desk · zsh
                 </div>
-                <div className="font-mono text-[10px] tracking-[0.18em] text-paper-mute">
+                <div className="font-sub text-[10px] tracking-[0.18em] text-paper-mute">
                   120×34
                 </div>
               </div>
@@ -295,7 +295,7 @@ export function Signal() {
             </div>
 
             {/* footer caption */}
-            <div className="mt-5 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.22em] text-paper-mute">
+            <div className="mt-5 flex items-center justify-between font-sub text-[10px] uppercase tracking-[0.22em] text-paper-mute">
               <span>excerpt · 2026.04.25 · 1m 24s of session</span>
               <span>{count}/{LOG.length} lines</span>
             </div>

@@ -50,19 +50,19 @@ export function MemoryFeed({ bufferSize = 12 }: { bufferSize?: number }) {
     <div className="border border-ink-line bg-ink-raise/40 p-6 sm:p-7">
       <div className="flex items-baseline justify-between mb-5">
         <div className="section-label">© ione — memory feed</div>
-        <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-faint">
+        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint">
           live
         </span>
       </div>
 
       {!isReady && (
-        <p className="font-mono text-[11px] tracking-wide text-paper-mute">
+        <p className="font-sub text-[11px] tracking-wide text-paper-mute">
           listening for the graph…
         </p>
       )}
 
       {isReady && events.length === 0 && (
-        <p className="font-mono text-[11px] leading-relaxed text-paper-mute">
+        <p className="font-sub text-[11px] leading-relaxed text-paper-mute">
           nothing yet — when ione reads a source or proposes a claim, it
           shows up here.
         </p>
@@ -80,14 +80,14 @@ export function MemoryFeed({ bufferSize = 12 }: { bufferSize?: number }) {
                 className="flex items-baseline gap-3 text-sm leading-snug"
               >
                 <span
-                  className={`font-mono text-[9px] tracking-[0.22em] uppercase shrink-0 w-[5.5rem] ${accent}`}
+                  className={`font-sub text-[9px] tracking-[0.22em] uppercase shrink-0 w-[5.5rem] ${accent}`}
                 >
                   {label}
                 </span>
                 <span className="text-paper-dim flex-1 min-w-0 truncate">
                   {headline}
                 </span>
-                <span className="font-mono text-[9px] tracking-wide text-paper-faint shrink-0">
+                <span className="font-sub text-[9px] tracking-wide text-paper-faint shrink-0">
                   {timeAgo(e.created_at)}
                 </span>
               </li>

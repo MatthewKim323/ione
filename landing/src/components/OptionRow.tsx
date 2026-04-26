@@ -41,14 +41,14 @@ export function OptionRow({
       <span className="flex-1 min-w-0">
         <span
           className={[
-            "block font-mono text-sm",
+            "block font-sub text-sm",
             selected ? "text-paper" : "text-paper-dim",
           ].join(" ")}
         >
           {label}
         </span>
         {description && (
-          <span className="block font-mono text-[11px] text-paper-mute mt-0.5">
+          <span className="block font-sub text-[11px] text-paper-mute mt-0.5">
             {description}
           </span>
         )}

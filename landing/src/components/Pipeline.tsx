@@ -108,7 +108,7 @@ export function Pipeline() {
                   whileInView={{ opacity: 1 }}
                   viewport={{ once: true, margin: "-10%" }}
                   transition={{ duration: 0.7, delay: 0.1 }}
-                  className="text-paper/90 text-[15px] leading-[1.7] font-mono drop-shadow-[0_1px_12px_rgba(0,0,0,0.35)]"
+                  className="text-paper/90 text-[15px] leading-[1.7] font-sub drop-shadow-[0_1px_12px_rgba(0,0,0,0.35)]"
                 >
                   Every eight seconds your screen becomes a JSON document.
                   Three specialised agents read it in series — each one
@@ -162,7 +162,7 @@ export function Pipeline() {
                               : "bg-paper-dim"
                       }`}
                     />
-                    <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute tabular-nums">
+                    <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute tabular-nums">
                       {step.n}
                     </span>
                   </div>
@@ -190,7 +190,7 @@ export function Pipeline() {
                       {step.sub}
                     </div>
                     <p
-                      className={`text-[13px] leading-[1.65] font-mono mb-8 ${
+                      className={`text-[13px] leading-[1.65] font-sub mb-8 ${
                         isCapture
                           ? "text-paper/85 drop-shadow-[0_1px_8px_rgba(0,0,0,0.35)]"
                           : "text-paper-dim"
@@ -199,7 +199,7 @@ export function Pipeline() {
                       {step.body}
                     </p>
                     <div
-                      className={`font-mono text-[10px] tracking-[0.12em] uppercase pt-4 border-t flex items-center gap-2 ${
+                      className={`font-sub text-[10px] tracking-[0.12em] uppercase pt-4 border-t flex items-center gap-2 ${
                         isCapture
                           ? "border-white/20 text-paper/80"
                           : "border-ink-line text-paper-mute"
@@ -246,7 +246,7 @@ export function Pipeline() {
                   {n}
                 </div>
                 <div className="meta-label text-paper-dim">{top}</div>
-                <div className="font-mono text-[11px] text-paper-mute mt-1">
+                <div className="font-sub text-[11px] text-paper-mute mt-1">
                   {bot}
                 </div>
               </div>

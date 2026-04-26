@@ -17,22 +17,22 @@ export function Field({ label, hint, error, id, ...rest }: FieldProps) {
     <div className="mb-5">
       <label
         htmlFor={inputId}
-        className="block font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute mb-2"
+        className="block font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute mb-2"
       >
         {label}
       </label>
       <input
         id={inputId}
         {...rest}
-        className={`w-full bg-transparent border-0 border-b border-paper-faint focus:border-red-pencil focus:outline-none px-0 py-2 text-paper placeholder:text-paper-faint font-mono text-sm transition-colors ${rest.className ?? ""}`}
+        className={`w-full bg-transparent border-0 border-b border-paper-faint focus:border-red-pencil focus:outline-none px-0 py-2 text-paper placeholder:text-paper-faint font-sub text-sm transition-colors ${rest.className ?? ""}`}
       />
       {hint && !error && (
-        <p className="mt-1.5 font-mono text-[10px] tracking-wide text-paper-mute">
+        <p className="mt-1.5 font-sub text-[10px] tracking-wide text-paper-mute">
           {hint}
         </p>
       )}
       {error && (
-        <p className="mt-1.5 font-mono text-[10px] tracking-wide text-red-pencil">
+        <p className="mt-1.5 font-sub text-[10px] tracking-wide text-red-pencil">
           {error}
         </p>
       )}

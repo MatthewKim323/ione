@@ -28,7 +28,7 @@ export function Hero() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2, duration: 0.6 }}
-            className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute mb-12 flex items-center gap-3"
+            className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute mb-12 flex items-center gap-3"
           >
             <span className="inline-block h-px w-8 bg-paper-faint" />
             <span>an AI math tutor · est. 2026</span>
@@ -57,7 +57,7 @@ export function Hero() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.55, duration: 0.7 }}
-            className="mt-10 max-w-[42ch] text-paper-dim text-[15px] leading-[1.7] font-mono"
+            className="mt-10 max-w-[42ch] text-paper-dim text-[15px] leading-[1.7] font-sub"
           >
             ione watches you do math on your iPad and intervenes only
             when intervention will help. it is mostly silent. when it speaks,
@@ -83,7 +83,7 @@ export function Hero() {
                 background: "rgba(37, 99, 235, 0.18)",
                 border: "1px solid rgba(37, 99, 235, 0.5)",
                 color: "#000",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--font-sub)",
                 fontSize: "0.6rem",
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
@@ -116,7 +116,7 @@ export function Hero() {
                   <span className="text-red-pencil mr-2">{`0${i + 1}`}</span>
                   {title}
                 </span>
-                <span className="text-[11px] font-mono text-paper-mute">
+                <span className="text-[11px] font-sub text-paper-mute">
                   {sub}
                 </span>
               </div>
@@ -134,7 +134,7 @@ export function Hero() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.4, duration: 0.6 }}
-          className="hidden md:flex absolute bottom-[-6rem] left-0 right-0 items-center justify-between px-2 font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute"
+          className="hidden md:flex absolute bottom-[-6rem] left-0 right-0 items-center justify-between px-2 font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute"
         >
           <span className="flex items-center gap-3">
             <span>scroll</span>
@@ -160,7 +160,7 @@ function NotebookPage() {
       {/* the page itself */}
       <div className="relative bg-ink-deep border border-ink-line ruled-paper px-7 py-10 pr-16 sm:pr-20 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)]">
         {/* top-left page meta */}
-        <div className="flex items-center justify-between mb-8 font-mono text-[9px] tracking-[0.22em] uppercase" style={{ color: "#b89a78" }}>
+        <div className="flex items-center justify-between mb-8 font-sub text-[9px] tracking-[0.22em] uppercase" style={{ color: "#b89a78" }}>
           <span>calculus i · sec 5.3</span>
           <span>p. 4</span>
         </div>
@@ -191,7 +191,7 @@ function NotebookPage() {
                 initial={{ opacity: 0, x: -6 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.7 + line.i * 0.08, duration: 0.5 }}
-                className="font-mono text-[16px] text-paper tracking-tight"
+                className="font-sub text-[16px] text-paper tracking-tight"
               >
                 {line.text}
               </motion.div>

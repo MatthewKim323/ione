@@ -29,7 +29,7 @@ export function BrowserCompatBanner() {
       style={{ boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.04)" }}
     >
       <div className="flex-1 min-w-0">
-        <div className="font-mono text-[10px] tracking-[0.22em] uppercase text-rust mb-1">
+        <div className="font-sub text-[10px] tracking-[0.22em] uppercase text-rust mb-1">
           browser · heads up
         </div>
         <div
@@ -48,7 +48,7 @@ export function BrowserCompatBanner() {
       <button
         type="button"
         onClick={() => setDismissed(true)}
-        className="font-mono text-[10px] tracking-[0.18em] uppercase text-paper-dim hover:text-paper transition-colors px-2 py-1"
+        className="font-sub text-[10px] tracking-[0.18em] uppercase text-paper-dim hover:text-paper transition-colors px-2 py-1"
         aria-label="dismiss browser warning"
       >
         dismiss

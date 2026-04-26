@@ -78,7 +78,7 @@ export function BackupVideoStage() {
             <div className="relative aspect-[4/3] w-full border border-ink-line bg-ink overflow-hidden">
               {missing ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
-                  <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-rust">
+                  <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-rust">
                     backup not found
                   </span>
                   <span
@@ -106,7 +106,7 @@ export function BackupVideoStage() {
               )}
             </div>
 
-            <footer className="mt-2 font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+            <footer className="mt-2 font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
               <span>mode · video</span>
               <span className="px-2 text-paper-faint">·</span>
               <span>no agents are running. this is a recording.</span>

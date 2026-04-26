@@ -194,7 +194,7 @@ export function MemoryInspector() {
       </p>
 
       {loading && (
-        <p className="font-mono text-[11px] text-paper-mute">
+        <p className="font-sub text-[11px] text-paper-mute">
           loading the file cabinet…
         </p>
       )}
@@ -214,7 +214,7 @@ export function MemoryInspector() {
           </p>
           <Link
             to="/dashboard"
-            className="inline-block mt-6 font-mono text-[11px] tracking-[0.14em] uppercase pencil-link"
+            className="inline-block mt-6 font-sub text-[11px] tracking-[0.14em] uppercase pencil-link"
           >
             ← upload a source
           </Link>
@@ -232,7 +232,7 @@ export function MemoryInspector() {
                   <button
                     type="button"
                     onClick={() => setShowMeta(true)}
-                    className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute hover:text-paper transition-colors"
+                    className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute hover:text-paper transition-colors"
                   >
                     show {items.length} bookkeeping claim
                     {items.length === 1 ? "" : "s"} →
@@ -279,7 +279,7 @@ function CategoryGroup({
         >
           {CATEGORY_LABEL[category]}
         </h2>
-        <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-faint">
+        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint">
           {claims.length} {claims.length === 1 ? "claim" : "claims"}
         </span>
       </div>
@@ -324,7 +324,7 @@ function ClaimRow({
           <div className="flex items-baseline gap-3 flex-wrap mb-1.5">
             <span
               className={[
-                "font-mono text-[10px] tracking-[0.22em] uppercase",
+                "font-sub text-[10px] tracking-[0.22em] uppercase",
                 claim.status === "confirmed"
                   ? "text-moss"
                   : "text-brass",
@@ -332,14 +332,14 @@ function ClaimRow({
             >
               {claim.predicate}
             </span>
-            <span className="font-mono text-[9px] tracking-[0.18em] uppercase text-paper-mute">
+            <span className="font-sub text-[9px] tracking-[0.18em] uppercase text-paper-mute">
               {claim.status}
             </span>
             <ConfidenceBar value={claim.confidence} />
             {(isHigh || isMed) && (
               <span
                 className={[
-                  "font-mono text-[9px] tracking-[0.18em] uppercase px-1.5 py-px border",
+                  "font-sub text-[9px] tracking-[0.18em] uppercase px-1.5 py-px border",
                   isHigh
                     ? "text-red-pencil border-red-pencil/60"
                     : "text-brass border-brass/60",
@@ -365,7 +365,7 @@ function ClaimRow({
             type="button"
             onClick={() => onReject(claim.id)}
             disabled={busy}
-            className="font-mono text-[10px] tracking-[0.18em] uppercase text-paper-mute hover:text-red-pencil transition-colors opacity-60 group-hover:opacity-100 focus:opacity-100 disabled:opacity-30"
+            className="font-sub text-[10px] tracking-[0.18em] uppercase text-paper-mute hover:text-red-pencil transition-colors opacity-60 group-hover:opacity-100 focus:opacity-100 disabled:opacity-30"
           >
             reject
           </button>
@@ -373,7 +373,7 @@ function ClaimRow({
             type="button"
             onClick={() => onDelete(claim.id)}
             disabled={busy}
-            className="font-mono text-[10px] tracking-[0.18em] uppercase text-paper-faint hover:text-red-pencil transition-colors opacity-50 group-hover:opacity-100 focus:opacity-100 disabled:opacity-30"
+            className="font-sub text-[10px] tracking-[0.18em] uppercase text-paper-faint hover:text-red-pencil transition-colors opacity-50 group-hover:opacity-100 focus:opacity-100 disabled:opacity-30"
           >
             delete
           </button>
@@ -420,7 +420,7 @@ function ObjectLine({ value }: { value: unknown }) {
     }
   })();
   return (
-    <p className="text-paper text-[14px] font-mono leading-snug break-all">
+    <p className="text-paper text-[14px] font-sub leading-snug break-all">
       {truncate(json, 240)}
     </p>
   );
@@ -436,7 +436,7 @@ function ConfidenceBar({ value }: { value: number }) {
           style={{ width: `${pct * 100}%` }}
         />
       </span>
-      <span className="font-mono text-[9px] tracking-wide text-paper-mute">
+      <span className="font-sub text-[9px] tracking-wide text-paper-mute">
         {(pct * 100).toFixed(0)}%
       </span>
     </span>
@@ -448,7 +448,7 @@ function Citation({ claim }: { claim: ClaimWithSource }) {
   const ck = claim.chunk;
   if (!sf && !ck && !claim.extracted_by) return null;
   return (
-    <div className="mt-3 flex items-baseline gap-2 flex-wrap font-mono text-[10px] tracking-wide text-paper-faint">
+    <div className="mt-3 flex items-baseline gap-2 flex-wrap font-sub text-[10px] tracking-wide text-paper-faint">
       <span className="tracking-[0.18em] uppercase">cited from</span>
       {sf ? (
         <Link

@@ -93,7 +93,7 @@ export function Pedagogy() {
               whileInView={{ opacity: 1 }}
               viewport={{ once: true, margin: "-10%" }}
               transition={{ duration: 0.7, delay: 0.1 }}
-              className="text-paper-dim text-[15px] leading-[1.7] font-mono max-w-[52ch]"
+              className="text-paper-dim text-[15px] leading-[1.7] font-sub max-w-[52ch]"
             >
               The best math tutors are mostly silent. They sit beside the
               student, watch the work{" "}
@@ -106,7 +106,7 @@ export function Pedagogy() {
               whileInView={{ opacity: 1 }}
               viewport={{ once: true, margin: "-10%" }}
               transition={{ duration: 0.7, delay: 0.2 }}
-              className="text-paper-dim text-[15px] leading-[1.7] font-mono max-w-[52ch]"
+              className="text-paper-dim text-[15px] leading-[1.7] font-sub max-w-[52ch]"
             >
               ione is built on this{" "}
               <strong className="text-paper font-bold">asymmetry</strong>.
@@ -173,7 +173,7 @@ export function Pedagogy() {
               >
                 {p.title}
               </h3>
-              <p className="text-paper-dim text-[14px] leading-[1.7] font-mono mt-1">
+              <p className="text-paper-dim text-[14px] leading-[1.7] font-sub mt-1">
                 {p.body}
               </p>
             </motion.article>

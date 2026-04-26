@@ -356,7 +356,7 @@ export function TutorWorkspace() {
                 />
                 {!capture.isRunning && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
-                    <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+                    <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
                       awaiting share
                     </span>
                     <span
@@ -386,7 +386,7 @@ export function TutorWorkspace() {
                       <button
                         type="button"
                         onClick={() => setRoi(null)}
-                        className="font-mono text-[10px] tracking-[0.16em] uppercase px-2 py-1 bg-ink/70 text-paper-dim hover:text-paper border border-ink-line"
+                        className="font-sub text-[10px] tracking-[0.16em] uppercase px-2 py-1 bg-ink/70 text-paper-dim hover:text-paper border border-ink-line"
                       >
                         clear region
                       </button>
@@ -394,7 +394,7 @@ export function TutorWorkspace() {
                     <button
                       type="button"
                       onClick={() => setPickingRoi((v) => !v)}
-                      className="font-mono text-[10px] tracking-[0.16em] uppercase px-2 py-1 bg-ink/70 text-paper-dim hover:text-paper border border-ink-line"
+                      className="font-sub text-[10px] tracking-[0.16em] uppercase px-2 py-1 bg-ink/70 text-paper-dim hover:text-paper border border-ink-line"
                     >
                       {pickingRoi ? "cancel" : roi ? "re-select region" : "select region"}
                     </button>
@@ -416,7 +416,7 @@ export function TutorWorkspace() {
                 latex={latestOcr?.latex ?? null}
               />
 
-              <footer className="mt-auto pt-6 border-t border-ink-line flex items-baseline justify-between font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+              <footer className="mt-auto pt-6 border-t border-ink-line flex items-baseline justify-between font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
                 <span>cycles · {capture.stats.cyclesRun}</span>
                 <span>encoded · {(capture.stats.totalEncodedBytes / 1024).toFixed(1)} kb</span>
                 <span className="text-paper-dim">

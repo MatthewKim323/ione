@@ -6,10 +6,10 @@
 export function LoadingScreen() {
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center bg-ink">
-      <div className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute mb-3">
+      <div className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute mb-3">
         ione
       </div>
-      <div className="font-mono text-paper text-sm pencil-cursor">
+      <div className="font-sub text-paper text-sm pencil-cursor">
         loading
       </div>
     </div>

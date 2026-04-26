@@ -48,7 +48,7 @@ export function ConfidenceRibbon({
         className="w-[12px] min-h-full"
       />
       <span
-        className="absolute left-[18px] top-2 font-mono text-[9px] tracking-[0.22em] uppercase text-paper-mute select-none"
+        className="absolute left-[18px] top-2 font-sub text-[9px] tracking-[0.22em] uppercase text-paper-mute select-none"
       >
         {REASON_HINT[level]}
       </span>

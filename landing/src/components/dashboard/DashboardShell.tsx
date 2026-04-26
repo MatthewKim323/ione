@@ -24,17 +24,17 @@ export function DashboardShell({ children }: { children: ReactNode }) {
         <div className="flex items-center gap-6">
           <Link
             to="/"
-            className="hidden sm:inline-block font-mono text-[11px] tracking-[0.14em] uppercase pencil-link"
+            className="hidden sm:inline-block font-sub text-[11px] tracking-[0.14em] uppercase pencil-link"
           >
             ← landing
           </Link>
-          <span className="hidden md:inline-block font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+          <span className="hidden md:inline-block font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
             {user?.email}
           </span>
           <button
             type="button"
             onClick={signOut}
-            className="font-mono text-[11px] tracking-[0.14em] uppercase pencil-link"
+            className="font-sub text-[11px] tracking-[0.14em] uppercase pencil-link"
           >
             sign out
           </button>

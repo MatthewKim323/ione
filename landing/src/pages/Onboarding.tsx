@@ -214,7 +214,7 @@ export default function Onboarding() {
               autoFocus
             />
 
-            <div className="mt-6 mb-2 font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+            <div className="mt-6 mb-2 font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
               grade level
             </div>
             <div className="flex flex-wrap gap-2">
@@ -250,7 +250,7 @@ export default function Onboarding() {
             exit={{ opacity: 0, x: -12 }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="mb-2 font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+            <div className="mb-2 font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
               current class
             </div>
             <div className="flex flex-col gap-1.5 mb-8">
@@ -265,7 +265,7 @@ export default function Onboarding() {
               ))}
             </div>
 
-            <div className="mb-2 font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+            <div className="mb-2 font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
               what feels tricky?
               <span className="ml-2 normal-case tracking-normal text-paper-faint">
                 (optional — pick any that ring true)
@@ -286,7 +286,7 @@ export default function Onboarding() {
               <button
                 type="button"
                 onClick={() => setStep(0)}
-                className="font-mono text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-paper transition-colors"
+                className="font-sub text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-paper transition-colors"
               >
                 ← back
               </button>
@@ -311,7 +311,7 @@ export default function Onboarding() {
             exit={{ opacity: 0, x: -12 }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="mb-2 font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+            <div className="mb-2 font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
               voice hints
             </div>
             <div className="flex gap-2 mb-8">
@@ -327,7 +327,7 @@ export default function Onboarding() {
               />
             </div>
 
-            <div className="mb-2 font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+            <div className="mb-2 font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
               intervention frequency
             </div>
             <div className="flex flex-col gap-1.5">
@@ -343,7 +343,7 @@ export default function Onboarding() {
             </div>
 
             {error && (
-              <p className="mt-4 font-mono text-[11px] text-red-pencil">
+              <p className="mt-4 font-sub text-[11px] text-red-pencil">
                 {error}
               </p>
             )}
@@ -352,7 +352,7 @@ export default function Onboarding() {
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="font-mono text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-paper transition-colors"
+                className="font-sub text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-paper transition-colors"
               >
                 ← back
               </button>
@@ -399,7 +399,7 @@ export default function Onboarding() {
             </div>
 
             {error && (
-              <p className="mt-4 font-mono text-[11px] text-red-pencil">
+              <p className="mt-4 font-sub text-[11px] text-red-pencil">
                 {error}
               </p>
             )}
@@ -408,7 +408,7 @@ export default function Onboarding() {
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="font-mono text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-paper transition-colors"
+                className="font-sub text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-paper transition-colors"
               >
                 ← back
               </button>
@@ -416,7 +416,7 @@ export default function Onboarding() {
                 <button
                   type="button"
                   onClick={finish}
-                  className="font-mono text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-paper transition-colors"
+                  className="font-sub text-xs tracking-[0.14em] uppercase text-paper-mute hover:text-paper transition-colors"
                 >
                   skip for now
                 </button>
@@ -454,7 +454,7 @@ function StepDots({ active, total }: { active: number; total: number }) {
           aria-current={i === active}
         />
       ))}
-      <span className="ml-3 font-mono text-[10px] tracking-[0.22em] uppercase text-paper-faint tabular-nums">
+      <span className="ml-3 font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint tabular-nums">
         {active + 1} / {total}
       </span>
     </div>

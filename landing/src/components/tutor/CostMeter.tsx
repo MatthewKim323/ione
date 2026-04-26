@@ -27,7 +27,7 @@ export function CostMeter({
     pct < 60 ? "var(--color-moss)" : pct < 90 ? "var(--color-brass)" : "var(--color-red-pencil)";
 
   return (
-    <div className="border border-ink-line bg-ink-raise p-4 text-[11px] font-mono uppercase tracking-[0.16em] text-paper-mute">
+    <div className="border border-ink-line bg-ink-raise p-4 text-[11px] font-sub uppercase tracking-[0.16em] text-paper-mute">
       <div className="flex items-baseline justify-between mb-2">
         <span>cost meter · dev</span>
         <span className="tabular-nums text-paper-dim">

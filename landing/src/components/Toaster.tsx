@@ -77,7 +77,7 @@ export function Toaster() {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1 pl-2">
                 <div
-                  className={`font-mono text-[9px] tracking-[0.22em] uppercase mb-1 ${
+                  className={`font-sub text-[9px] tracking-[0.22em] uppercase mb-1 ${
                     t.severity === "error"
                       ? "text-red-pencil"
                       : t.severity === "warn"
@@ -96,7 +96,7 @@ export function Toaster() {
                   {t.text}
                 </div>
                 {t.description && (
-                  <div className="font-mono text-[11px] tracking-wide text-paper-mute mt-1.5 leading-relaxed">
+                  <div className="font-sub text-[11px] tracking-wide text-paper-mute mt-1.5 leading-relaxed">
                     {t.description}
                   </div>
                 )}

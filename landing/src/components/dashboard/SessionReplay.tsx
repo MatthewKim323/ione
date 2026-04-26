@@ -197,7 +197,7 @@ export function SessionReplay() {
 
   if (loading) {
     return (
-      <div className="text-paper-mute font-mono text-xs animate-pulse">
+      <div className="text-paper-mute font-sub text-xs animate-pulse">
         loading session…
       </div>
     );
@@ -205,10 +205,10 @@ export function SessionReplay() {
   if (error || !meta) {
     return (
       <div className="border border-ink-line bg-ink-deep px-6 py-10 text-center">
-        <p className="text-red-pencil font-mono text-sm">{error ?? "not found"}</p>
+        <p className="text-red-pencil font-sub text-sm">{error ?? "not found"}</p>
         <Link
           to="/dashboard/sessions"
-          className="inline-block mt-4 font-mono text-[11px] tracking-[0.18em] uppercase pencil-link"
+          className="inline-block mt-4 font-sub text-[11px] tracking-[0.18em] uppercase pencil-link"
         >
           ← back to sessions
         </Link>
@@ -231,7 +231,7 @@ export function SessionReplay() {
     <section>
       <Link
         to="/dashboard/sessions"
-        className="inline-block mb-5 font-mono text-[11px] tracking-[0.18em] uppercase pencil-link"
+        className="inline-block mb-5 font-sub text-[11px] tracking-[0.18em] uppercase pencil-link"
       >
         ← all sessions
       </Link>
@@ -244,7 +244,7 @@ export function SessionReplay() {
         >
           {problem}
         </h1>
-        <div className="mt-3 flex items-center gap-x-4 gap-y-1 flex-wrap font-mono text-[10px] tracking-[0.18em] uppercase text-paper-mute">
+        <div className="mt-3 flex items-center gap-x-4 gap-y-1 flex-wrap font-sub text-[10px] tracking-[0.18em] uppercase text-paper-mute">
           <span>{startedAt.toLocaleString()}</span>
           {durationMs != null && <span>· {Math.round(durationMs / 1000)}s</span>}
           <span>· {cycles.length} cycles</span>
@@ -265,7 +265,7 @@ export function SessionReplay() {
 
       {cycles.length === 0 ? (
         <div className="border border-ink-line bg-ink-deep px-6 py-10 text-center">
-          <p className="text-paper-mute font-mono text-[11px] tracking-wide">
+          <p className="text-paper-mute font-sub text-[11px] tracking-wide">
             this session has no recorded cycles.
           </p>
         </div>
@@ -309,7 +309,7 @@ function Scrubber({
 
   return (
     <div className="mb-6">
-      <div className="flex items-center gap-3 font-mono text-[10px] tracking-[0.18em] uppercase text-paper-faint mb-2">
+      <div className="flex items-center gap-3 font-sub text-[10px] tracking-[0.18em] uppercase text-paper-faint mb-2">
         <span>← →</span>
         <span>cycle {activeIdx + 1} of {cycles.length}</span>
       </div>
@@ -456,7 +456,7 @@ function FrameCard({
           />
         ) : (
           <div className="text-center px-8 py-12">
-            <p className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-faint mb-2">
+            <p className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint mb-2">
               no stored frame
             </p>
             <p className="text-paper-mute text-xs max-w-[36ch] mx-auto leading-relaxed">
@@ -490,14 +490,14 @@ function AgentCard({
   return (
     <article className="border border-ink-line bg-ink-deep">
       <header className="px-5 py-3 flex items-baseline justify-between gap-3 hairline-bottom">
-        <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
           {label}
         </span>
         {hasJson && (
           <button
             type="button"
             onClick={() => setOpen((o) => !o)}
-            className="font-mono text-[10px] tracking-wide pencil-link"
+            className="font-sub text-[10px] tracking-wide pencil-link"
           >
             {open ? "hide json" : "show json"}
           </button>
@@ -511,7 +511,7 @@ function AgentCard({
           {summary}
         </p>
         {visible.length > 0 && (
-          <ul className="flex flex-wrap gap-x-3 gap-y-1 font-mono text-[10px] tracking-wide text-paper-faint">
+          <ul className="flex flex-wrap gap-x-3 gap-y-1 font-sub text-[10px] tracking-wide text-paper-faint">
             {visible.map((v, i) => (
               <li key={i}>{v}</li>
             ))}
@@ -543,12 +543,12 @@ function PolicyCard({
       ].join(" ")}
     >
       <header className="px-5 py-3 flex items-baseline justify-between gap-3 hairline-bottom">
-        <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
           policy decision
         </span>
         <span
           className={[
-            "font-mono text-[10px] tracking-[0.18em] uppercase",
+            "font-sub text-[10px] tracking-[0.18em] uppercase",
             spoke ? "text-red-pencil" : "text-paper-faint",
           ].join(" ")}
         >
@@ -564,7 +564,7 @@ function PolicyCard({
             >
               "{hint.text}"
             </p>
-            <ul className="flex flex-wrap gap-x-3 gap-y-1 font-mono text-[10px] tracking-wide text-paper-faint">
+            <ul className="flex flex-wrap gap-x-3 gap-y-1 font-sub text-[10px] tracking-wide text-paper-faint">
               <li>{hint.hint_type}</li>
               {hint.predicted && <li className="text-brass">predicted</li>}
               {hint.severity != null && <li>severity {hint.severity}</li>}
@@ -584,7 +584,7 @@ function PolicyCard({
               {whyDidntSpeak(cycle)}
             </p>
             {cycle.suppression_reason && (
-              <p className="font-mono text-[10px] tracking-wide text-red-pencil/80">
+              <p className="font-sub text-[10px] tracking-wide text-red-pencil/80">
                 reason: {cycle.suppression_reason}
               </p>
             )}
@@ -625,11 +625,11 @@ function SidebarStat({ rows }: { rows: [string, string][] }) {
   return (
     <div className="border border-ink-line bg-ink-deep">
       <header className="px-5 py-3 hairline-bottom">
-        <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
           telemetry
         </span>
       </header>
-      <dl className="px-5 py-4 grid grid-cols-2 gap-x-4 gap-y-2 font-mono text-[10px] tracking-wide">
+      <dl className="px-5 py-4 grid grid-cols-2 gap-x-4 gap-y-2 font-sub text-[10px] tracking-wide">
         {rows.map(([k, v]) => (
           <div key={k} className="contents">
             <dt className="text-paper-faint">{k}</dt>

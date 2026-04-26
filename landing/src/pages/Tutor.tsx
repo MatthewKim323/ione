@@ -31,11 +31,11 @@ export default function Tutor() {
       <header className="px-6 sm:px-10 py-5 flex items-center justify-between max-w-[1280px] mx-auto">
         <Link
           to="/dashboard"
-          className="font-mono text-[11px] tracking-[0.22em] uppercase text-paper-mute hover:text-paper transition-colors"
+          className="font-sub text-[11px] tracking-[0.22em] uppercase text-paper-mute hover:text-paper transition-colors"
         >
           ← back to dashboard
         </Link>
-        <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-faint">
+        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint">
           {subtitle}
         </span>
       </header>

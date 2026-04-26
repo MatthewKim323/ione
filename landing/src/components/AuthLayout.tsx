@@ -31,7 +31,7 @@ export function AuthLayout({
       <header className="px-6 sm:px-10 pt-6 sm:pt-8 flex items-center justify-between">
         <Link
           to="/"
-          className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute hover:text-paper transition-colors"
+          className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute hover:text-paper transition-colors"
         >
           ← back
         </Link>
@@ -42,7 +42,7 @@ export function AuthLayout({
         >
           ione<span className="text-red-pencil">.</span>
         </Link>
-        <div className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+        <div className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
           {meta}
         </div>
       </header>
@@ -78,14 +78,14 @@ export function AuthLayout({
           </div>
 
           {footer && (
-            <div className="mt-6 text-center font-mono text-[11px] tracking-[0.14em] uppercase text-paper-mute">
+            <div className="mt-6 text-center font-sub text-[11px] tracking-[0.14em] uppercase text-paper-mute">
               {footer}
             </div>
           )}
         </motion.div>
       </main>
 
-      <footer className="px-6 sm:px-10 pb-6 font-mono text-[10px] tracking-[0.22em] uppercase text-paper-faint flex justify-between">
+      <footer className="px-6 sm:px-10 pb-6 font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint flex justify-between">
         <span>© ione</span>
         <span>tutor in the margin</span>
       </footer>

@@ -51,7 +51,7 @@ export function PatternsPanel() {
 
   if (loading) {
     return (
-      <div className="text-paper-mute font-mono text-xs tracking-wide animate-pulse">
+      <div className="text-paper-mute font-sub text-xs tracking-wide animate-pulse">
         loading patterns…
       </div>
     );
@@ -123,7 +123,7 @@ function Header({
         the shape of how you struggle.
       </h1>
       {summary && (
-        <p className="text-paper-mute font-mono text-[10px] tracking-[0.18em] uppercase mt-3">
+        <p className="text-paper-mute font-sub text-[10px] tracking-[0.18em] uppercase mt-3">
           {summary.sessions} sessions · {summary.cycles} cycles ·{" "}
           {summary.hints} hints
           {summary.predictedTotal > 0 && (
@@ -173,7 +173,7 @@ function SparklineCard({
     return (
       <article>
         <CardHeading title={title} marginalia={marginalia} />
-        <p className="text-paper-faint font-mono text-[10px] tracking-wide">
+        <p className="text-paper-faint font-sub text-[10px] tracking-wide">
           no data yet
         </p>
       </article>
@@ -226,7 +226,7 @@ function SparklineCard({
           </AreaChart>
         </ResponsiveContainer>
       </div>
-      <div className="flex justify-between font-mono text-[9px] tracking-wide text-paper-faint mt-1 px-2">
+      <div className="flex justify-between font-sub text-[9px] tracking-wide text-paper-faint mt-1 px-2">
         <span>min {formatValue(min)}</span>
         <span>max {formatValue(max)}</span>
       </div>
@@ -259,7 +259,7 @@ function CardHeading({
         </p>
       </div>
       {latest && (
-        <span className="font-mono text-[11px] tracking-wide text-paper-mute">
+        <span className="font-sub text-[11px] tracking-wide text-paper-mute">
           latest {latest}
           {typeof trend === "number" && trend !== 0 && (
             <span
@@ -300,7 +300,7 @@ function SparklineTooltip({
   const date = `${d.getMonth() + 1}/${d.getDate()}`;
   return (
     <div
-      className="bg-ink-deep border border-ink-line px-2 py-1 font-mono text-[10px] tracking-wide text-paper-mute shadow-md"
+      className="bg-ink-deep border border-ink-line px-2 py-1 font-sub text-[10px] tracking-wide text-paper-mute shadow-md"
       style={{ pointerEvents: "none" }}
     >
       session {p.index} · {date} ·{" "}

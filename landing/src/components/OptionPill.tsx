@@ -15,7 +15,7 @@ export function OptionPill({ label, selected, onClick }: OptionPillProps) {
       onClick={onClick}
       aria-pressed={selected}
       className={[
-        "px-4 py-2 font-mono text-xs tracking-[0.14em] uppercase border transition-all duration-300 ease-[var(--ease-pencil)]",
+        "px-4 py-2 font-sub text-xs tracking-[0.14em] uppercase border transition-all duration-300 ease-[var(--ease-pencil)]",
         selected
           ? "bg-red-pencil border-red-pencil text-paper"
           : "border-paper-faint text-paper-dim hover:text-paper hover:border-paper-mute",

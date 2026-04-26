@@ -91,7 +91,7 @@ export function MarginNote({
             initial={{ opacity: 0 }}
             animate={triggered ? { opacity: 1 } : { opacity: 0 }}
             transition={{ duration: 1.4, delay: stagger + 1.0 }}
-            className="font-mono tracking-[0.2em] uppercase mb-0.5"
+            className="font-sub tracking-[0.2em] uppercase mb-0.5"
             style={{ fontSize: "0.52rem", color: "rgba(212,43,43,0.4)" }}
           >
             {meta}

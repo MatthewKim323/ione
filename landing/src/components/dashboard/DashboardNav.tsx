@@ -32,7 +32,7 @@ export function DashboardNav() {
               end={t.end}
               className={({ isActive }) =>
                 [
-                  "inline-block py-4 font-mono text-[11px] tracking-[0.22em] uppercase",
+                  "inline-block py-4 font-sub text-[11px] tracking-[0.22em] uppercase",
                   "transition-colors border-b-2 -mb-px",
                   isActive
                     ? "text-red-pencil border-red-pencil"

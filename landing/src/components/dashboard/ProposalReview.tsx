@@ -159,7 +159,7 @@ export function ProposalReview() {
             i think — please confirm.
           </h2>
         </div>
-        <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-faint">
+        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint">
           {sorted.length} pending
         </span>
       </div>
@@ -199,13 +199,13 @@ function ProposalRow({
   return (
     <li className="px-5 sm:px-7 py-5">
       <div className="flex items-baseline gap-3 flex-wrap mb-1.5">
-        <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-red-pencil">
+        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-red-pencil">
           {claim.predicate}
         </span>
         {(isHigh || isMed) && (
           <span
             className={[
-              "font-mono text-[9px] tracking-[0.18em] uppercase px-1.5 py-px border",
+              "font-sub text-[9px] tracking-[0.18em] uppercase px-1.5 py-px border",
               isHigh
                 ? "text-red-pencil border-red-pencil/60"
                 : "text-brass border-brass/60",
@@ -214,7 +214,7 @@ function ProposalRow({
             {isHigh ? "high sensitivity" : "medium"}
           </span>
         )}
-        <span className="font-mono text-[9px] tracking-wide text-paper-mute">
+        <span className="font-sub text-[9px] tracking-wide text-paper-mute">
           {(claim.confidence * 100).toFixed(0)}% confidence
         </span>
       </div>
@@ -233,7 +233,7 @@ function ProposalRow({
         </p>
       )}
       {claim.sourceFile && (
-        <div className="font-mono text-[10px] tracking-wide text-paper-faint mb-3">
+        <div className="font-sub text-[10px] tracking-wide text-paper-faint mb-3">
           cited from{" "}
           <span className="text-paper-mute">
             {claim.sourceFile.title ?? claim.sourceFile.filename}
@@ -246,7 +246,7 @@ function ProposalRow({
           type="button"
           onClick={onConfirm}
           disabled={busy}
-          className="font-mono text-[11px] tracking-[0.18em] uppercase px-3 py-1.5 border border-moss text-moss hover:bg-moss/10 transition-colors disabled:opacity-40"
+          className="font-sub text-[11px] tracking-[0.18em] uppercase px-3 py-1.5 border border-moss text-moss hover:bg-moss/10 transition-colors disabled:opacity-40"
         >
           confirm
         </button>
@@ -254,7 +254,7 @@ function ProposalRow({
           type="button"
           onClick={onReject}
           disabled={busy}
-          className="font-mono text-[11px] tracking-[0.18em] uppercase px-3 py-1.5 border border-red-pencil/70 text-red-pencil hover:bg-red-pencil/10 transition-colors disabled:opacity-40"
+          className="font-sub text-[11px] tracking-[0.18em] uppercase px-3 py-1.5 border border-red-pencil/70 text-red-pencil hover:bg-red-pencil/10 transition-colors disabled:opacity-40"
         >
           reject
         </button>

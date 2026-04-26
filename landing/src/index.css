@@ -23,7 +23,11 @@
   --color-moss: #6b7e4a;
 
   /* ── Typography ──────────────────────────────────────────────── */
-  --font-display: "Instrument Serif", "Iowan Old Style", serif;
+  /* Primary / display — body copy + big heads */
+  --font-display: "Outfit", system-ui, sans-serif;
+  /* Supporting labels, nav, UI chrome, most former “mono voice” copy */
+  --font-sub: "Jost", system-ui, sans-serif;
+  /* True monospace — terminal logs, aligned data, code fallbacks */
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   --font-hand: "Caveat", "Bradley Hand", cursive;
 
@@ -44,7 +48,7 @@
   body {
     background-color: #f2f2f2;
     color: var(--color-paper);
-    font-family: var(--font-mono);
+    font-family: var(--font-display);
     font-weight: 400;
     font-feature-settings: "ss01", "ss02", "cv01";
     overflow-x: hidden;
@@ -75,7 +79,7 @@
 @layer components {
   /* "© ione — 001 / pedagogy" section labels                      */
   .section-label {
-    font-family: var(--font-mono);
+    font-family: var(--font-sub);
     font-size: 0.6875rem;
     letter-spacing: 0.18em;
     text-transform: uppercase;
@@ -84,7 +88,7 @@
 
   /* Tiny uppercase mono labels next to a number/stat              */
   .meta-label {
-    font-family: var(--font-mono);
+    font-family: var(--font-sub);
     font-size: 0.625rem;
     letter-spacing: 0.22em;
     text-transform: uppercase;
@@ -173,7 +177,7 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.875rem 1.5rem;
-    font-family: var(--font-mono);
+    font-family: var(--font-sub);
     font-size: 0.75rem;
     letter-spacing: 0.18em;
     text-transform: uppercase;

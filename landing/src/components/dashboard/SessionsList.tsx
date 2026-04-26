@@ -93,7 +93,7 @@ export function SessionsList() {
       </div>
 
       <div className="flex items-center gap-4 mb-5">
-        <label className="font-mono text-[10px] tracking-[0.18em] uppercase text-paper-mute flex items-center gap-2 cursor-pointer">
+        <label className="font-sub text-[10px] tracking-[0.18em] uppercase text-paper-mute flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
             checked={includeActive}
@@ -109,12 +109,12 @@ export function SessionsList() {
       </div>
 
       {loading && rows.length === 0 ? (
-        <div className="text-paper-mute font-mono text-xs animate-pulse">
+        <div className="text-paper-mute font-sub text-xs animate-pulse">
           loading sessions…
         </div>
       ) : rows.length === 0 ? (
         <div className="border border-ink-line bg-ink-deep px-6 py-10 text-center">
-          <p className="text-paper-mute font-mono text-[11px] tracking-[0.18em] uppercase">
+          <p className="text-paper-mute font-sub text-[11px] tracking-[0.18em] uppercase">
             no sessions yet
           </p>
           <p className="text-paper-dim text-sm mt-3 max-w-[40ch] mx-auto">
@@ -123,7 +123,7 @@ export function SessionsList() {
           </p>
           <Link
             to="/tutor"
-            className="inline-block mt-6 font-mono text-[11px] tracking-[0.22em] uppercase pencil-link"
+            className="inline-block mt-6 font-sub text-[11px] tracking-[0.22em] uppercase pencil-link"
           >
             → start a session
           </Link>
@@ -142,7 +142,7 @@ export function SessionsList() {
             type="button"
             onClick={() => setPage((p) => p + 1)}
             disabled={loading}
-            className="font-mono text-[11px] tracking-[0.22em] uppercase pencil-link"
+            className="font-sub text-[11px] tracking-[0.22em] uppercase pencil-link"
           >
             {loading ? "loading…" : "load more"}
           </button>
@@ -181,30 +181,30 @@ function SessionRowItem({ row }: { row: SessionRow }) {
       >
         <div className="flex items-baseline justify-between gap-3 mb-1.5 flex-wrap">
           <div className="flex items-baseline gap-3 flex-wrap">
-            <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+            <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
               {dateStr}
             </span>
-            <span className="font-mono text-[10px] tracking-wide text-paper-faint">
+            <span className="font-sub text-[10px] tracking-wide text-paper-faint">
               {durationStr}
             </span>
             {row.demo_mode && (
-              <span className="font-mono text-[9px] tracking-[0.18em] uppercase px-1.5 py-px border border-brass/60 text-brass">
+              <span className="font-sub text-[9px] tracking-[0.18em] uppercase px-1.5 py-px border border-brass/60 text-brass">
                 demo
               </span>
             )}
             {active && (
-              <span className="font-mono text-[9px] tracking-[0.18em] uppercase px-1.5 py-px border border-moss/60 text-moss">
+              <span className="font-sub text-[9px] tracking-[0.18em] uppercase px-1.5 py-px border border-moss/60 text-moss">
                 active
               </span>
             )}
             {row.end_reason && row.end_reason !== "user_stopped" && (
-              <span className="font-mono text-[9px] tracking-wide text-red-pencil">
+              <span className="font-sub text-[9px] tracking-wide text-red-pencil">
                 {row.end_reason}
               </span>
             )}
           </div>
           <span
-            className="font-mono text-[10px] tracking-wide text-paper-faint group-hover:text-red-pencil transition-colors"
+            className="font-sub text-[10px] tracking-wide text-paper-faint group-hover:text-red-pencil transition-colors"
             aria-hidden
           >
             replay →
@@ -216,7 +216,7 @@ function SessionRowItem({ row }: { row: SessionRow }) {
         >
           {problem}
         </p>
-        <div className="flex items-center gap-x-4 gap-y-1 flex-wrap font-mono text-[10px] tracking-wide text-paper-mute">
+        <div className="flex items-center gap-x-4 gap-y-1 flex-wrap font-sub text-[10px] tracking-wide text-paper-mute">
           <span>{row.total_cycles ?? 0} cycles</span>
           <span>·</span>
           <span>{row.total_hints ?? 0} hints</span>

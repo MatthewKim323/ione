@@ -37,7 +37,7 @@ export function PencilButton({
         "cta",
         sizeCls,
         toneCls,
-        "uppercase font-mono",
+        "uppercase font-sub",
         className ?? "",
       ].join(" ")}
       {...rest}

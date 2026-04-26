@@ -71,7 +71,7 @@ export function Closer() {
               whileInView={{ opacity: 1 }}
               viewport={{ once: true, margin: "-10%" }}
               transition={{ duration: 0.7, delay: 0.2 }}
-              className="mt-10 max-w-[42ch] text-paper-dim text-[15px] leading-[1.7] font-mono"
+              className="mt-10 max-w-[42ch] text-paper-dim text-[15px] leading-[1.7] font-sub"
             >
               ten words of voice. one specific question. delivered in 1.2
               seconds, only when ted needed it. the rest of the hour, ione
@@ -96,7 +96,7 @@ export function Closer() {
               whileInView={{ opacity: 1 }}
               viewport={{ once: true, margin: "-10%" }}
               transition={{ duration: 0.7, delay: 0.5 }}
-              className="mt-8 font-mono text-[11px] tracking-[0.18em] text-paper-mute"
+              className="mt-8 font-sub text-[11px] tracking-[0.18em] text-paper-mute"
             >
               works with iPad + goodnotes · no setup · email + password
             </motion.div>
@@ -116,7 +116,7 @@ export function Closer() {
       </div>
 
       {/* footer */}
-      <div className="relative max-w-[1380px] mx-auto mt-32 pt-10 border-t border-ink-line flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 font-mono text-[11px] uppercase tracking-[0.18em] text-paper-mute">
+      <div className="relative max-w-[1380px] mx-auto mt-32 pt-10 border-t border-ink-line flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 font-sub text-[11px] uppercase tracking-[0.18em] text-paper-mute">
         <div className="flex items-center gap-4">
           <span
             className="text-paper text-2xl leading-none normal-case tracking-normal"
@@ -162,7 +162,7 @@ function SessionCard() {
         ted, <span style={{ fontStyle: "italic" }}>15</span>
       </div>
 
-      <div className="font-mono text-[12px] text-paper-dim leading-[1.8]">
+      <div className="font-sub text-[12px] text-paper-dim leading-[1.8]">
         <Row k="frames captured" v="208" />
         <Row k="frames processed" v="11" muted />
         <Row k="agent invocations" v="11 → 11 → 11" />
@@ -182,7 +182,7 @@ function SessionCard() {
           ].map(([label, hot]) => (
             <span
               key={String(label)}
-              className={`px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] font-mono border ${
+              className={`px-2.5 py-1 text-[10px] uppercase tracking-[0.18em] font-sub border ${
                 hot
                   ? "border-red-pencil/60 text-red-pencil"
                   : "border-ink-line text-paper-mute"

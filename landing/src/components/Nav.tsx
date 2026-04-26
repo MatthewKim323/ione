@@ -10,6 +10,19 @@ const STATUS_CYCLE = [
   { label: "memory", value: "backboard" },
 ];
 
+function GitHubIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden
+    >
+      <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+    </svg>
+  );
+}
+
 export function Nav() {
   const { session, profile } = useAuth();
   const isAuthed = !!session;
@@ -43,84 +56,97 @@ export function Nav() {
 
   return (
     <nav
-      className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pt-4 sm:px-6 sm:pt-6 pointer-events-none"
+      className="fixed top-0 left-0 right-0 z-50 flex justify-center px-3 pt-3 sm:pt-4 pointer-events-none"
       aria-label="Primary"
     >
-      {/* Single consolidated bar — same pattern as useiris.tech: one
-          rounded capsule with status, mark, links, and CTA living
-          together instead of floating in three separate zones. */}
+      {/* Glossy chrome capsule — metallic rim + inner glass, compact. */}
       <div
-        className="pointer-events-auto flex w-full max-w-5xl items-center gap-2 sm:gap-4 rounded-full border border-white/20 bg-black/30 px-3 py-2 sm:px-5 sm:py-2.5 backdrop-blur-xl shadow-[0_8px_40px_rgba(0,0,0,0.18)]"
-        style={{ WebkitBackdropFilter: "blur(20px)" }}
+        className="pointer-events-auto w-fit max-w-[calc(100vw-1.5rem)] rounded-full p-px shadow-[0_4px_24px_rgba(0,0,0,0.25),0_0_0_1px_rgba(255,255,255,0.06)_inset]"
+        style={{
+          background:
+            "linear-gradient(165deg, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.22) 35%, rgba(180,190,210,0.15) 55%, rgba(40,45,55,0.5) 100%)",
+        }}
       >
-        {/* Left: boot → live status */}
-        <div className="min-w-0 shrink font-mono text-[9px] sm:text-[10px] tracking-[0.18em] sm:tracking-[0.22em] uppercase text-paper-mute leading-none">
-          {!booted ? (
-            <span className="tabular-nums text-paper">{pct}%</span>
-          ) : (
-            <span className="flex items-baseline gap-1.5 sm:gap-2">
-              <span className="text-red-pencil">●</span>
-              <span className="hidden min-[420px]:inline text-paper-mute">
-                {status.label}
+        <div
+          className="flex items-center gap-1.5 rounded-full px-2 py-0.5 sm:px-2.5 sm:py-1 backdrop-blur-xl"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.06) 45%, rgba(8,10,14,0.55) 100%)",
+            boxShadow:
+              "inset 0 1px 0 rgba(255,255,255,0.55)," +
+              "inset 0 -1px 0 rgba(0,0,0,0.35)," +
+              "inset 0 0 20px rgba(255,255,255,0.04)",
+            WebkitBackdropFilter: "blur(18px)",
+          }}
+        >
+          {/* Left: status */}
+          <div className="min-w-0 shrink pl-0.5 font-sub text-[7px] sm:text-[8px] tracking-[0.14em] uppercase text-paper/85 leading-none">
+            {!booted ? (
+              <span className="tabular-nums text-paper">{pct}%</span>
+            ) : (
+              <span className="flex items-baseline gap-1">
+                <span className="text-red-pencil text-[6px] sm:text-[7px]">
+                  ●
+                </span>
+                <span className="hidden min-[380px]:inline text-paper-mute">
+                  {status.label}
+                </span>
+                <span className="tabular-nums text-paper truncate max-w-[4.2rem] sm:max-w-[5.5rem]">
+                  {status.value}
+                </span>
               </span>
-              <span className="tabular-nums text-paper truncate max-w-[5.5rem] sm:max-w-none">
-                {status.value}
-              </span>
-            </span>
-          )}
-        </div>
+            )}
+          </div>
 
-        <span
-          className="hidden sm:block h-4 w-px shrink-0 bg-white/15"
-          aria-hidden
-        />
+          <span
+            className="h-2.5 w-px shrink-0 bg-gradient-to-b from-transparent via-white/35 to-transparent"
+            aria-hidden
+          />
 
-        {/* Center: wordmark */}
-        <div className="flex min-w-0 flex-1 justify-center">
-          <Link
-            to="/"
-            className="shrink-0 text-paper text-lg sm:text-xl leading-none transition-opacity hover:opacity-90"
-            style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}
-          >
-            ione<span className="text-red-pencil">.</span>
-          </Link>
-        </div>
-
-        <span
-          className="hidden sm:block h-4 w-px shrink-0 bg-white/15"
-          aria-hidden
-        />
-
-        {/* Right: anchors + primary CTA in one cluster */}
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <div className="hidden sm:flex items-center gap-4 font-mono text-[10px] sm:text-[11px] tracking-[0.16em] sm:tracking-[0.18em] uppercase">
-            <a href="#pipeline" className="pencil-link text-paper/90">
+          {/* Center: nav (no wordmark) */}
+          <div className="flex flex-1 items-center justify-center gap-2.5 sm:gap-3 px-0.5 font-sub text-[7px] sm:text-[8px] tracking-[0.14em] sm:tracking-[0.16em] uppercase">
+            <a
+              href="#pipeline"
+              className="text-paper/90 transition hover:text-paper"
+            >
               how
             </a>
-            <a href="#signal" className="pencil-link text-paper/90">
+            <a
+              href="#signal"
+              className="text-paper/90 transition hover:text-paper whitespace-nowrap"
+            >
               terminal
             </a>
             <a
               href="https://github.com/MatthewKim323/ione"
-              className="pencil-link text-paper-dim"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex text-paper/75 transition hover:text-paper"
+              aria-label="ione on GitHub"
             >
-              github
+              <GitHubIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 opacity-90" />
             </a>
           </div>
 
+          <span
+            className="h-2.5 w-px shrink-0 bg-gradient-to-b from-transparent via-white/35 to-transparent"
+            aria-hidden
+          />
+
+          {/* Right: CTA */}
           {isAuthed ? (
             <Link
               to={profile?.onboarded_at ? "/dashboard" : "/onboarding"}
-              className="inline-flex items-center justify-center rounded-full bg-white px-3.5 py-1.5 sm:px-4 sm:py-2 font-mono text-[9px] sm:text-[10px] font-medium uppercase tracking-[0.14em] sm:tracking-[0.16em] text-ink-deep shadow-sm transition hover:bg-paper active:scale-[0.98]"
+              className="shrink-0 rounded-full bg-gradient-to-b from-white to-paper/95 px-2 py-0.5 sm:px-2.5 sm:py-1 font-sub text-[7px] sm:text-[8px] font-semibold uppercase tracking-[0.12em] text-ink-deep shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] transition hover:brightness-105 active:scale-[0.97]"
             >
-              dashboard
+              home
             </Link>
           ) : (
             <Link
               to="/login"
-              className="inline-flex items-center justify-center rounded-full bg-white px-3.5 py-1.5 sm:px-4 sm:py-2 font-mono text-[9px] sm:text-[10px] font-medium uppercase tracking-[0.14em] sm:tracking-[0.16em] text-ink-deep shadow-sm transition hover:bg-paper active:scale-[0.98]"
+              className="shrink-0 rounded-full bg-gradient-to-b from-white to-paper/95 px-2 py-0.5 sm:px-2.5 sm:py-1 font-sub text-[7px] sm:text-[8px] font-semibold uppercase tracking-[0.12em] text-ink-deep shadow-[0_1px_2px_rgba(0,0,0,0.12),inset_0_1px_0_rgba(255,255,255,0.9)] transition hover:brightness-105 active:scale-[0.97]"
             >
-              log in
+              login
             </Link>
           )}
         </div>

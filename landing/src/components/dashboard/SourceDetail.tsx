@@ -93,7 +93,7 @@ export function SourceDetail() {
 
   if (loading) {
     return (
-      <div className="text-paper-mute font-mono text-xs animate-pulse">
+      <div className="text-paper-mute font-sub text-xs animate-pulse">
         loading source…
       </div>
     );
@@ -101,10 +101,10 @@ export function SourceDetail() {
   if (err || !source) {
     return (
       <div className="border border-ink-line bg-ink-deep px-6 py-10 text-center">
-        <p className="text-red-pencil font-mono text-sm">{err ?? "not found"}</p>
+        <p className="text-red-pencil font-sub text-sm">{err ?? "not found"}</p>
         <Link
           to="/dashboard"
-          className="inline-block mt-4 font-mono text-[11px] tracking-[0.18em] uppercase pencil-link"
+          className="inline-block mt-4 font-sub text-[11px] tracking-[0.18em] uppercase pencil-link"
         >
           ← back to desk
         </Link>
@@ -118,7 +118,7 @@ export function SourceDetail() {
     <section>
       <Link
         to="/dashboard"
-        className="inline-block mb-5 font-mono text-[11px] tracking-[0.18em] uppercase pencil-link"
+        className="inline-block mb-5 font-sub text-[11px] tracking-[0.18em] uppercase pencil-link"
       >
         ← back to desk
       </Link>
@@ -131,7 +131,7 @@ export function SourceDetail() {
         >
           {source.title ?? source.filename}
         </h1>
-        <div className="mt-3 flex items-center gap-x-4 gap-y-1 flex-wrap font-mono text-[10px] tracking-[0.18em] uppercase text-paper-mute">
+        <div className="mt-3 flex items-center gap-x-4 gap-y-1 flex-wrap font-sub text-[10px] tracking-[0.18em] uppercase text-paper-mute">
           <span>{source.filename}</span>
           <span>·</span>
           <span>status: {source.status}</span>
@@ -148,7 +148,7 @@ export function SourceDetail() {
         <div className="lg:col-span-7">
           <div className="section-label mb-2">chunks</div>
           {chunks.length === 0 ? (
-            <p className="text-paper-mute font-mono text-xs">
+            <p className="text-paper-mute font-sub text-xs">
               no chunks yet — extraction may still be running.
             </p>
           ) : (
@@ -171,10 +171,10 @@ export function SourceDetail() {
                     }
                   >
                     <div className="flex items-baseline justify-between gap-3 mb-2 flex-wrap">
-                      <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-faint">
+                      <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint">
                         chunk {c.position ?? "?"}
                       </span>
-                      <span className="font-mono text-[10px] tracking-wide text-paper-faint">
+                      <span className="font-sub text-[10px] tracking-wide text-paper-faint">
                         {cClaims.length === 0
                           ? "no claims"
                           : `${cClaims.length} claim${cClaims.length === 1 ? "" : "s"}`}
@@ -193,7 +193,7 @@ export function SourceDetail() {
         <aside className="lg:col-span-5">
           <div className="section-label mb-2">claims</div>
           {claims.length === 0 ? (
-            <p className="text-paper-mute font-mono text-xs">
+            <p className="text-paper-mute font-sub text-xs">
               extraction hasn't produced any claims yet.
             </p>
           ) : (
@@ -206,7 +206,7 @@ export function SourceDetail() {
                 />
               ))}
               {orphanClaims.length > 0 && (
-                <p className="font-mono text-[10px] tracking-wide text-paper-faint mt-3">
+                <p className="font-sub text-[10px] tracking-wide text-paper-faint mt-3">
                   {orphanClaims.length} unrooted claim
                   {orphanClaims.length === 1 ? "" : "s"} (no chunk citation)
                 </p>
@@ -232,17 +232,17 @@ function ClaimItem({
   return (
     <li className="border border-ink-line bg-ink-deep px-4 py-3">
       <div className="flex items-baseline justify-between gap-2 mb-1.5 flex-wrap">
-        <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-red-pencil">
+        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-red-pencil">
           {claim.predicate}
         </span>
         <div className="flex items-center gap-2">
-          <span className="font-mono text-[9px] tracking-wide text-paper-faint">
+          <span className="font-sub text-[9px] tracking-wide text-paper-faint">
             {(claim.confidence * 100).toFixed(0)}%
           </span>
           {(isHigh || isMed) && (
             <span
               className={[
-                "font-mono text-[9px] tracking-[0.18em] uppercase px-1.5 py-px border",
+                "font-sub text-[9px] tracking-[0.18em] uppercase px-1.5 py-px border",
                 isHigh
                   ? "text-red-pencil border-red-pencil/60"
                   : "text-brass border-brass/60",
@@ -253,7 +253,7 @@ function ClaimItem({
           )}
           <span
             className={[
-              "font-mono text-[9px] tracking-wide",
+              "font-sub text-[9px] tracking-wide",
               status === "confirmed"
                 ? "text-moss"
                 : status === "rejected"
@@ -279,7 +279,7 @@ function ClaimItem({
           "{truncate(claim.reasoning, 180)}"
         </p>
       )}
-      <div className="flex items-center gap-3 font-mono text-[10px] tracking-wide text-paper-faint">
+      <div className="flex items-center gap-3 font-sub text-[10px] tracking-wide text-paper-faint">
         <span>{claim.extracted_by}</span>
         {claim.source_chunk_id && (
           <button

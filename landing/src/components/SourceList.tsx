@@ -76,20 +76,20 @@ export function SourceList({ reloadKey = 0 }: SourceListProps) {
     <div className="border border-ink-line bg-ink-raise/40 p-6 sm:p-8">
       <div className="flex items-baseline justify-between mb-5">
         <div className="section-label">© ione — sources read</div>
-        <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-faint">
+        <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint">
           {files.length} {files.length === 1 ? "file" : "files"}
         </span>
       </div>
 
       {loading && (
-        <p className="font-mono text-[11px] tracking-wide text-paper-mute">
+        <p className="font-sub text-[11px] tracking-wide text-paper-mute">
           flipping through your shelf…
         </p>
       )}
 
       {!loading && files.length === 0 && (
         <div className="py-6 text-paper-mute">
-          <p className="font-mono text-[12px] leading-relaxed mb-3">
+          <p className="font-sub text-[12px] leading-relaxed mb-3">
             nothing yet — your shelf is empty.
           </p>
           <p
@@ -114,7 +114,7 @@ export function SourceList({ reloadKey = 0 }: SourceListProps) {
                 aria-label={`open ${file.filename}`}
               >
                 <div className="flex items-baseline gap-2 mb-0.5">
-                  <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-red-pencil">
+                  <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-red-pencil">
                     {KIND_LABEL[file.kind]}
                   </span>
                   <StatusDot status={file.status} />
@@ -126,7 +126,7 @@ export function SourceList({ reloadKey = 0 }: SourceListProps) {
                 >
                   {file.title ?? file.filename}
                 </div>
-                <div className="font-mono text-[10px] tracking-wide text-paper-mute mt-0.5">
+                <div className="font-sub text-[10px] tracking-wide text-paper-mute mt-0.5">
                   {formatSize(file.size_bytes)} ·{" "}
                   {timeAgo(file.uploaded_at)}
                 </div>
@@ -134,7 +134,7 @@ export function SourceList({ reloadKey = 0 }: SourceListProps) {
               <button
                 type="button"
                 onClick={() => onDelete(file)}
-                className="font-mono text-[10px] tracking-[0.18em] uppercase text-paper-mute hover:text-red-pencil transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
+                className="font-sub text-[10px] tracking-[0.18em] uppercase text-paper-mute hover:text-red-pencil transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100"
                 aria-label={`delete ${file.filename}`}
               >
                 remove
@@ -159,7 +159,7 @@ function StatusDot({ status }: { status: SourceFile["status"] }) {
   };
   const m = map[status];
   return (
-    <span className="inline-flex items-center gap-1.5 font-mono text-[9px] tracking-[0.18em] uppercase text-paper-mute">
+    <span className="inline-flex items-center gap-1.5 font-sub text-[9px] tracking-[0.18em] uppercase text-paper-mute">
       <span className={`block w-1.5 h-1.5 rounded-full ${m.color}`} />
       {m.label}
     </span>

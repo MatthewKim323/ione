@@ -107,7 +107,7 @@ export function SourceUpload({
       {!bare && (
         <div className="flex items-baseline justify-between mb-5">
           <div className="section-label">+ new source</div>
-          <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-faint">
+          <span className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-faint">
             stays in your account
           </span>
         </div>
@@ -136,7 +136,7 @@ export function SourceUpload({
               aria-checked={active}
               onClick={() => setKind(opt.value)}
               title={opt.help}
-              className={`px-3 py-1.5 text-[11px] font-mono tracking-[0.14em] uppercase border transition-colors ${
+              className={`px-3 py-1.5 text-[11px] font-sub tracking-[0.14em] uppercase border transition-colors ${
                 active
                   ? "border-red-pencil text-paper bg-red-pencil/15"
                   : "border-ink-line text-paper-mute hover:text-paper hover:border-paper-faint"
@@ -147,7 +147,7 @@ export function SourceUpload({
           );
         })}
       </div>
-      <p className="font-mono text-[10px] tracking-wide text-paper-mute -mt-2 mb-5">
+      <p className="font-sub text-[10px] tracking-wide text-paper-mute -mt-2 mb-5">
         {KIND_OPTIONS.find((o) => o.value === kind)?.help}
       </p>
 
@@ -155,7 +155,7 @@ export function SourceUpload({
       <div className="mb-5">
         <label
           htmlFor={`${inputId}-title`}
-          className="block font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute mb-2"
+          className="block font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute mb-2"
         >
           label (optional)
         </label>
@@ -165,7 +165,7 @@ export function SourceUpload({
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder='e.g. "Algebra 2 — Chapter 5 test"'
-          className="w-full bg-transparent border-0 border-b border-paper-faint focus:border-red-pencil focus:outline-none px-0 py-2 text-paper placeholder:text-paper-faint font-mono text-sm transition-colors"
+          className="w-full bg-transparent border-0 border-b border-paper-faint focus:border-red-pencil focus:outline-none px-0 py-2 text-paper placeholder:text-paper-faint font-sub text-sm transition-colors"
         />
       </div>
 
@@ -198,7 +198,7 @@ export function SourceUpload({
         >
           {busy ? "uploading…" : "drop file here"}
         </div>
-        <div className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute">
+        <div className="font-sub text-[10px] tracking-[0.22em] uppercase text-paper-mute">
           or click to browse · pdf · image · txt · ≤ 25 mb
         </div>
 
@@ -216,7 +216,7 @@ export function SourceUpload({
         <motion.p
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-4 font-mono text-[11px] tracking-wide text-moss"
+          className="mt-4 font-sub text-[11px] tracking-wide text-moss"
         >
           ✓ uploaded {status.filename}. ione will read it next.
         </motion.p>
@@ -225,7 +225,7 @@ export function SourceUpload({
         <motion.p
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-4 font-mono text-[11px] tracking-wide text-red-pencil"
+          className="mt-4 font-sub text-[11px] tracking-wide text-red-pencil"
         >
           × {status.msg}
         </motion.p>
