@@ -146,10 +146,11 @@
     font-weight: 600;
   }
 
-  /* Landing title plate: hairline below ∫one. — keep clear air before hero */
+  /* Hairline under wordmark — margin-top only pulls the line down; title column
+     uses justify-start (not justify-center) so this does not lift the headline. */
   .intro-title-rule-wrap {
-    margin-top: clamp(4.25rem, 12vw, 8.5rem);
-    margin-bottom: clamp(3.75rem, 9vh, 6.5rem);
+    margin-top: clamp(7rem, 18vw, 15rem);
+    margin-bottom: clamp(3.25rem, 8vh, 6.5rem);
   }
 
   .intro-title-rule {

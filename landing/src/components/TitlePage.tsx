@@ -237,7 +237,7 @@ export function TitlePage({
         <IntroTechLogoLoop />
       </div>
 
-      <div className="relative z-[2] flex min-h-screen flex-col justify-center items-start pl-3 pr-6 py-8 sm:pl-4 sm:pr-10 sm:py-10 md:pl-5 md:pr-14 md:py-12 lg:pl-7 lg:pr-16 text-left pb-[clamp(2.75rem,7vh,5.5rem)]">
+      <div className="relative z-[2] flex min-h-screen flex-col justify-start items-start pl-3 pr-6 py-8 sm:pl-4 sm:pr-10 sm:py-10 md:pl-5 md:pr-14 md:py-12 lg:pl-7 lg:pr-16 text-left pb-[clamp(2.75rem,7vh,5.5rem)] pt-[clamp(4.5rem,16vh,14rem)] md:pt-[clamp(5rem,18vh,16rem)]">
         <div className="flex w-full max-w-[min(100%,92vw)] flex-col items-stretch -translate-x-0.5 sm:-translate-x-1 md:-translate-x-1.5">
           <h1
             className="h-display"
