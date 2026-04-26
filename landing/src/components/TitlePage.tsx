@@ -44,10 +44,10 @@ export function TitlePage() {
           fontSize: "clamp(7rem, 22vw, 22rem)",
           letterSpacing: "-0.04em",
           lineHeight: 0.9,
-          color: "#ABD400",
+          color: "#15275C",
           fontStyle: "italic",
-          // Layered shadow — a tight contact drop, a mid carry, and a
-          // wide diffuse halo.  Pushed harder so the high-chroma lime
+          // Layered shadow tuned for the dark-blue glyph: a tight contact
+          // drop, a mid carry, and a wide diffuse halo so the title
           // detaches from the cream paper with real depth.
           textShadow:
             "0 1px 0 rgba(0,0,0,0.18)," +
@@ -55,7 +55,37 @@ export function TitlePage() {
             " 0 18px 48px rgba(0,0,0,0.20)",
         }}
       >
-        ione<span style={{ color: "#c4302b", fontStyle: "normal" }}>.</span>
+        {/* "i" rendered as ∫ — math integral, in keeping with the brand. */}
+        <span
+          aria-hidden
+          style={{
+            // Pull it visually closer to the rest of the wordmark since
+            // the integral glyph has a generous left side-bearing.
+            display: "inline-block",
+            marginRight: "-0.08em",
+            // Nudge the integral down a touch so its tail aligns with
+            // the baseline of the lowercase letters next to it.
+            transform: "translateY(0.04em)",
+          }}
+        >
+          ∫
+        </span>
+        <span aria-hidden>one</span>
+        {/* Accessible text for screen readers / SEO. */}
+        <span
+          style={{
+            position: "absolute",
+            width: "1px",
+            height: "1px",
+            overflow: "hidden",
+            clip: "rect(0 0 0 0)",
+            clipPath: "inset(50%)",
+            whiteSpace: "nowrap",
+          }}
+        >
+          ione
+        </span>
+        <span style={{ color: "#c4302b", fontStyle: "normal" }}>.</span>
       </motion.h1>
 
       {/* SEMI-HEADER TAGLINE — cycling carousel in electric lime. */}
