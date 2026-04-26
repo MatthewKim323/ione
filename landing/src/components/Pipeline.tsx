@@ -1,6 +1,35 @@
 import { motion } from "motion/react";
 import { SectionLabel } from "./SectionLabel";
 
+/** Same clip as the capture step — lives in /public. */
+const PIPELINE_BG_VIDEO = "/pipeline-capture-bg.mp4";
+
+/** Match Landing flower dim: readable type over footage. */
+const VIDEO_DIM = "rgba(0, 0, 0, 0.18)";
+
+function VideoDimBackdrop({ className = "" }: { className?: string }) {
+  return (
+    <div
+      className={`pointer-events-none absolute inset-0 ${className}`}
+      aria-hidden
+    >
+      <video
+        className="absolute inset-0 h-full w-full object-cover"
+        src={PIPELINE_BG_VIDEO}
+        muted
+        playsInline
+        loop
+        autoPlay
+        preload="metadata"
+      />
+      <div
+        className="absolute inset-0"
+        style={{ backgroundColor: VIDEO_DIM }}
+      />
+    </div>
+  );
+}
+
 const STEPS = [
   {
     n: "01",
@@ -52,34 +81,41 @@ export function Pipeline() {
           <SectionLabel number="002" name="pipeline" />
         </motion.div>
 
-        <div className="mt-12 grid grid-cols-1 lg:grid-cols-12 gap-x-12 gap-y-12">
-          <div className="lg:col-span-7">
-            <motion.h2
-              initial={{ opacity: 0, y: 14 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-10%" }}
-              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-              className="h-display text-[clamp(2.4rem,5vw,4.6rem)]"
-            >
-              <span className="block">from pixels</span>
-              <span className="block">
-                to <span style={{ fontStyle: "italic" }}>insight</span>
-                <span className="text-red-pencil">.</span>
-              </span>
-            </motion.h2>
-          </div>
-          <div className="lg:col-span-5 lg:pt-4">
-            <motion.p
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true, margin: "-10%" }}
-              transition={{ duration: 0.7, delay: 0.1 }}
-              className="text-paper-dim text-[15px] leading-[1.7] font-mono"
-            >
-              Every eight seconds your screen becomes a JSON document. Three
-              specialised agents read it in series — each one cheaper, faster,
-              and more skeptical than the last.
-            </motion.p>
+        {/* Full-bleed strip: video + same dim as flower bg behind the
+            “from pixels → insight” headline and intro copy. */}
+        <div className="relative left-1/2 mt-12 w-screen max-w-none -translate-x-1/2 overflow-hidden">
+          <VideoDimBackdrop />
+          <div className="relative z-10 mx-auto max-w-[1380px] px-6 py-14 sm:px-10 sm:py-20">
+            <div className="grid grid-cols-1 gap-x-12 gap-y-10 lg:grid-cols-12">
+              <div className="lg:col-span-7">
+                <motion.h2
+                  initial={{ opacity: 0, y: 14 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-10%" }}
+                  transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                  className="h-display text-[clamp(2.4rem,5vw,4.6rem)] text-paper drop-shadow-[0_2px_24px_rgba(0,0,0,0.35)]"
+                >
+                  <span className="block">from pixels</span>
+                  <span className="block">
+                    to <span style={{ fontStyle: "italic" }}>insight</span>
+                    <span className="text-red-pencil">.</span>
+                  </span>
+                </motion.h2>
+              </div>
+              <div className="lg:col-span-5 lg:pt-4">
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  whileInView={{ opacity: 1 }}
+                  viewport={{ once: true, margin: "-10%" }}
+                  transition={{ duration: 0.7, delay: 0.1 }}
+                  className="text-paper/90 text-[15px] leading-[1.7] font-mono drop-shadow-[0_1px_12px_rgba(0,0,0,0.35)]"
+                >
+                  Every eight seconds your screen becomes a JSON document.
+                  Three specialised agents read it in series — each one
+                  cheaper, faster, and more skeptical than the last.
+                </motion.p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -92,57 +128,90 @@ export function Pipeline() {
           />
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-px md:gap-8 lg:gap-12">
-            {STEPS.map((step, i) => (
-              <motion.div
-                key={step.n}
-                initial={{ opacity: 0, y: 18 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-10%" }}
-                transition={{
-                  duration: 0.7,
-                  delay: i * 0.15,
-                  ease: [0.16, 1, 0.3, 1],
-                }}
-                className="relative pt-8"
-              >
-                {/* number marker on the connecting line */}
-                <div className="absolute top-0 left-0 flex items-center gap-3">
-                  <span
-                    className={`w-2.5 h-2.5 rounded-full ${
-                      step.color === "red-pencil"
-                        ? "bg-red-pencil"
-                        : step.color === "brass"
-                          ? "bg-brass"
-                          : step.color === "moss"
-                            ? "bg-moss"
-                            : "bg-paper-dim"
-                    }`}
-                  />
-                  <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute tabular-nums">
-                    {step.n}
-                  </span>
-                </div>
+            {STEPS.map((step, i) => {
+              const isCapture = step.name === "capture";
+              return (
+                <motion.div
+                  key={step.n}
+                  initial={{ opacity: 0, y: 18 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-10%" }}
+                  transition={{
+                    duration: 0.7,
+                    delay: i * 0.15,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                  className={`relative pt-8 ${
+                    isCapture
+                      ? "overflow-hidden rounded-sm md:min-h-[420px]"
+                      : ""
+                  }`}
+                >
+                  {isCapture && <VideoDimBackdrop />}
 
-                <div className="pt-12">
-                  <h3
-                    className="text-paper text-[2.6rem] leading-[0.95] mb-1"
-                    style={{ fontFamily: "var(--font-display)" }}
-                  >
-                    {step.name}
-                  </h3>
-                  <div className="meta-label mb-6">{step.sub}</div>
-                  <p className="text-paper-dim text-[13px] leading-[1.65] font-mono mb-8">
-                    {step.body}
-                  </p>
-                  <div
-                    className="font-mono text-[10px] tracking-[0.12em] uppercase text-paper-mute pt-4 border-t border-ink-line flex items-center gap-2"
-                  >
-                    <span className="text-red-pencil">→</span>
-                    <span className="truncate">{step.out}</span>
+                  {/* number marker on the connecting line */}
+                  <div className="absolute top-0 left-0 z-10 flex items-center gap-3">
+                    <span
+                      className={`w-2.5 h-2.5 rounded-full ${
+                        step.color === "red-pencil"
+                          ? "bg-red-pencil"
+                          : step.color === "brass"
+                            ? "bg-brass"
+                            : step.color === "moss"
+                              ? "bg-moss"
+                              : "bg-paper-dim"
+                      }`}
+                    />
+                    <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-paper-mute tabular-nums">
+                      {step.n}
+                    </span>
                   </div>
-                </div>
-              </motion.div>
-            ))}
+
+                  <div
+                    className={`relative z-10 pt-12 ${
+                      isCapture ? "px-1 sm:px-2 pb-4" : ""
+                    }`}
+                  >
+                    <h3
+                      className={`text-[2.6rem] leading-[0.95] mb-1 ${
+                        isCapture
+                          ? "text-paper drop-shadow-[0_2px_16px_rgba(0,0,0,0.4)]"
+                          : "text-paper"
+                      }`}
+                      style={{ fontFamily: "var(--font-display)" }}
+                    >
+                      {step.name}
+                    </h3>
+                    <div
+                      className={`meta-label mb-6 ${
+                        isCapture ? "text-paper/80" : ""
+                      }`}
+                    >
+                      {step.sub}
+                    </div>
+                    <p
+                      className={`text-[13px] leading-[1.65] font-mono mb-8 ${
+                        isCapture
+                          ? "text-paper/85 drop-shadow-[0_1px_8px_rgba(0,0,0,0.35)]"
+                          : "text-paper-dim"
+                      }`}
+                    >
+                      {step.body}
+                    </p>
+                    <div
+                      className={`font-mono text-[10px] tracking-[0.12em] uppercase pt-4 border-t flex items-center gap-2 ${
+                        isCapture
+                          ? "border-white/20 text-paper/80"
+                          : "border-ink-line text-paper-mute"
+                      }`}
+                    >
+                      <span className="text-red-pencil">→</span>
+                      <span className="truncate">{step.out}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
 
