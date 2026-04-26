@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none" aria-hidden="true">
+  <defs>
+    <linearGradient id="g" x1="32" y1="24" x2="104" y2="112" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ffffff" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#e8f4ff" stop-opacity="0.78"/>
+    </linearGradient>
+  </defs>
+  <!-- Iris-inspired mark: ring + pupil, reads at small sizes -->
+  <ellipse cx="64" cy="64" rx="52" ry="38" stroke="url(#g)" stroke-width="10" transform="rotate(-12 64 64)"/>
+  <ellipse cx="64" cy="64" rx="22" ry="16" fill="#ffffff" fill-opacity="0.92" transform="rotate(-12 64 64)"/>
+  <circle cx="58" cy="60" r="6" fill="#1a1a22" fill-opacity="0.55"/>
+</svg>

@@ -141,6 +141,7 @@ Rules:
 - Mathematical equivalence matters more than syntactic equivalence. \`2(x+1)\` and \`2x+2\` are the same.
 - Stalls take priority over minor errors. If is_stalled is true, focus on what would unstick them.
 - Output JSON only.
+- One JSON object only. The closing brace } must be the last non-whitespace character in your entire reply — no markdown fences, no second JSON object, no commentary, no "hope this helps" after the JSON.
 
 EVALUATION TARGET (READ THIS — many prior versions skipped errors because of this):
 

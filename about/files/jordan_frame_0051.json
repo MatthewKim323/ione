@@ -1,0 +1,62 @@
+{
+  "_meta": {
+    "agent": "ocr",
+    "session_id": "sess_jordan_2026-04-21_b9c4",
+    "frame_id": "frame_0051",
+    "captured_at": "2026-04-21T22:48:09.221Z",
+    "mathpix_request_id": "req_mpx_2J7nWv",
+    "processing_ms": 478
+  },
+  "page_state": {
+    "problem": {
+      "stated": "Find dy/dx if  y = sin(3x^2 + 1)",
+      "source": "stewart_calc_8e_ch3_p195_q8",
+      "topic_tags": ["chain_rule", "trig_derivatives", "function_composition"]
+    },
+    "student_work": [
+      {
+        "line": 1,
+        "latex": "y = \\sin(3x^2 + 1)",
+        "kind": "given",
+        "confidence": 0.99
+      },
+      {
+        "line": 2,
+        "latex": "\\text{let } u = 3x^2 + 1",
+        "kind": "student_step",
+        "confidence": 0.93,
+        "notes": "Set up substitution correctly."
+      },
+      {
+        "line": 3,
+        "latex": "\\frac{dy}{du} = \\cos(u)",
+        "kind": "student_step",
+        "confidence": 0.95
+      },
+      {
+        "line": 4,
+        "latex": "\\frac{dy}{dx} = \\cos(3x^2 + 1)",
+        "kind": "student_answer",
+        "confidence": 0.97,
+        "notes": "Wrote outer derivative correctly but did not multiply by du/dx = 6x."
+      }
+    ],
+    "scratch_marks": [
+      { "near_line": 2, "kind": "underline", "content": "u = 3x^2 + 1" }
+    ],
+    "page_geometry": {
+      "writing_orientation": "left_to_right",
+      "lines_detected": 4,
+      "ink_density": 0.31,
+      "pen_color": "black"
+    }
+  },
+  "structured_output": {
+    "current_line": 4,
+    "answer_present": true,
+    "answer_value": "\\cos(3x^2 + 1)",
+    "work_complete": true,
+    "ready_for_evaluation": true,
+    "missing_step_hint": "no du/dx step found despite u-substitution setup"
+  }
+}

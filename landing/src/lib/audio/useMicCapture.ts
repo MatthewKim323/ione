@@ -115,6 +115,10 @@ export function useMicCapture(): UseMicCaptureResult {
         echoCancellation: true,
         noiseSuppression: true,
         autoGainControl: true,
+        // Stereo "what you hear" / loopback devices are a common source of
+        // TV/podcast bleed into Scribe. Prefer mono voice capture when the
+        // browser honors it.
+        channelCount: { ideal: 1, max: 2 },
       },
       video: false,
     });
@@ -240,7 +244,11 @@ export function useMicCapture(): UseMicCaptureResult {
 
   const stop = useCallback(async (): Promise<MicCaptureRecording | null> => {
     const rec = recorderRef.current;
-    if (!rec || (state !== "recording" && state !== "starting")) {
+    // Guard on MediaRecorder.state, not React `state` — two rapid stop()
+    // calls (e.g. pointerup + pointerleave firing in the same frame before
+    // setState("stopping") flushes) would otherwise both enter and corrupt
+    // the single shared recorder / stop listener.
+    if (!rec || rec.state !== "recording") {
       return null;
     }
     setState("stopping");
@@ -289,7 +297,7 @@ export function useMicCapture(): UseMicCaptureResult {
 
     setState("idle");
     return result;
-  }, [state, teardownAnalyser]);
+  }, [teardownAnalyser]);
 
   const cancel = useCallback(() => {
     const rec = recorderRef.current;

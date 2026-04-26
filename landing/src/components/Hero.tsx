@@ -36,11 +36,11 @@ export function Hero() {
     <section
       ref={heroRef}
       data-hero
-      className="relative min-h-screen flex items-center px-6 sm:px-10 pt-32 pb-24"
+      className="relative min-h-screen flex items-center px-6 sm:px-10 pt-32 pb-36 md:pb-44"
     >
       <div className="relative w-full max-w-[1380px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-x-12 gap-y-16 items-center">
         {/* ── Left: headline + CTAs ─────────────────────────────────── */}
-        <div className="lg:col-span-7 relative">
+        <div className="lg:col-span-7 relative -translate-x-1 sm:-translate-x-1.5 md:-translate-x-2">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -115,12 +115,12 @@ export function Hero() {
           <NotebookPage marginScrollYProgress={marginScrollYProgress} />
         </div>
 
-        {/* bottom-corner scroll hint */}
+        {/* scroll hint — sits below the hero grid so it does not crowd Demo */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.4, duration: 0.6 }}
-          className="hidden md:flex absolute bottom-[-6rem] left-0 right-0 items-center justify-start px-2 font-sub text-[10px] tracking-[0.22em] uppercase text-ink/50"
+          className="hidden md:flex absolute left-0 right-0 top-full mt-20 sm:mt-24 md:mt-28 items-center justify-start px-2 font-sub text-[10px] tracking-[0.22em] uppercase text-ink/50"
         >
           <span className="flex items-center gap-3">
             <span>scroll</span>

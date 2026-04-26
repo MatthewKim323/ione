@@ -1,0 +1,94 @@
+{
+  "_meta": {
+    "schema_version": "0.4.2",
+    "kg_type": "longitudinal_struggle_memory",
+    "generated_at": "2026-04-23T19:41:08.221Z",
+    "description": "Backboard KG snapshot. Nodes are concepts, error-patterns, and student anchors. Edges encode prerequisite chains, struggle attribution, and observed co-occurrence across sessions.",
+    "node_count": 28,
+    "edge_count": 41
+  },
+  "nodes": [
+    { "id": "student:maya_chen", "type": "student", "label": "Maya Chen", "grade": 10, "course": "algebra_2", "first_seen": "2026-02-11T15:02:00Z", "session_count": 9 },
+    { "id": "student:jordan_park", "type": "student", "label": "Jordan Park", "grade": 12, "course": "calc_1", "first_seen": "2026-01-29T22:14:00Z", "session_count": 14 },
+
+    { "id": "concept:distribution", "type": "concept", "label": "Distributive property", "domain": "algebra", "depth": 2 },
+    { "id": "concept:signed_arithmetic", "type": "concept", "label": "Signed arithmetic", "domain": "algebra", "depth": 1 },
+    { "id": "concept:subtraction_as_addition", "type": "concept", "label": "Subtraction as addition of negative", "domain": "algebra", "depth": 1 },
+    { "id": "concept:like_terms", "type": "concept", "label": "Combining like terms", "domain": "algebra", "depth": 2 },
+    { "id": "concept:linear_equations", "type": "concept", "label": "Solving linear equations", "domain": "algebra", "depth": 3 },
+    { "id": "concept:factoring", "type": "concept", "label": "Polynomial factoring", "domain": "algebra", "depth": 4 },
+
+    { "id": "concept:limits_intro", "type": "concept", "label": "Limit definition", "domain": "calculus", "depth": 3 },
+    { "id": "concept:power_rule", "type": "concept", "label": "Power rule", "domain": "calculus", "depth": 3 },
+    { "id": "concept:chain_rule", "type": "concept", "label": "Chain rule", "domain": "calculus", "depth": 4 },
+    { "id": "concept:product_rule", "type": "concept", "label": "Product rule", "domain": "calculus", "depth": 4 },
+    { "id": "concept:trig_derivatives", "type": "concept", "label": "Derivatives of trig functions", "domain": "calculus", "depth": 4 },
+    { "id": "concept:implicit_diff", "type": "concept", "label": "Implicit differentiation", "domain": "calculus", "depth": 5 },
+    { "id": "concept:function_composition", "type": "concept", "label": "Function composition", "domain": "precalc", "depth": 2 },
+
+    { "id": "error:sign_drop_distribute", "type": "error_pattern", "label": "Drops negative sign when distributing across subtraction", "severity": "high", "first_observed": "2026-02-11T15:14:32Z", "occurrences": 11 },
+    { "id": "error:sign_flip_move_term", "type": "error_pattern", "label": "Forgets sign flip when moving term across equals", "severity": "medium", "first_observed": "2026-02-18T16:22:10Z", "occurrences": 6 },
+    { "id": "error:double_negative_collapse", "type": "error_pattern", "label": "Reads --x as -x instead of +x", "severity": "medium", "first_observed": "2026-03-04T15:33:45Z", "occurrences": 4 },
+
+    { "id": "error:chain_inner_derivative_missing", "type": "error_pattern", "label": "Applies outer derivative but omits inner derivative", "severity": "high", "first_observed": "2026-01-30T20:11:09Z", "occurrences": 17 },
+    { "id": "error:chain_with_trig_only", "type": "error_pattern", "label": "Chain rule omission specifically with trig outer functions", "severity": "high", "first_observed": "2026-02-04T22:48:51Z", "occurrences": 9 },
+    { "id": "error:product_vs_chain_confusion", "type": "error_pattern", "label": "Applies product rule when chain rule is needed", "severity": "medium", "first_observed": "2026-02-12T21:55:02Z", "occurrences": 5 },
+    { "id": "error:dx_dropped", "type": "error_pattern", "label": "Drops dx/du notation mid-derivation", "severity": "low", "first_observed": "2026-02-19T20:09:33Z", "occurrences": 3 },
+
+    { "id": "intervention:silent_observe", "type": "intervention_kind", "label": "Stayed silent (student self-corrected)", "count_total": 84 },
+    { "id": "intervention:nudge_question", "type": "intervention_kind", "label": "Asked guiding question", "count_total": 19 },
+    { "id": "intervention:point_to_line", "type": "intervention_kind", "label": "Pointed to specific line", "count_total": 11 },
+    { "id": "intervention:full_explain", "type": "intervention_kind", "label": "Explained the rule", "count_total": 4 },
+
+    { "id": "session:maya_2026-04-22", "type": "session", "label": "Maya · 2026-04-22 · 23 min", "student": "student:maya_chen", "duration_sec": 1380, "frames_processed": 47, "interventions": 3 },
+    { "id": "session:jordan_2026-04-21", "type": "session", "label": "Jordan · 2026-04-21 · 31 min", "student": "student:jordan_park", "duration_sec": 1860, "frames_processed": 62, "interventions": 5 }
+  ],
+  "edges": [
+    { "from": "concept:signed_arithmetic", "to": "concept:distribution", "rel": "prerequisite_of", "weight": 0.95 },
+    { "from": "concept:subtraction_as_addition", "to": "concept:distribution", "rel": "prerequisite_of", "weight": 0.88 },
+    { "from": "concept:distribution", "to": "concept:like_terms", "rel": "prerequisite_of", "weight": 0.81 },
+    { "from": "concept:like_terms", "to": "concept:linear_equations", "rel": "prerequisite_of", "weight": 0.92 },
+    { "from": "concept:linear_equations", "to": "concept:factoring", "rel": "prerequisite_of", "weight": 0.74 },
+
+    { "from": "concept:function_composition", "to": "concept:chain_rule", "rel": "prerequisite_of", "weight": 0.97 },
+    { "from": "concept:power_rule", "to": "concept:chain_rule", "rel": "prerequisite_of", "weight": 0.86 },
+    { "from": "concept:chain_rule", "to": "concept:implicit_diff", "rel": "prerequisite_of", "weight": 0.91 },
+    { "from": "concept:trig_derivatives", "to": "concept:chain_rule", "rel": "co_required_with", "weight": 0.78 },
+    { "from": "concept:product_rule", "to": "concept:chain_rule", "rel": "easily_confused_with", "weight": 0.69 },
+
+    { "from": "student:maya_chen", "to": "error:sign_drop_distribute", "rel": "struggles_with", "weight": 0.91, "evidence_sessions": 7 },
+    { "from": "student:maya_chen", "to": "error:sign_flip_move_term", "rel": "struggles_with", "weight": 0.62, "evidence_sessions": 4 },
+    { "from": "student:maya_chen", "to": "error:double_negative_collapse", "rel": "struggles_with", "weight": 0.48, "evidence_sessions": 3 },
+    { "from": "error:sign_drop_distribute", "to": "concept:distribution", "rel": "manifests_in", "weight": 0.96 },
+    { "from": "error:sign_drop_distribute", "to": "concept:signed_arithmetic", "rel": "root_cause_in", "weight": 0.84 },
+    { "from": "error:sign_flip_move_term", "to": "concept:linear_equations", "rel": "manifests_in", "weight": 0.88 },
+    { "from": "error:double_negative_collapse", "to": "concept:signed_arithmetic", "rel": "manifests_in", "weight": 0.79 },
+    { "from": "error:sign_drop_distribute", "to": "error:double_negative_collapse", "rel": "co_occurs_with", "weight": 0.71 },
+
+    { "from": "student:jordan_park", "to": "error:chain_inner_derivative_missing", "rel": "struggles_with", "weight": 0.94, "evidence_sessions": 11 },
+    { "from": "student:jordan_park", "to": "error:chain_with_trig_only", "rel": "struggles_with", "weight": 0.83, "evidence_sessions": 8 },
+    { "from": "student:jordan_park", "to": "error:product_vs_chain_confusion", "rel": "struggles_with", "weight": 0.55, "evidence_sessions": 4 },
+    { "from": "student:jordan_park", "to": "error:dx_dropped", "rel": "struggles_with", "weight": 0.31, "evidence_sessions": 2 },
+    { "from": "error:chain_inner_derivative_missing", "to": "concept:chain_rule", "rel": "manifests_in", "weight": 0.98 },
+    { "from": "error:chain_with_trig_only", "to": "concept:trig_derivatives", "rel": "manifests_in", "weight": 0.93 },
+    { "from": "error:chain_with_trig_only", "to": "concept:chain_rule", "rel": "manifests_in", "weight": 0.89 },
+    { "from": "error:product_vs_chain_confusion", "to": "concept:product_rule", "rel": "root_cause_in", "weight": 0.72 },
+    { "from": "error:chain_inner_derivative_missing", "to": "error:chain_with_trig_only", "rel": "specializes_to", "weight": 0.81 },
+
+    { "from": "session:maya_2026-04-22", "to": "error:sign_drop_distribute", "rel": "observed", "count": 2 },
+    { "from": "session:maya_2026-04-22", "to": "error:sign_flip_move_term", "rel": "observed", "count": 1 },
+    { "from": "session:maya_2026-04-22", "to": "intervention:silent_observe", "rel": "produced", "count": 9 },
+    { "from": "session:maya_2026-04-22", "to": "intervention:nudge_question", "rel": "produced", "count": 2 },
+    { "from": "session:maya_2026-04-22", "to": "intervention:point_to_line", "rel": "produced", "count": 1 },
+
+    { "from": "session:jordan_2026-04-21", "to": "error:chain_inner_derivative_missing", "rel": "observed", "count": 3 },
+    { "from": "session:jordan_2026-04-21", "to": "error:chain_with_trig_only", "rel": "observed", "count": 2 },
+    { "from": "session:jordan_2026-04-21", "to": "intervention:silent_observe", "rel": "produced", "count": 12 },
+    { "from": "session:jordan_2026-04-21", "to": "intervention:nudge_question", "rel": "produced", "count": 3 },
+    { "from": "session:jordan_2026-04-21", "to": "intervention:point_to_line", "rel": "produced", "count": 1 },
+    { "from": "session:jordan_2026-04-21", "to": "intervention:full_explain", "rel": "produced", "count": 1 },
+
+    { "from": "student:maya_chen", "to": "session:maya_2026-04-22", "rel": "had_session" },
+    { "from": "student:jordan_park", "to": "session:jordan_2026-04-21", "rel": "had_session" }
+  ]
+}

@@ -6,6 +6,7 @@ import {
   useState,
   type RefObject,
 } from "react";
+import { motion } from "motion/react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/auth";
 
@@ -150,7 +151,7 @@ function pickScrollSection(): ScrollNavId {
   return best;
 }
 
-export function Nav() {
+export function Nav({ revealed = true }: { revealed?: boolean }) {
   const { session, profile } = useAuth();
   const barRef = useRef<HTMLDivElement>(null);
   const introRef = useRef<HTMLDivElement>(null);
@@ -255,9 +256,16 @@ export function Nav() {
       .join(" ");
 
   return (
-    <nav
+    <motion.nav
       className="floating-nav floating-nav--light fixed top-6 left-1/2 z-50 max-w-[calc(100vw-1rem)] -translate-x-1/2 px-2 sm:top-8"
       aria-label="On this page"
+      initial={false}
+      animate={
+        revealed
+          ? { opacity: 1, y: 0, pointerEvents: "auto" }
+          : { opacity: 0, y: -26, pointerEvents: "none" }
+      }
+      transition={{ duration: 0.82, ease: [0.16, 1, 0.3, 1] }}
     >
       <div ref={barRef} className="floating-nav__shell relative">
         {indicator.ready && (
@@ -392,6 +400,6 @@ export function Nav() {
           </div>
         </div>
       </div>
-    </nav>
+    </motion.nav>
   );
 }

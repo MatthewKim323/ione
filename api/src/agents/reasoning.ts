@@ -115,7 +115,9 @@ export async function evaluateStudent(
   const sonnet = await sonnetJson<ReasoningOutput>({
     system: REASONING_EVALUATE_SYSTEM,
     user: userPayload,
-    maxTokens: 600,
+    // Evaluator emits several string fields; 600 was truncating mid-value,
+    // leaving invalid JSON and "reasoning agent rejected" every cycle.
+    maxTokens: 1200,
     cacheSystem: true,
   });
   input.cost?.add("reasoning_evaluate", sonnet.usd);

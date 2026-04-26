@@ -1,0 +1,67 @@
+{
+  "_meta": {
+    "agent": "ocr",
+    "session_id": "sess_maya_2026-04-22_a3f1",
+    "frame_id": "frame_0034",
+    "captured_at": "2026-04-22T17:23:14.802Z",
+    "mathpix_request_id": "req_mpx_8K1pQz",
+    "processing_ms": 412
+  },
+  "page_state": {
+    "problem": {
+      "stated": "Solve for x:  3(x - 4) - 2(2x - 5) = 7",
+      "source": "worksheet_alg2_ch3_p47_q12",
+      "topic_tags": ["distribution", "linear_equations", "signed_arithmetic"]
+    },
+    "student_work": [
+      {
+        "line": 1,
+        "latex": "3(x - 4) - 2(2x - 5) = 7",
+        "kind": "given",
+        "confidence": 0.99
+      },
+      {
+        "line": 2,
+        "latex": "3x - 12 - 4x - 10 = 7",
+        "kind": "student_step",
+        "confidence": 0.96,
+        "notes": "Right distribution of 3, but -2 distributed as if it were +(-2) onto -5, producing -10 instead of +10."
+      },
+      {
+        "line": 3,
+        "latex": "-x - 22 = 7",
+        "kind": "student_step",
+        "confidence": 0.94
+      },
+      {
+        "line": 4,
+        "latex": "-x = 29",
+        "kind": "student_step",
+        "confidence": 0.97
+      },
+      {
+        "line": 5,
+        "latex": "x = -29",
+        "kind": "student_answer",
+        "confidence": 0.98
+      }
+    ],
+    "scratch_marks": [
+      { "near_line": 2, "kind": "circled", "content": "-2" },
+      { "near_line": 2, "kind": "arrow", "content": "from -2 to (2x - 5)" }
+    ],
+    "page_geometry": {
+      "writing_orientation": "left_to_right",
+      "lines_detected": 5,
+      "ink_density": 0.42,
+      "pen_color": "blue"
+    }
+  },
+  "structured_output": {
+    "current_line": 5,
+    "answer_present": true,
+    "answer_value": "-29",
+    "work_complete": true,
+    "ready_for_evaluation": true
+  }
+}

@@ -10,34 +10,92 @@ export function stripJsonFences(text: string): string {
     .trim();
 }
 
+/**
+ * Sonnet sometimes emits a valid JSON object followed by prose, a duplicate
+ * object, or markdown after a closing fence. `JSON.parse` rejects the whole
+ * string with "Unexpected non-whitespace character after JSON". We slice
+ * the first top-level `{ ... }` with string-aware brace matching.
+ */
+function extractFirstJsonObject(text: string): string | null {
+  const start = text.indexOf("{");
+  if (start < 0) return null;
+  let depth = 0;
+  let inString = false;
+  let escape = false;
+  for (let i = start; i < text.length; i += 1) {
+    const c = text[i]!;
+    if (inString) {
+      if (escape) {
+        escape = false;
+      } else if (c === "\\") {
+        escape = true;
+      } else if (c === '"') {
+        inString = false;
+      }
+      continue;
+    }
+    if (c === '"') inString = true;
+    else if (c === "{") depth += 1;
+    else if (c === "}") {
+      depth -= 1;
+      if (depth === 0) return text.slice(start, i + 1);
+    }
+  }
+  return null;
+}
+
 export type ParseResult<T> =
   | { ok: true; value: T }
   | { ok: false; error: string; raw: string };
 
 /** Parse Sonnet's text output as JSON, with fence stripping. */
 export function parseJsonResponse<T>(raw: string): ParseResult<T> {
-  const stripped = stripJsonFences(raw);
-  try {
-    return { ok: true, value: JSON.parse(stripped) as T };
-  } catch (e) {
-    // Salvage path. Truncation (max_tokens hit) leaves a structurally
-    // invalid JSON like `{ "claims": [ {...}, {...partial` and we lose
-    // every successfully-emitted claim. We try to recover the prefix by:
-    //   1. find the start of the `claims` array
-    //   2. walk to the last `}` that closes a top-level claim entry
-    //      (i.e. the nearest `},` or `}` followed by `]`)
-    //   3. close the array + object explicitly
-    // We only do this if the raw clearly LOOKS like a truncated extractor
-    // payload so we don't paper over real bugs.
-    const salvage = trySalvageTruncatedClaims<T>(stripped);
-    if (salvage) return salvage;
+  const stripped = stripJsonFences(raw).trim();
 
-    return {
-      ok: false,
-      error: e instanceof Error ? e.message : String(e),
-      raw,
-    };
+  const tryParse = (s: string): ParseResult<T> | null => {
+    try {
+      return { ok: true, value: JSON.parse(s) as T };
+    } catch {
+      return null;
+    }
+  };
+
+  const direct = tryParse(stripped);
+  if (direct) return direct;
+
+  const firstObj = extractFirstJsonObject(stripped);
+  if (firstObj) {
+    const nested = tryParse(firstObj);
+    if (nested) return nested;
   }
+
+  // Salvage path. Truncation (max_tokens hit) leaves a structurally
+  // invalid JSON like `{ "claims": [ {...}, {...partial` and we lose
+  // every successfully-emitted claim. We try to recover the prefix by:
+  //   1. find the start of the `claims` array
+  //   2. walk to the last `}` that closes a top-level claim entry
+  //      (i.e. the nearest `},` or `}` followed by `]`)
+  //   3. close the array + object explicitly
+  // We only do this if the raw clearly LOOKS like a truncated extractor
+  // payload so we don't paper over real bugs.
+  const salvage = trySalvageTruncatedClaims<T>(stripped);
+  if (salvage) return salvage;
+
+  let errMsg = "invalid json";
+  try {
+    JSON.parse(stripped);
+  } catch (e) {
+    errMsg = e instanceof Error ? e.message : String(e);
+  }
+  if (firstObj) {
+    try {
+      JSON.parse(firstObj);
+    } catch (e2) {
+      errMsg = e2 instanceof Error ? e2.message : String(e2);
+    }
+  }
+
+  return { ok: false, error: errMsg, raw };
 }
 
 function trySalvageTruncatedClaims<T>(stripped: string): ParseResult<T> | null {

@@ -1,0 +1,154 @@
+{
+  "_meta": {
+    "agent": "intervention",
+    "log_window_start": "2026-04-21T22:17:03.000Z",
+    "log_window_end": "2026-04-22T17:46:21.000Z",
+    "total_decisions": 24,
+    "spoke_count": 8,
+    "stayed_silent_count": 16,
+    "silence_bias_param": 0.72
+  },
+  "decisions": [
+    {
+      "session_id": "sess_jordan_2026-04-21_b9c4",
+      "frame_id": "frame_0008",
+      "ts": "2026-04-21T22:19:11.412Z",
+      "evaluation_verdict": "ok",
+      "decision": "stay_silent",
+      "reasoning": "Work is correct and progressing. No reason to interrupt."
+    },
+    {
+      "session_id": "sess_jordan_2026-04-21_b9c4",
+      "frame_id": "frame_0019",
+      "ts": "2026-04-21T22:24:45.901Z",
+      "evaluation_verdict": "minor_arithmetic_slip",
+      "decision": "stay_silent",
+      "reasoning": "Student's pen is still moving and slip is recoverable. Wait for self-correction."
+    },
+    {
+      "session_id": "sess_jordan_2026-04-21_b9c4",
+      "frame_id": "frame_0021",
+      "ts": "2026-04-21T22:25:12.118Z",
+      "evaluation_verdict": "self_corrected",
+      "decision": "stay_silent",
+      "reasoning": "Confirmed self-correction. Silence was the right call."
+    },
+    {
+      "session_id": "sess_jordan_2026-04-21_b9c4",
+      "frame_id": "frame_0034",
+      "ts": "2026-04-21T22:34:50.220Z",
+      "evaluation_verdict": "incorrect",
+      "kg_pattern": "error:product_vs_chain_confusion",
+      "decision": "speak",
+      "kind": "intervention:nudge_question",
+      "utterance": "Quick check — is this a product of two functions of x, or a function inside a function?",
+      "tts_voice": "elevenlabs_flash_v2_5__rachel",
+      "outcome": "self_corrected_within_1_line"
+    },
+    {
+      "session_id": "sess_jordan_2026-04-21_b9c4",
+      "frame_id": "frame_0041",
+      "ts": "2026-04-21T22:41:03.554Z",
+      "evaluation_verdict": "ok",
+      "decision": "stay_silent"
+    },
+    {
+      "session_id": "sess_jordan_2026-04-21_b9c4",
+      "frame_id": "frame_0051",
+      "ts": "2026-04-21T22:48:09.901Z",
+      "evaluation_verdict": "incomplete",
+      "kg_pattern": "error:chain_with_trig_only",
+      "kg_recurrence": 9,
+      "decision": "speak",
+      "kind": "intervention:full_explain",
+      "utterance": "Hold up — you set u = 3x^2 + 1 perfectly, but the chain rule needs you to multiply by du/dx. What's the derivative of 3x^2 + 1?",
+      "tts_voice": "elevenlabs_flash_v2_5__rachel",
+      "outcome": "student_responded_6x_then_corrected_answer"
+    },
+    {
+      "session_id": "sess_jordan_2026-04-21_b9c4",
+      "frame_id": "frame_0055",
+      "ts": "2026-04-21T22:49:48.770Z",
+      "evaluation_verdict": "ok",
+      "decision": "stay_silent",
+      "reasoning": "Student reapplied chain rule correctly on next problem. Reinforce by not over-talking."
+    },
+    {
+      "session_id": "sess_jordan_2026-04-21_b9c4",
+      "frame_id": "frame_0058",
+      "ts": "2026-04-21T22:50:42.110Z",
+      "evaluation_verdict": "ok",
+      "decision": "stay_silent"
+    },
+    {
+      "session_id": "sess_maya_2026-04-22_a3f1",
+      "frame_id": "frame_0006",
+      "ts": "2026-04-22T17:11:45.001Z",
+      "evaluation_verdict": "ok",
+      "decision": "stay_silent"
+    },
+    {
+      "session_id": "sess_maya_2026-04-22_a3f1",
+      "frame_id": "frame_0012",
+      "ts": "2026-04-22T17:14:22.882Z",
+      "evaluation_verdict": "minor_arithmetic_slip",
+      "decision": "stay_silent",
+      "reasoning": "Recoverable slip on like-terms combination. Hold."
+    },
+    {
+      "session_id": "sess_maya_2026-04-22_a3f1",
+      "frame_id": "frame_0014",
+      "ts": "2026-04-22T17:14:51.114Z",
+      "evaluation_verdict": "self_corrected",
+      "decision": "stay_silent"
+    },
+    {
+      "session_id": "sess_maya_2026-04-22_a3f1",
+      "frame_id": "frame_0021",
+      "ts": "2026-04-22T17:18:09.450Z",
+      "evaluation_verdict": "incorrect",
+      "kg_pattern": "error:sign_flip_move_term",
+      "kg_recurrence": 6,
+      "decision": "speak",
+      "kind": "intervention:nudge_question",
+      "utterance": "When you move that term across the equals sign, what happens to its sign?",
+      "tts_voice": "elevenlabs_flash_v2_5__bella",
+      "outcome": "self_corrected_within_1_line"
+    },
+    {
+      "session_id": "sess_maya_2026-04-22_a3f1",
+      "frame_id": "frame_0028",
+      "ts": "2026-04-22T17:21:33.778Z",
+      "evaluation_verdict": "ok",
+      "decision": "stay_silent"
+    },
+    {
+      "session_id": "sess_maya_2026-04-22_a3f1",
+      "frame_id": "frame_0034",
+      "ts": "2026-04-22T17:23:15.408Z",
+      "evaluation_verdict": "incorrect",
+      "kg_pattern": "error:sign_drop_distribute",
+      "kg_recurrence": 11,
+      "decision": "speak",
+      "kind": "intervention:point_to_line",
+      "utterance": "Take another look at line 2 — what does -2 times -5 give you?",
+      "tts_voice": "elevenlabs_flash_v2_5__bella",
+      "outcome": "self_corrected_within_2_lines"
+    },
+    {
+      "session_id": "sess_maya_2026-04-22_a3f1",
+      "frame_id": "frame_0040",
+      "ts": "2026-04-22T17:26:01.220Z",
+      "evaluation_verdict": "ok",
+      "decision": "stay_silent",
+      "reasoning": "Maya rewrote line 2 correctly and is moving on. No need to celebrate; let her keep flow."
+    },
+    {
+      "session_id": "sess_maya_2026-04-22_a3f1",
+      "frame_id": "frame_0046",
+      "ts": "2026-04-22T17:29:55.001Z",
+      "evaluation_verdict": "ok",
+      "decision": "stay_silent"
+    }
+  ]
+}

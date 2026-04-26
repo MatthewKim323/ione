@@ -1,0 +1,58 @@
+{
+  "_meta": {
+    "agent": "reasoning",
+    "session_id": "sess_maya_2026-04-22_a3f1",
+    "frame_id": "frame_0034",
+    "model": "claude-sonnet-4-5",
+    "calls_made": 2,
+    "cache_hit_canonical": true,
+    "evaluated_at": "2026-04-22T17:23:15.408Z"
+  },
+  "canonical_solution": {
+    "problem": "3(x - 4) - 2(2x - 5) = 7",
+    "steps": [
+      { "step": 1, "latex": "3(x - 4) - 2(2x - 5) = 7", "rationale": "Given." },
+      { "step": 2, "latex": "3x - 12 - 4x + 10 = 7", "rationale": "Distribute 3 across (x - 4); distribute -2 across (2x - 5). Note: -2 \\cdot -5 = +10." },
+      { "step": 3, "latex": "-x - 2 = 7", "rationale": "Combine like terms: 3x - 4x = -x; -12 + 10 = -2." },
+      { "step": 4, "latex": "-x = 9", "rationale": "Add 2 to both sides." },
+      { "step": 5, "latex": "x = -9", "rationale": "Multiply both sides by -1." }
+    ],
+    "final_answer": "x = -9"
+  },
+  "evaluation": {
+    "verdict": "incorrect",
+    "first_divergence_line": 2,
+    "line_results": [
+      { "line": 1, "status": "ok", "matches_canonical": true },
+      {
+        "line": 2,
+        "status": "error",
+        "matches_canonical": false,
+        "expected_latex": "3x - 12 - 4x + 10 = 7",
+        "observed_latex": "3x - 12 - 4x - 10 = 7",
+        "error_classification": "sign_drop_distribute",
+        "error_subtype": "negative_times_negative_treated_as_negative",
+        "explanation_for_intervention": "Student distributed -2 across (2x - 5) and produced -10 for the second term. -2 \\cdot -5 = +10, not -10. Classic sign-drop on the trailing subtraction inside the second parenthesis.",
+        "confidence": 0.97
+      },
+      { "line": 3, "status": "consistent_with_prior_error", "matches_canonical": false, "note": "Algebra is internally correct given the line 2 error." },
+      { "line": 4, "status": "consistent_with_prior_error", "matches_canonical": false },
+      { "line": 5, "status": "consistent_with_prior_error", "matches_canonical": false, "observed_answer": "-29", "canonical_answer": "-9" }
+    ]
+  },
+  "kg_lookup": {
+    "student": "student:maya_chen",
+    "matched_pattern": "error:sign_drop_distribute",
+    "prior_occurrences": 11,
+    "session_streak": 3,
+    "is_recurring": true,
+    "last_intervention_kind_for_this_pattern": "intervention:nudge_question",
+    "last_intervention_outcome": "self_corrected_within_2_lines"
+  },
+  "intervention_recommendation": {
+    "should_intervene": true,
+    "kind": "intervention:point_to_line",
+    "rationale": "This is the 11th observed instance of the same sign-drop pattern across 7 sessions. Last nudge worked within 2 lines, so go slightly more direct this time without giving the answer away.",
+    "suggested_utterance_seed": "Take another look at line 2 — what does -2 times -5 give you?"
+  }
+}

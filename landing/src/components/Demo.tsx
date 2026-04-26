@@ -211,22 +211,21 @@ export function Demo() {
     };
   }, [ready]);
 
-  // Long, smooth vertical feather. The asymmetry (slightly bigger entry
-  // band than exit band) is on purpose — the eye lingers on whatever's
-  // coming up from below, so the top fade gets more runway. ~18% on top
-  // / ~16% on bottom is enough that the eye reads the demo as
-  // dissolving into the page rather than slapped on as a hard rectangle.
+  // Vertical feather: keep a tall fully-clear band at the top so the first
+  // opaque pixels sit lower — avoids a “hairline” sitting right on the
+  // hero → demo handoff (reads like a fineline across the page).
   const FEATHER_MASK =
     "linear-gradient(to bottom," +
     " rgba(0,0,0,0)    0%," +
-    " rgba(0,0,0,0.25) 4%," +
-    " rgba(0,0,0,0.65) 9%," +
-    " rgba(0,0,0,0.92) 14%," +
-    " #000             18%," +
-    " #000             84%," +
-    " rgba(0,0,0,0.92) 88%," +
-    " rgba(0,0,0,0.65) 93%," +
-    " rgba(0,0,0,0.25) 97%," +
+    " rgba(0,0,0,0)    14%," +
+    " rgba(0,0,0,0.18) 18%," +
+    " rgba(0,0,0,0.52) 24%," +
+    " rgba(0,0,0,0.85) 30%," +
+    " #000             36%," +
+    " #000             80%," +
+    " rgba(0,0,0,0.85) 85%," +
+    " rgba(0,0,0,0.52) 91%," +
+    " rgba(0,0,0,0.18) 96%," +
     " rgba(0,0,0,0)    100%)";
 
   return (
@@ -234,7 +233,7 @@ export function Demo() {
       ref={sectionRef}
       id="demo"
       aria-label="demo"
-      className="relative scroll-mt-28"
+      className="relative scroll-mt-28 mt-20 sm:mt-24 md:mt-[min(12vh,7.5rem)]"
       style={{
         height: `${SECTION_VH * 100}vh`,
       }}

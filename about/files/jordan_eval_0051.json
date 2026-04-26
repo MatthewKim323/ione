@@ -1,0 +1,58 @@
+{
+  "_meta": {
+    "agent": "reasoning",
+    "session_id": "sess_jordan_2026-04-21_b9c4",
+    "frame_id": "frame_0051",
+    "model": "claude-sonnet-4-5",
+    "calls_made": 2,
+    "cache_hit_canonical": false,
+    "evaluated_at": "2026-04-21T22:48:09.901Z"
+  },
+  "canonical_solution": {
+    "problem": "Find dy/dx if  y = sin(3x^2 + 1)",
+    "steps": [
+      { "step": 1, "latex": "y = \\sin(3x^2 + 1)", "rationale": "Given." },
+      { "step": 2, "latex": "\\text{let } u = 3x^2 + 1", "rationale": "Substitute the inner function." },
+      { "step": 3, "latex": "\\frac{dy}{du} = \\cos(u), \\quad \\frac{du}{dx} = 6x", "rationale": "Differentiate outer (sin -> cos) and inner (3x^2 + 1 -> 6x) separately." },
+      { "step": 4, "latex": "\\frac{dy}{dx} = \\frac{dy}{du} \\cdot \\frac{du}{dx} = \\cos(3x^2 + 1) \\cdot 6x", "rationale": "Chain rule: multiply outer derivative by inner derivative." },
+      { "step": 5, "latex": "\\frac{dy}{dx} = 6x\\cos(3x^2 + 1)", "rationale": "Reorder for conventional form." }
+    ],
+    "final_answer": "6x\\cos(3x^2 + 1)"
+  },
+  "evaluation": {
+    "verdict": "incomplete",
+    "first_divergence_line": 4,
+    "line_results": [
+      { "line": 1, "status": "ok", "matches_canonical": true },
+      { "line": 2, "status": "ok", "matches_canonical": true },
+      { "line": 3, "status": "partial", "matches_canonical": false, "note": "Got dy/du correct but did not compute du/dx." },
+      {
+        "line": 4,
+        "status": "error",
+        "matches_canonical": false,
+        "expected_latex": "\\frac{dy}{dx} = 6x\\cos(3x^2 + 1)",
+        "observed_latex": "\\frac{dy}{dx} = \\cos(3x^2 + 1)",
+        "error_classification": "chain_inner_derivative_missing",
+        "error_subtype": "trig_outer_with_polynomial_inner",
+        "explanation_for_intervention": "Student wrote the outer derivative cos(u) but skipped multiplying by du/dx = 6x. The substitution was set up correctly, so the gap is at the chain-rule combine step, not the inner-derivative computation itself.",
+        "confidence": 0.96
+      }
+    ]
+  },
+  "kg_lookup": {
+    "student": "student:jordan_park",
+    "matched_pattern": "error:chain_with_trig_only",
+    "prior_occurrences": 9,
+    "session_streak": 4,
+    "is_recurring": true,
+    "specializes_pattern": "error:chain_inner_derivative_missing",
+    "last_intervention_kind_for_this_pattern": "intervention:nudge_question",
+    "last_intervention_outcome": "asked_followup_did_not_self_correct"
+  },
+  "intervention_recommendation": {
+    "should_intervene": true,
+    "kind": "intervention:full_explain",
+    "rationale": "9th occurrence in 4 consecutive sessions on the trig-outer specialization. Nudges have not produced self-correction. Time to walk through the multiply step explicitly, then have the student redo a similar problem.",
+    "suggested_utterance_seed": "Hold up — you set u = 3x^2 + 1 perfectly, but the chain rule needs you to multiply by du/dx. What's the derivative of 3x^2 + 1?"
+  }
+}

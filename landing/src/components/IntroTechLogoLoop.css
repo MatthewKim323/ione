@@ -1,0 +1,22 @@
+/* Light rose-pink — single tone for all stack marks (no blur / SVG filters). */
+.intro-tech-logo-img,
+.intro-tech-logo-node {
+  filter: grayscale(1) sepia(0.32) hue-rotate(292deg) saturate(0.88) brightness(1.2) contrast(0.88);
+}
+
+.intro-tech-logo-node {
+  display: inline-flex;
+  height: 48px;
+  width: 48px;
+  align-items: center;
+  justify-content: center;
+}
+
+.intro-tech-lenis-mark {
+  font-family: var(--font-display), ui-serif, Georgia, serif;
+  font-size: 1.35rem;
+  font-style: italic;
+  line-height: 1;
+  color: #fff5f9;
+  opacity: 0.95;
+}

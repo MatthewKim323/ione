@@ -47,6 +47,9 @@ import { MarginCollapsible } from "./MarginCollapsible";
 
 type SurfacedHintExtra = SurfacedHint & { received_at: number };
 
+/** PTT is for a short math question; multi‑minute TV/radio bleed reads as paragraphs. */
+const PTT_MAX_QUESTION_CHARS = 480;
+
 const SurfacedHintEqual = (a: SurfacedHintExtra | null, b: SurfacedHintExtra | null) => {
   if (a === b) return true;
   if (!a || !b) return false;
@@ -112,6 +115,13 @@ export function TutorWorkspace() {
    * the user's own request).
    */
   const userInteractingRef = useRef(false);
+  /**
+   * Serializes stopVoiceAndSend — pointerup + pointerleave (or double
+   * keyup) used to fire twice in one gesture before React flipped
+   * voiceState off "recording", which double‑posted /api/cycle and could
+   * wedge inFlightRef or leave the mic in a bad state next to screen share.
+   */
+  const voiceSendInFlightRef = useRef(false);
   /**
    * Tracks whether the user-triggered "I need help" path is currently
    * running. Distinct from `inFlightRef` so the help button disables
@@ -428,6 +438,8 @@ export function TutorWorkspace() {
    */
   const stopVoiceAndSend = useCallback(async () => {
     if (voiceState !== "recording") return;
+    if (voiceSendInFlightRef.current) return;
+    voiceSendInFlightRef.current = true;
     setVoiceState("transcribing");
     let recording: Awaited<ReturnType<typeof mic.stop>> = null;
     try {
@@ -439,6 +451,7 @@ export function TutorWorkspace() {
       // too short or cancelled — quietly reset
       setVoiceState("idle");
       userInteractingRef.current = false;
+      voiceSendInFlightRef.current = false;
       return;
     }
     // Pre-flight: if the analyser never saw any meaningful input, the
@@ -451,6 +464,7 @@ export function TutorWorkspace() {
       });
       setVoiceState("idle");
       userInteractingRef.current = false;
+      voiceSendInFlightRef.current = false;
       return;
     }
     try {
@@ -474,6 +488,15 @@ export function TutorWorkspace() {
             ttlMs: 3500,
           });
         }
+        setVoiceState("idle");
+        return;
+      }
+      if (text.length > PTT_MAX_QUESTION_CHARS) {
+        toast.warn("that transcript is huge — usually wrong mic or TV in the room.", {
+          id: "voice_transcript_too_long",
+          description: `try headphones, mute other tabs, or pick the built‑in mic (${text.length} chars).`,
+          ttlMs: 8000,
+        });
         setVoiceState("idle");
         return;
       }
@@ -511,6 +534,7 @@ export function TutorWorkspace() {
     } finally {
       setVoiceState("idle");
       userInteractingRef.current = false;
+      voiceSendInFlightRef.current = false;
     }
   }, [capture, mic, postCycle, voiceState, waitForCycleDrain]);
 
@@ -722,16 +746,25 @@ export function TutorWorkspace() {
                       // "recording" with no way out).
                       onPointerDown={(e) => {
                         e.preventDefault();
+                        try {
+                          (e.currentTarget as HTMLElement).setPointerCapture(
+                            e.pointerId,
+                          );
+                        } catch {
+                          /* unsupported or already captured */
+                        }
                         void startVoice();
                       }}
                       onPointerUp={(e) => {
                         e.preventDefault();
-                        void stopVoiceAndSend();
-                      }}
-                      onPointerLeave={() => {
-                        if (voiceState === "recording") {
-                          void stopVoiceAndSend();
+                        try {
+                          (e.currentTarget as HTMLElement).releasePointerCapture(
+                            e.pointerId,
+                          );
+                        } catch {
+                          /* not capturing */
                         }
+                        void stopVoiceAndSend();
                       }}
                       onPointerCancel={() => cancelVoice()}
                       // Suppress the default "click" since we drive

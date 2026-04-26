@@ -1,4 +1,7 @@
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
+import { SKIP_FX } from "../lib/prerender";
+import { IntroTechLogoLoop } from "./IntroTechLogoLoop";
 
 // ─── Handwriting choreography for the wordmark ────────────────────────
 const STROKE_START = 0.3;
@@ -12,7 +15,14 @@ function strokeAt(index: number) {
 
 const HAND_EASE = [0.65, 0, 0.35, 1] as const;
 
-function HandwrittenWordmark() {
+/** Logo leads the ∫ stroke slightly — same opacity / y-em motion as letters. */
+const LOGO_LEAD_S = 0.14;
+
+function HandwrittenWordmark({
+  onIntroComplete,
+}: {
+  onIntroComplete?: () => void;
+}) {
   const reduceMotion = useReducedMotion() ?? false;
   const integral = strokeAt(0);
   const o = strokeAt(1);
@@ -115,6 +125,9 @@ function HandwrittenWordmark() {
                   ease: [0.4, 0, 0.2, 1],
                 }
           }
+          onAnimationComplete={
+            reduceMotion || !onIntroComplete ? undefined : onIntroComplete
+          }
         >
           .
         </motion.span>
@@ -123,11 +136,109 @@ function HandwrittenWordmark() {
   );
 }
 
-export function TitlePage() {
+function TitleLogoMark({
+  reduceMotion,
+  skipFx,
+}: {
+  reduceMotion: boolean;
+  skipFx: boolean;
+}) {
+  const instant = reduceMotion || skipFx;
+  const delay = Math.max(0.06, STROKE_START - LOGO_LEAD_S);
+  /** Ship `logo.svg`; swap to `logo.png` when that file exists (no 404 flash). */
+  const [src, setSrc] = useState("/logo.svg");
+  useLayoutEffect(() => {
+    const probe = new Image();
+    probe.onload = () => setSrc("/logo.png");
+    probe.src = "/logo.png";
+  }, []);
+
+  return (
+    <motion.img
+      src={src}
+      alt=""
+      width={128}
+      height={128}
+      decoding="async"
+      draggable={false}
+      className="shrink-0 select-none [font-size:inherit]"
+      style={{
+        height: "0.82em",
+        width: "auto",
+        maxWidth: "min(26vw, 1.85em)",
+        objectFit: "contain",
+        filter:
+          "drop-shadow(0 2px 0 rgba(0,0,0,0.28)) drop-shadow(0 6px 18px rgba(0,0,0,0.35)) drop-shadow(0 14px 36px rgba(0,0,0,0.28))",
+      }}
+      initial={instant ? { opacity: 1, y: "0em" } : { opacity: 0, y: "0.06em" }}
+      animate={{ opacity: 1, y: "0em" }}
+      transition={
+        instant
+          ? { duration: 0 }
+          : {
+              delay,
+              duration: STROKE_DUR,
+              ease: HAND_EASE,
+            }
+      }
+    />
+  );
+}
+
+export function TitlePage({
+  onIntroComplete,
+}: {
+  /** Fires once the handwritten title (including period bounce) has finished. */
+  onIntroComplete?: () => void;
+}) {
+  const reduceMotion = useReducedMotion() ?? false;
+  const firedRef = useRef(false);
+
+  const fireIntroComplete = () => {
+    if (firedRef.current) return;
+    firedRef.current = true;
+    onIntroComplete?.();
+  };
+
+  useEffect(() => {
+    if (!onIntroComplete) return;
+    if (SKIP_FX) {
+      fireIntroComplete();
+      return;
+    }
+    if (reduceMotion) {
+      const id = window.setTimeout(fireIntroComplete, 520);
+      return () => clearTimeout(id);
+    }
+  }, [reduceMotion, onIntroComplete]);
+
+  useEffect(() => {
+    if (!onIntroComplete || SKIP_FX || reduceMotion) return;
+    const id = window.setTimeout(fireIntroComplete, 4800);
+    return () => clearTimeout(id);
+  }, [reduceMotion, onIntroComplete]);
+
   return (
     <section className="relative min-h-screen" style={{ minHeight: "100vh" }}>
-      <div className="relative flex min-h-screen flex-col justify-center items-start px-6 py-8 sm:px-10 sm:py-10 md:px-14 md:py-12 lg:pl-20 text-left pb-[clamp(2.75rem,7vh,5.5rem)]">
-        <div className="flex w-full max-w-[min(100%,92vw)] flex-col items-stretch">
+      {/* Iris-style vertical tech strip — intro hero only (matches useiris.tech placement). */}
+      <div
+        className="pointer-events-none absolute z-[1] hidden md:block"
+        style={{
+          top: "50%",
+          right: "clamp(124px, 15vw, 236px)",
+          transform: "translateY(-50%)",
+          height: "clamp(344px, 50vh, 452px)",
+          width: "104px",
+          overflow: "hidden",
+          opacity: 0.88,
+        }}
+        aria-hidden
+      >
+        <IntroTechLogoLoop />
+      </div>
+
+      <div className="relative z-[2] flex min-h-screen flex-col justify-center items-start pl-3 pr-6 py-8 sm:pl-4 sm:pr-10 sm:py-10 md:pl-5 md:pr-14 md:py-12 lg:pl-7 lg:pr-16 text-left pb-[clamp(2.75rem,7vh,5.5rem)]">
+        <div className="flex w-full max-w-[min(100%,92vw)] flex-col items-stretch -translate-x-0.5 sm:-translate-x-1 md:-translate-x-1.5">
           <h1
             className="h-display"
             style={{
@@ -141,18 +252,28 @@ export function TitlePage() {
                 " 0 8px 24px rgba(0,0,0,0.4)," +
                 " 0 20px 52px rgba(0,0,0,0.32)",
               position: "relative",
-              display: "inline-block",
+              display: "inline-flex",
+              flexDirection: "row",
+              flexWrap: "wrap",
+              alignItems: "flex-end",
               overflow: "visible",
             }}
           >
-            <motion.div
-              className="inline-block w-full [text-rendering:optimizeLegibility]"
+            <motion.span
+              className="inline-flex flex-row flex-wrap items-end gap-x-0 gap-y-[0.12em] [text-rendering:optimizeLegibility] [font-size:inherit]"
               initial={{ opacity: 0, y: 28 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.85, delay: 0.06, ease: [0.16, 1, 0.3, 1] }}
             >
-              <HandwrittenWordmark />
-            </motion.div>
+              <TitleLogoMark reduceMotion={reduceMotion} skipFx={SKIP_FX} />
+              <span className="inline-flex min-w-0 items-end -ml-[0.14em] sm:-ml-[0.18em] md:-ml-[0.2em]">
+                <HandwrittenWordmark
+                  onIntroComplete={
+                    SKIP_FX || reduceMotion ? undefined : fireIntroComplete
+                  }
+                />
+              </span>
+            </motion.span>
 
             <span
               style={{

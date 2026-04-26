@@ -1,14 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
 import { Nav } from "../components/Nav";
 import { TitlePage } from "../components/TitlePage";
 import { Hero } from "../components/Hero";
 import { Pipeline } from "../components/Pipeline";
 import { Demo } from "../components/Demo";
 import { Closer } from "../components/Closer";
+import { LandingLoader } from "../components/LandingLoader";
 import { SKIP_FX } from "../lib/prerender";
 import { useLenisLanding } from "../lib/useLenisLanding";
 
 const PAGE_BG = "#f2f2f2";
+/** Full-viewport backdrop while the loader runs (matches loader video letterbox). */
+const BOOT_BG = "#000000";
 
 // How many viewport-heights of scroll equal one full pass through the video.
 // Higher = the clip advances more slowly as you scroll and “owns” more of the page.
@@ -344,17 +348,76 @@ function FlowerBackground() {
 export default function Landing() {
   useLenisLanding();
 
-  useEffect(() => {
-    document.body.style.backgroundColor = PAGE_BG;
-    document.documentElement.style.backgroundColor = PAGE_BG;
+  /** Landing shell + flower + main — true once loader begins its exit fade (crossfade under the overlay) */
+  const [contentLive, setContentLive] = useState(SKIP_FX);
+  /** Loader unmounted after exit animation */
+  const [loaderDismissed, setLoaderDismissed] = useState(SKIP_FX);
+  const [chromeVisible, setChromeVisible] = useState(SKIP_FX);
+
+  const onLoaderExitStart = useCallback(() => {
+    setContentLive(true);
   }, []);
 
-  return (
-    <div style={{ backgroundColor: PAGE_BG, position: "relative" }}>
-      <FlowerBackground />
+  const onLoaderFinished = useCallback(() => {
+    setLoaderDismissed(true);
+    setContentLive(true);
+  }, []);
 
-      <div
+  const onTitleIntroComplete = useCallback(() => {
+    setChromeVisible(true);
+  }, []);
+
+  useEffect(() => {
+    const shell = SKIP_FX || contentLive ? PAGE_BG : BOOT_BG;
+    document.body.style.backgroundColor = shell;
+    document.documentElement.style.backgroundColor = shell;
+  }, [contentLive]);
+
+  useEffect(() => {
+    if (SKIP_FX || contentLive) {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+      return;
+    }
+    document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.documentElement.style.overflow = "";
+      document.body.style.overflow = "";
+    };
+  }, [contentLive]);
+
+  return (
+    <motion.div
+      className="relative min-h-0"
+      initial={false}
+      animate={{
+        backgroundColor: !SKIP_FX && !contentLive ? BOOT_BG : PAGE_BG,
+      }}
+      transition={{
+        duration: 0.95,
+        ease: [0.22, 1, 0.48, 1],
+      }}
+    >
+      {(SKIP_FX || contentLive) && <FlowerBackground />}
+
+      {!SKIP_FX && !loaderDismissed && (
+        <LandingLoader
+          pageBg={BOOT_BG}
+          onExitStart={onLoaderExitStart}
+          onFinished={onLoaderFinished}
+        />
+      )}
+
+      <motion.div
         aria-hidden
+        initial={{ opacity: 0 }}
+        animate={chromeVisible ? { opacity: 1 } : { opacity: 0 }}
+        transition={{
+          duration: 0.88,
+          delay: chromeVisible ? 0.05 : 0,
+          ease: [0.16, 1, 0.3, 1],
+        }}
         style={{
           position: "fixed",
           inset: 0,
@@ -375,18 +438,52 @@ export default function Landing() {
         }}
       />
 
-      <div style={{ position: "relative", zIndex: 2 }}>
-        <Nav />
-        <main>
-          <div id="intro" className="scroll-mt-28">
-            <TitlePage />
-            <Hero />
-          </div>
-          <Demo />
-          <Pipeline />
-          <Closer />
-        </main>
-      </div>
-    </div>
+      {contentLive && (
+        <motion.div
+          className="relative z-[2]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{
+            duration: 1.02,
+            ease: [0.2, 1, 0.52, 1],
+          }}
+        >
+          <Nav revealed={chromeVisible} />
+          <main>
+            <div id="intro" className="scroll-mt-28">
+              <TitlePage
+                onIntroComplete={SKIP_FX ? undefined : onTitleIntroComplete}
+              />
+              {chromeVisible ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 22 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.92,
+                    delay: 0.12,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
+                >
+                  <Hero />
+                </motion.div>
+              ) : null}
+            </div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={chromeVisible ? { opacity: 1 } : { opacity: 0 }}
+              transition={{
+                duration: 0.85,
+                delay: chromeVisible ? 0.14 : 0,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+            >
+              <Demo />
+              <Pipeline />
+              <Closer />
+            </motion.div>
+          </main>
+        </motion.div>
+      )}
+    </motion.div>
   );
 }
