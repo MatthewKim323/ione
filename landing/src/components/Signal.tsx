@@ -141,26 +141,39 @@ export function Signal() {
     >
       {/* Subtle purple LiquidChrome backdrop — sits behind everything,
           dim opacity + low amplitude so it reads as ambient depth, not
-          a feature.  Non-interactive so it doesn't compete with the
-          terminal box for pointer attention. */}
+          a feature.  The vertical mask makes the chrome ease in at the
+          top edge of the section and fade out at the bottom, so the
+          transition with the neighboring sections is gradual instead
+          of a hard rectangle of color appearing on scroll. */}
       <div
         aria-hidden
         className="absolute inset-0 pointer-events-none"
         style={{
-          opacity: 0.22,
-          // Slight dark vignette around the edges so the chrome bleeds
-          // into the page instead of butting hard against the borders.
+          opacity: 0.26,
+          // Vertical fade in/out (top + bottom 22% are the ramp zones)
+          // crossed with a radial vignette so the corners also feather
+          // into the page background rather than butting against it.
           maskImage:
-            "radial-gradient(ellipse at center, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%)",
+            "linear-gradient(to bottom," +
+            " rgba(0,0,0,0) 0%," +
+            " rgba(0,0,0,1) 22%," +
+            " rgba(0,0,0,1) 78%," +
+            " rgba(0,0,0,0) 100%)",
           WebkitMaskImage:
-            "radial-gradient(ellipse at center, rgba(0,0,0,1) 55%, rgba(0,0,0,0) 100%)",
+            "linear-gradient(to bottom," +
+            " rgba(0,0,0,0) 0%," +
+            " rgba(0,0,0,1) 22%," +
+            " rgba(0,0,0,1) 78%," +
+            " rgba(0,0,0,0) 100%)",
         }}
       >
         <LiquidChrome
-          // baseColor: dim purple at the troughs.
-          baseColor={[0.18, 0.10, 0.28]}
-          // maxColor: brightest peak — exactly #CCCCFF (204/255).
-          maxColor={[0.8, 0.8, 1.0]}
+          // baseColor: deeper, more saturated purple at the troughs.
+          baseColor={[0.22, 0.08, 0.36]}
+          // maxColor: brightest peak — soft purple-lavender ≈ #C9B0FF.
+          // (Shifted away from the previous #CCCCFF so the highlight
+          // reads as purple rather than pale blue-white.)
+          maxColor={[0.79, 0.69, 1.0]}
           speed={0.35}
           amplitude={0.18}
           frequencyX={2.5}
