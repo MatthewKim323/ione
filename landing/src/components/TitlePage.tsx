@@ -44,7 +44,7 @@ export function TitlePage() {
           fontSize: "clamp(7rem, 22vw, 22rem)",
           letterSpacing: "-0.04em",
           lineHeight: 0.9,
-          color: "#1a7a3c",
+          color: "#BFEC00",
           fontStyle: "italic",
         }}
       >
@@ -68,10 +68,9 @@ export function TitlePage() {
           items={CAROUSEL_ITEMS}
           interval={2600}
           style={{
-            color: "#CCFF00",
-            // Subtle dark drop-shadow so the high-key lime stays legible
-            // on the cream paper background.
-            textShadow: "0 1px 0 rgba(0,0,0,0.06)",
+            // Original tagline color — the lime moved up to the wordmark,
+            // so the carousel returns to its supporting role.
+            color: "rgba(0,0,0,0.78)",
           }}
         />
       </motion.h2>
